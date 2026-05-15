@@ -21,6 +21,7 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import PersonAddIcon from '@mui/icons-material/PersonAdd'
+import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
 import { Loading } from '@/components/Loading'
 
 const supabase = createClient()
@@ -129,9 +130,14 @@ export default function CheckinPage() {
   return (
     <Container maxWidth="sm" sx={{ py: 5 }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 4 }}>
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>當天報到</Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>輸入單位與姓名搜尋，協助報到</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <QrCodeScannerIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+          </Box>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>完成報到</Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>輸入單位與姓名搜尋，協助報到</Typography>
+          </Box>
         </Box>
         <Button variant="outlined" startIcon={<PersonAddIcon />} onClick={openWalkIn} disabled={!selectedSession}>
           現場報名

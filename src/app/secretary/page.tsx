@@ -19,6 +19,7 @@ import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import DeleteIcon from '@mui/icons-material/Delete'
 import DownloadIcon from '@mui/icons-material/Download'
+import ListAltIcon from '@mui/icons-material/ListAlt'
 import Checkbox from '@mui/material/Checkbox'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -180,8 +181,15 @@ export default function SecretaryPage() {
 
   return (
     <Container maxWidth="md" sx={{ py: 5 }}>
-      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>秘書掛號</Typography>
-      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4 }}>填寫本單位報名名單</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+        <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <ListAltIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+        </Box>
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>秘書掛號</Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>填寫本單位報名名單</Typography>
+        </Box>
+      </Box>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 3 }}>
         <FormControl size="small" fullWidth>

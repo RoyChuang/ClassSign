@@ -6,7 +6,8 @@ import { ThemeRegistry } from '@/components/ThemeRegistry'
 
 export const metadata: Metadata = {
   title: 'ClassSign 班會掛號系統',
-  description: '掛號班會系統',
+  description: '班會掛號系統',
+  icons: { icon: '/logo.jpg' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -15,6 +15,7 @@ import MenuItem from '@mui/material/MenuItem'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import EditIcon from '@mui/icons-material/Edit'
+import PeopleIcon from '@mui/icons-material/People'
 import TextField from '@mui/material/TextField'
 import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
@@ -87,8 +88,15 @@ export default function UsersPage() {
 
   return (
     <Container maxWidth="md" sx={{ py: 5 }}>
-      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>使用者管理</Typography>
-      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4 }}>設定角色、單位與別名。秘書登入後會自動出現於列表。</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+        <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <PeopleIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+        </Box>
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>使用者管理</Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>設定角色、單位與別名</Typography>
+        </Box>
+      </Box>
 
       <TextField
         size="small" fullWidth placeholder="搜尋姓名或 Email"

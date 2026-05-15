@@ -12,6 +12,7 @@ import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
 import FormControl from '@mui/material/FormControl'
 import { Loading } from '@/components/Loading'
+import KitchenIcon from '@mui/icons-material/Kitchen'
 
 const supabase = createClient()
 
@@ -54,18 +55,21 @@ export default function KitchenPage() {
 
   return (
     <Container maxWidth="sm" sx={{ py: 5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700 }}>廚房看板</Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <span className="live-dot" />
-          <Typography variant="caption" sx={{ color: '#16A34A', fontWeight: 500 }}>即時更新</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+        <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <KitchenIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+        </Box>
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>廚房看板</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <span className="live-dot" />
+              <Typography variant="caption" sx={{ color: '#16A34A', fontWeight: 500 }}>即時更新</Typography>
+            </Box>
+          </Box>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>掛號及報到人數</Typography>
         </Box>
       </Box>
-      {session && (
-        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-          {session.date} · 截止 {session.reg_deadline}
-        </Typography>
-      )}
 
       <FormControl fullWidth size="small" sx={{ mb: 4 }}>
         <Select value={selectedSession} onChange={e => setSelectedSession(e.target.value)}>

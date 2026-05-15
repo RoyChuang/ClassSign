@@ -19,6 +19,7 @@ import TableFooter from '@mui/material/TableFooter'
 import TableRow from '@mui/material/TableRow'
 import TableCell from '@mui/material/TableCell'
 import { Loading } from '@/components/Loading'
+import BarChartIcon from '@mui/icons-material/BarChart'
 
 const supabase = createClient()
 
@@ -57,8 +58,15 @@ export default function DashboardPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 5 }}>
-      <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>統計總覽</Typography>
-      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4 }}>各單位乾坤人數一覽</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+        <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <BarChartIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+        </Box>
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>統計總覽</Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>各單位乾坤人數一覽</Typography>
+        </Box>
+      </Box>
 
       <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap' }}>
         <FormControl size="small" sx={{ minWidth: 200 }}>

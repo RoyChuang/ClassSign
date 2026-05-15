@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useAuth } from './AuthProvider'
 import AppBar from '@mui/material/AppBar'
 import Toolbar from '@mui/material/Toolbar'
@@ -22,10 +23,12 @@ export function Navbar() {
     <AppBar position="static" color="default" elevation={0}
       sx={{ borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
       <Toolbar variant="dense" sx={{ gap: 2, minHeight: 52 }}>
-        <Typography component={Link} href="/" variant="h6" color="primary"
-          sx={{ textDecoration: 'none', flexGrow: 1, fontWeight: 700, fontSize: 18, letterSpacing: '-0.01em' }}>
-          ClassSign
-        </Typography>
+        <Box component={Link} href="/" sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none', flexGrow: 1 }}>
+          <Image src="/logo.jpg" alt="logo" width={28} height={28} style={{ borderRadius: 6 }} />
+          <Typography variant="h6" color="primary" sx={{ fontWeight: 700, fontSize: 18, letterSpacing: '-0.01em' }}>
+            ClassSign
+          </Typography>
+        </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           {profile && (
             <>

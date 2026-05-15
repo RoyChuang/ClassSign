@@ -19,6 +19,7 @@ import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
+import SettingsIcon from '@mui/icons-material/Settings'
 import { Loading } from '@/components/Loading'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -122,8 +123,15 @@ export default function AdminPage() {
 
   return (
     <Container maxWidth="md" sx={{ py: 5 }}>
-      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>班會管理</Typography>
-      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4 }}>建立班會、調整狀態</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+        <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <SettingsIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+        </Box>
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>班會管理</Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>建立班會、調整狀態</Typography>
+        </Box>
+      </Box>
 
       <Card sx={{ mb: 4 }}>
         <CardContent sx={{ p: 3 }}>
@@ -160,24 +168,24 @@ export default function AdminPage() {
             .filter(s => !search.trim() || s.name.toLowerCase().includes(search.trim().toLowerCase()))
             .map(s => (
             <Card key={s.id}>
-              <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2, '&:last-child': { pb: 2 } }}>
-                <Box>
-                  <Typography sx={{ fontWeight: 500 }}>{s.name}</Typography>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>{s.date} · 截止 {s.reg_deadline}</Typography>
+              <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
+                  <Box>
+                    <Typography sx={{ fontWeight: 500 }}>{s.name}</Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>{s.date} · 截止 {s.reg_deadline}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0, ml: 1 }}>
+                    <IconButton size="small" onClick={() => openEdit(s)}><EditIcon fontSize="small" /></IconButton>
+                    <IconButton size="small" color="error" onClick={() => setDeleteTarget(s)}><DeleteIcon fontSize="small" /></IconButton>
+                  </Box>
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Chip size="small" label={statusLabel[s.status]} color={statusColor[s.status]} />
                   <Select size="small" value={s.status} onChange={e => updateStatus(s.id, e.target.value)} sx={{ fontSize: 13 }}>
                     <MenuItem value="open">掛號中</MenuItem>
                     <MenuItem value="closed">已截止</MenuItem>
                     <MenuItem value="finished">已結束</MenuItem>
                   </Select>
-                  <IconButton size="small" onClick={() => openEdit(s)}>
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton size="small" color="error" onClick={() => setDeleteTarget(s)}>
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
                 </Box>
               </CardContent>
             </Card>

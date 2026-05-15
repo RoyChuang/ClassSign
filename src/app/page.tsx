@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useAuth } from '@/components/AuthProvider'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
@@ -17,7 +18,7 @@ import type { SvgIconComponent } from '@mui/icons-material'
 
 const publicNav = [
   { href: '/dashboard', label: '統計總覽', desc: '各單位乾坤人數一覽', Icon: BarChartIcon },
-  { href: '/checkin', label: '當天報到', desc: '掃 QR Code 完成報到', Icon: QrCodeScannerIcon },
+  { href: '/checkin', label: '完成報到', desc: '輸入姓名搜尋，協助完成報到', Icon: QrCodeScannerIcon },
   { href: '/kitchen', label: '廚房看板', desc: '掛號及報到人數', Icon: KitchenIcon },
 ]
 
@@ -53,8 +54,9 @@ export default function Home() {
   return (
     <Container maxWidth="sm" sx={{ py: 7 }}>
       <Box sx={{ textAlign: 'center', mb: 6 }}>
+        <Image src="/logo.jpg" alt="興毅 logo" width={80} height={80} style={{ borderRadius: 12, marginBottom: 16 }} />
         <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, color: 'text.primary', letterSpacing: '-0.02em' }}>ClassSign</Typography>
-        <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>掛號班會系統</Typography>
+        <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>班會掛號系統</Typography>
       </Box>
 
       {profile?.role === 'admin' && (
