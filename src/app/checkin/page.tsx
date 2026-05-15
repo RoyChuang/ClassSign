@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Registration } from '@/lib/types'
+import { Session, Class, Registration, Unit, Gender, UNITS, GENDERS } from '@/lib/types'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
@@ -10,104 +10,248 @@ import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
-import Alert from '@mui/material/Alert'
-import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
+import Select from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+import Chip from '@mui/material/Chip'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import DialogActions from '@mui/material/DialogActions'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import PersonAddIcon from '@mui/icons-material/PersonAdd'
+import { Loading } from '@/components/Loading'
 
 const supabase = createClient()
 
-type ScanResult = { registration: Registration & { classes: { name: string } }; alreadyChecked: boolean } | null
+type Reg = Registration & { classes: { name: string } }
 
 export default function CheckinPage() {
-  const [scanning, setScanning] = useState(false)
-  const [result, setResult] = useState<ScanResult>(null)
-  const [error, setError] = useState<string>('')
-  const [manualToken, setManualToken] = useState('')
-  const scannerRef = useRef<unknown>(null)
-  const divRef = useRef<HTMLDivElement>(null)
+  const [sessions, setSessions] = useState<Session[]>([])
+  const [selectedSession, setSelectedSession] = useState('')
+  const [selectedUnit, setSelectedUnit] = useState<Unit | ''>('')
+  const [name, setName] = useState('')
+  const [results, setResults] = useState<Reg[]>([])
+  const [searched, setSearched] = useState(false)
+  const [searching, setSearching] = useState(false)
+  const [checkedIn, setCheckedIn] = useState<Set<string>>(new Set())
 
-  async function handleToken(token: string) {
-    setError(''); setResult(null)
-    const { data, error: err } = await supabase
-      .from('registrations').select('*, classes(name)')
-      .eq('qr_token', token.trim()).single()
+  // 現場報名
+  const [walkInOpen, setWalkInOpen] = useState(false)
+  const [classes, setClasses] = useState<Class[]>([])
+  const [walkInForm, setWalkInForm] = useState<{ name: string; gender: Gender; class_id: string }>({ name: '', gender: '乾', class_id: '' })
+  const [walkInSubmitting, setWalkInSubmitting] = useState(false)
+  const [walkInSuccess, setWalkInSuccess] = useState<string>('')
 
-    if (err || !data) { setError('找不到此 QR Code，請確認'); return }
+  useEffect(() => {
+    supabase.from('sessions').select('*').eq('status', 'open').order('date', { ascending: false })
+      .then(({ data }) => {
+        const list = data ?? []
+        setSessions(list)
+        if (list.length > 0) setSelectedSession(list[0].id)
+      })
+  }, [])
 
-    const alreadyChecked = data.checked_in
-    if (!alreadyChecked) {
-      await supabase.from('registrations')
-        .update({ checked_in: true, checked_in_at: new Date().toISOString() }).eq('id', data.id)
-      data.checked_in = true
+  useEffect(() => {
+    if (!selectedSession) { setClasses([]); return }
+    supabase.from('classes').select('*').eq('session_id', selectedSession).order('sort_order')
+      .then(({ data }) => {
+        setClasses(data ?? [])
+        setWalkInForm(f => ({ ...f, class_id: data?.[0]?.id ?? '' }))
+      })
+  }, [selectedSession])
+
+  async function search(e: React.FormEvent) {
+    e.preventDefault()
+    if (!selectedSession || !selectedUnit || !name.trim()) return
+    setSearching(true)
+    setSearched(false)
+    const { data } = await supabase
+      .from('registrations')
+      .select('*, classes(name)')
+      .eq('session_id', selectedSession)
+      .eq('unit', selectedUnit)
+      .ilike('name', `%${name.trim()}%`)
+      .order('name')
+    setResults((data ?? []) as Reg[])
+    setCheckedIn(new Set((data ?? []).filter(r => r.checked_in).map(r => r.id)))
+    setSearched(true)
+    setSearching(false)
+  }
+
+  async function checkIn(reg: Reg) {
+    if (checkedIn.has(reg.id)) return
+    await supabase.from('registrations')
+      .update({ checked_in: true, checked_in_at: new Date().toISOString() })
+      .eq('id', reg.id)
+    setCheckedIn(prev => new Set([...prev, reg.id]))
+  }
+
+  function openWalkIn() {
+    setWalkInForm({ name: name.trim(), gender: '乾', class_id: classes[0]?.id ?? '' })
+    setWalkInSuccess('')
+    setWalkInOpen(true)
+  }
+
+  async function submitWalkIn() {
+    if (!selectedSession || !selectedUnit || !walkInForm.name.trim() || !walkInForm.class_id) return
+    setWalkInSubmitting(true)
+    const { data, error } = await supabase.from('registrations').insert({
+      session_id: selectedSession,
+      unit: selectedUnit,
+      name: walkInForm.name.trim(),
+      gender: walkInForm.gender,
+      class_id: walkInForm.class_id,
+      checked_in: true,
+      checked_in_at: new Date().toISOString(),
+    }).select('*, classes(name)').single()
+
+    if (error || !data) {
+      alert('報名失敗：' + error?.message)
+    } else {
+      setWalkInSuccess(walkInForm.name.trim())
+      setWalkInOpen(false)
+      // 重新搜尋以顯示新增者
+      const { data: fresh } = await supabase
+        .from('registrations').select('*, classes(name)')
+        .eq('session_id', selectedSession).eq('unit', selectedUnit)
+        .ilike('name', `%${name.trim()}%`).order('name')
+      setResults((fresh ?? []) as Reg[])
+      setCheckedIn(new Set((fresh ?? []).filter(r => r.checked_in).map(r => r.id)))
+      setSearched(true)
     }
-    setResult({ registration: data as Registration & { classes: { name: string } }, alreadyChecked })
+    setWalkInSubmitting(false)
   }
 
-  async function startScanner() {
-    setScanning(true); setResult(null); setError('')
-    const { Html5QrcodeScanner } = await import('html5-qrcode')
-    if (scannerRef.current) return
-    const scanner = new Html5QrcodeScanner('qr-reader', { fps: 10, qrbox: 250 }, false)
-    scannerRef.current = scanner
-    scanner.render(async (decodedText: string) => {
-      scanner.clear(); scannerRef.current = null; setScanning(false)
-      await handleToken(decodedText)
-    }, () => {})
-  }
-
-  function stopScanner() {
-    if (scannerRef.current) {
-      try { (scannerRef.current as { clear: () => void }).clear() } catch {}
-      scannerRef.current = null
-    }
-    setScanning(false)
-  }
-
-  useEffect(() => () => { stopScanner() }, [])
+  const classMap = Object.fromEntries(classes.map(c => [c.id, c.name]))
 
   return (
     <Container maxWidth="sm" sx={{ py: 5 }}>
-      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>當天報到</Typography>
-      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4 }}>掃描 QR Code 完成報到</Typography>
-
-      <Card sx={{ mb: 2.5 }}>
-        <CardContent sx={{ p: 3 }}>
-          {!scanning ? (
-            <Button fullWidth variant="contained" size="large" startIcon={<QrCodeScannerIcon />} onClick={startScanner} sx={{ py: 1.5, fontSize: 15 }}>
-              開啟鏡頭掃描 QR Code
-            </Button>
-          ) : (
-            <Box>
-              <div id="qr-reader" ref={divRef} style={{ marginBottom: 16 }} />
-              <Button fullWidth variant="outlined" onClick={stopScanner}>取消掃描</Button>
-            </Box>
-          )}
-        </CardContent>
-      </Card>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 4 }}>
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>當天報到</Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>輸入單位與姓名搜尋，協助報到</Typography>
+        </Box>
+        <Button variant="outlined" startIcon={<PersonAddIcon />} onClick={openWalkIn} disabled={!selectedSession}>
+          現場報名
+        </Button>
+      </Box>
 
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ p: 3 }}>
-          <Typography variant="body2" sx={{ fontWeight: 500, mb: 1.5, color: 'text.secondary', fontSize: 12, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-            手動輸入 Token（測試用）
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <TextField size="small" fullWidth value={manualToken}
-              onChange={e => setManualToken(e.target.value)} placeholder="貼上 qr_token" />
-            <Button variant="outlined" onClick={() => handleToken(manualToken)}>確認</Button>
+          <Box component="form" onSubmit={search} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <FormControl size="small" fullWidth>
+              <InputLabel>班會</InputLabel>
+              <Select label="班會" value={selectedSession} onChange={e => { setSelectedSession(e.target.value); setSearched(false) }}>
+                {sessions.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              <FormControl size="small" fullWidth>
+                <InputLabel>單位</InputLabel>
+                <Select label="單位" value={selectedUnit} onChange={e => { setSelectedUnit(e.target.value as Unit); setSearched(false) }}>
+                  {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <TextField
+                size="small" label="姓名" placeholder="輸入姓名搜尋"
+                value={name} onChange={e => { setName(e.target.value); setSearched(false) }}
+              />
+            </Box>
+            <Button type="submit" variant="contained" disabled={searching || !selectedSession || !selectedUnit || !name.trim()}>
+              {searching ? '搜尋中...' : '搜尋'}
+            </Button>
           </Box>
         </CardContent>
       </Card>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {searching && <Loading />}
 
-      {result && (
-        <Alert severity={result.alreadyChecked ? 'warning' : 'success'} sx={{ mb: 2 }}>
-          <Typography sx={{ fontWeight: 700, mb: 0.5, fontSize: 15 }}>{result.alreadyChecked ? '已報到過' : '報到成功'}</Typography>
-          <Typography sx={{ fontWeight: 600, fontSize: 16 }}>{result.registration.name}</Typography>
-          <Typography variant="body2" sx={{ mt: 0.5, opacity: 0.8 }}>
-            {result.registration.unit} · {result.registration.gender} · {result.registration.classes?.name}
-          </Typography>
-        </Alert>
+      {walkInSuccess && (
+        <Card sx={{ mb: 2, borderColor: '#BBF7D0', bgcolor: '#F0FDF4' }}>
+          <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1.5, '&:last-child': { pb: 1.5 } }}>
+            <CheckCircleIcon sx={{ color: '#16A34A' }} />
+            <Typography sx={{ fontWeight: 600, color: '#16A34A' }}>「{walkInSuccess}」現場報名並完成報到</Typography>
+          </CardContent>
+        </Card>
       )}
+
+      {searched && !searching && (
+        results.length === 0 ? (
+          <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>
+            找不到「{name}」的報名記錄
+          </Typography>
+        ) : (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {results.map(r => {
+              const done = checkedIn.has(r.id)
+              return (
+                <Card key={r.id} sx={{ borderColor: done ? '#BBF7D0' : 'divider', bgcolor: done ? '#F0FDF4' : 'background.paper' }}>
+                  <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2, '&:last-child': { pb: 2 } }}>
+                    <Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.3 }}>
+                        <Typography sx={{ fontWeight: 600, fontSize: 16 }}>{r.name}</Typography>
+                        <Chip size="small" label={r.gender}
+                          sx={{ bgcolor: r.gender === '乾' ? '#EFF6FF' : '#FDF2F8', color: r.gender === '乾' ? '#2563EB' : '#DB2777', fontWeight: 500 }} />
+                      </Box>
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                        {r.unit} · {r.classes?.name}
+                      </Typography>
+                    </Box>
+                    {done ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <CheckCircleIcon fontSize="small" sx={{ color: '#16A34A' }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#16A34A' }}>已報到</Typography>
+                      </Box>
+                    ) : (
+                      <Button variant="contained" size="small" onClick={() => checkIn(r)} sx={{ px: 2.5 }}>
+                        報到
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </Box>
+        )
+      )}
+
+      {/* 現場報名 Dialog */}
+      <Dialog open={walkInOpen} onClose={() => !walkInSubmitting && setWalkInOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 600 }}>現場報名並報到</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', mt: -1 }}>
+            單位：{selectedUnit}　班會：{sessions.find(s => s.id === selectedSession)?.name}
+          </Typography>
+          <TextField
+            label="姓名" size="small" fullWidth required
+            value={walkInForm.name}
+            onChange={e => setWalkInForm(f => ({ ...f, name: e.target.value }))}
+          />
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+            <FormControl size="small" fullWidth>
+              <InputLabel>乾/坤</InputLabel>
+              <Select label="乾/坤" value={walkInForm.gender} onChange={e => setWalkInForm(f => ({ ...f, gender: e.target.value as Gender }))}>
+                {GENDERS.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl size="small" fullWidth>
+              <InputLabel>班別</InputLabel>
+              <Select label="班別" value={walkInForm.class_id} onChange={e => setWalkInForm(f => ({ ...f, class_id: e.target.value }))}>
+                {classes.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button onClick={() => setWalkInOpen(false)} disabled={walkInSubmitting}>取消</Button>
+          <Button variant="contained" onClick={submitWalkIn}
+            disabled={walkInSubmitting || !walkInForm.name.trim() || !walkInForm.class_id}>
+            {walkInSubmitting ? '處理中...' : '報名並報到'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   )
 }
