@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { parseUserProfile, UserProfile } from '@/lib/auth'
+import { UserProfile, UserRole, ADMIN_EMAILS } from '@/lib/auth'
+import { Unit } from '@/lib/types'
 
 interface AuthContextType {
   profile: UserProfile | null
@@ -18,26 +19,109 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 })
 
+const CACHE_KEY = 'cs_profile'
+
+function getCached(email: string): UserProfile | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const p = JSON.parse(raw) as UserProfile
+    return p.email === email ? p : null
+  } catch { return null }
+}
+
+function setCache(p: UserProfile) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(p)) } catch {}
+}
+
+function clearCache() {
+  try { localStorage.removeItem(CACHE_KEY) } catch {}
+}
+
+async function loadOrCreateProfile(email: string, googleName: string): Promise<UserProfile> {
+  const supabase = createClient()
+
+  const { data: existing } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('email', email)
+    .single()
+
+  if (existing) {
+    return {
+      id: existing.id,
+      email: existing.email,
+      displayName: existing.display_name || googleName,
+      role: existing.role as UserRole,
+      unit: existing.unit as Unit | null,
+    }
+  }
+
+  const defaultRole: UserRole = ADMIN_EMAILS.includes(email) ? 'admin' : 'viewer'
+  const { data: created } = await supabase
+    .from('profiles')
+    .insert({ email, display_name: googleName, role: defaultRole })
+    .select()
+    .single()
+
+  if (!created) throw new Error('Failed to create profile')
+
+  return {
+    id: created.id,
+    email: created.email,
+    displayName: created.display_name || googleName,
+    role: created.role as UserRole,
+    unit: created.unit as Unit | null,
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        const { email, user_metadata } = session.user
-        setProfile(parseUserProfile(email!, user_metadata.full_name ?? user_metadata.name ?? ''))
-      }
-      setLoading(false)
-    })
+  async function fetchAndSetProfile(email: string, googleName: string) {
+    try {
+      const p = await loadOrCreateProfile(email, googleName)
+      setProfile(p)
+      setCache(p)
+    } catch (err) {
+      console.error('Failed to load profile from DB:', err)
+    }
+  }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          const { email, user_metadata } = session.user
+          const googleName = user_metadata.full_name ?? user_metadata.name ?? ''
+
+          // 1. 先從快取顯示（即時）
+          const cached = getCached(email!)
+          if (cached) setProfile(cached)
+          setLoading(false)
+
+          // 2. 背景從 DB 更新
+          fetchAndSetProfile(email!, googleName)
+        } else {
+          setLoading(false)
+        }
+      } catch (err) {
+        console.error('Failed to get session:', err)
+        setLoading(false)
+      }
+    })()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const { email, user_metadata } = session.user
-        setProfile(parseUserProfile(email!, user_metadata.full_name ?? user_metadata.name ?? ''))
+        const googleName = user_metadata.full_name ?? user_metadata.name ?? ''
+        fetchAndSetProfile(email!, googleName)
       } else {
         setProfile(null)
+        clearCache()
       }
     })
 
@@ -54,6 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signOut() {
     await supabase.auth.signOut()
     setProfile(null)
+    clearCache()
   }
 
   return (

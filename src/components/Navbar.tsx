@@ -26,20 +26,16 @@ export function Navbar() {
           sx={{ textDecoration: 'none', flexGrow: 1, fontWeight: 700, fontSize: 18, letterSpacing: '-0.01em' }}>
           ClassSign
         </Typography>
-        {!loading && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            {profile ? (
-              <>
-                <Chip size="small" label={`${roleLabel[profile.role]}${profile.unit ? ` · ${profile.unit}` : ''}`}
-                  sx={{ borderRadius: '6px', fontWeight: 500, bgcolor: '#EFF6FF', color: '#2563EB', fontSize: 12 }} />
-                <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: 13 }}>{profile.displayName}</Typography>
-                <Button variant="outlined" size="small" onClick={signOut} sx={{ fontSize: 13 }}>登出</Button>
-              </>
-            ) : (
-              <Button variant="contained" size="small" onClick={signIn} sx={{ fontSize: 13 }}>Google 登入</Button>
-            )}
-          </Box>
-        )}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          {profile && (
+            <>
+              <Chip size="small" label={`${roleLabel[profile.role]}${profile.unit ? ` · ${profile.unit}` : ''}`}
+                sx={{ borderRadius: '6px', fontWeight: 500, bgcolor: '#EFF6FF', color: '#2563EB', fontSize: 12 }} />
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: 13 }}>{profile.displayName}</Typography>
+              <Button variant="outlined" size="small" onClick={signOut} sx={{ fontSize: 13 }}>登出</Button>
+            </>
+          )}
+        </Box>
       </Toolbar>
     </AppBar>
   )

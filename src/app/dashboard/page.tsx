@@ -18,6 +18,7 @@ import TableBody from '@mui/material/TableBody'
 import TableFooter from '@mui/material/TableFooter'
 import TableRow from '@mui/material/TableRow'
 import TableCell from '@mui/material/TableCell'
+import { Loading } from '@/components/Loading'
 
 const supabase = createClient()
 
@@ -77,7 +78,7 @@ export default function DashboardPage() {
         )}
       </Box>
 
-      {loading && <Typography sx={{ color: 'text.secondary' }}>載入中...</Typography>}
+      {loading && <Loading />}
 
       {selectedSession && !loading && (
         <>

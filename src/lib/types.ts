@@ -22,6 +22,15 @@ export interface Class {
   sort_order: number
 }
 
+export interface Profile {
+  id: string
+  email: string
+  display_name: string
+  role: 'admin' | 'secretary' | 'viewer'
+  unit: Unit | null
+  created_at: string
+}
+
 export interface Registration {
   id: string
   session_id: string

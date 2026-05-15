@@ -16,6 +16,15 @@ import Button from '@mui/material/Button'
 import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
 import Chip from '@mui/material/Chip'
+import IconButton from '@mui/material/IconButton'
+import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
+import { Loading } from '@/components/Loading'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import DialogContentText from '@mui/material/DialogContentText'
+import DialogActions from '@mui/material/DialogActions'
 
 const supabase = createClient()
 
@@ -25,9 +34,15 @@ const statusColor: Record<string, 'success' | 'warning' | 'default'> = { open: '
 export default function AdminPage() {
   const { profile, loading: authLoading, signIn } = useAuth()
   const [sessions, setSessions] = useState<Session[]>([])
+  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState<{ name: string; date: Dayjs | null; reg_deadline: Dayjs | null }>({ name: '', date: null, reg_deadline: null })
   const [submitting, setSubmitting] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<Session | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [editTarget, setEditTarget] = useState<Session | null>(null)
+  const [editForm, setEditForm] = useState<{ name: string; date: Dayjs | null; reg_deadline: Dayjs | null }>({ name: '', date: null, reg_deadline: null })
+  const [saving, setSaving] = useState(false)
 
   async function loadSessions() {
     const { data } = await supabase.from('sessions').select('*').order('date', { ascending: false })
@@ -36,6 +51,24 @@ export default function AdminPage() {
   }
 
   useEffect(() => { loadSessions() }, [])
+
+  function openEdit(s: Session) {
+    setEditTarget(s)
+    setEditForm({ name: s.name, date: dayjs(s.date), reg_deadline: dayjs(s.reg_deadline) })
+  }
+
+  async function saveEdit() {
+    if (!editTarget || !editForm.date || !editForm.reg_deadline) return
+    setSaving(true)
+    await supabase.from('sessions').update({
+      name: editForm.name,
+      date: editForm.date.format('YYYY-MM-DD'),
+      reg_deadline: editForm.reg_deadline.format('YYYY-MM-DD'),
+    }).eq('id', editTarget.id)
+    setEditTarget(null)
+    setSaving(false)
+    await loadSessions()
+  }
 
   async function createSession(e: React.FormEvent) {
     e.preventDefault()
@@ -61,12 +94,23 @@ export default function AdminPage() {
     await loadSessions()
   }
 
-  if (authLoading) return <Container sx={{ py: 5 }}><Typography sx={{ color: 'text.secondary' }}>載入中...</Typography></Container>
+  async function confirmDelete() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    await supabase.from('registrations').delete().eq('session_id', deleteTarget.id)
+    await supabase.from('classes').delete().eq('session_id', deleteTarget.id)
+    await supabase.from('sessions').delete().eq('id', deleteTarget.id)
+    setDeleteTarget(null)
+    setDeleting(false)
+    await loadSessions()
+  }
+
+  if (authLoading) return <Loading fullPage />
 
   if (!profile) return (
     <Container sx={{ py: 5, textAlign: 'center' }}>
-      <Typography sx={{ color: 'text.secondary', mb: 2 }}>請先登入</Typography>
-      <Button variant="contained" onClick={signIn}>Google 登入</Button>
+      <Typography sx={{ color: 'text.secondary', mb: 2 }}>此頁面僅供管理員使用</Typography>
+      <Button variant="contained" onClick={signIn}>管理員登入</Button>
     </Container>
   )
 
@@ -78,8 +122,8 @@ export default function AdminPage() {
 
   return (
     <Container maxWidth="md" sx={{ py: 5 }}>
-      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>管理員</Typography>
-      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4 }}>建立班會、管理設定</Typography>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>班會管理</Typography>
+      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4 }}>建立班會、調整狀態</Typography>
 
       <Card sx={{ mb: 4 }}>
         <CardContent sx={{ p: 3 }}>
@@ -88,18 +132,12 @@ export default function AdminPage() {
             <TextField required label="班會名稱" placeholder="例：115年5月全家福班"
               value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} fullWidth size="small" />
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-              <DatePicker
-                label="班會日期"
-                value={form.date}
+              <DatePicker label="班會日期" value={form.date}
                 onChange={val => setForm(f => ({ ...f, date: val }))}
-                slotProps={{ textField: { size: 'small', required: true } }}
-              />
-              <DatePicker
-                label="掛號截止日"
-                value={form.reg_deadline}
+                slotProps={{ textField: { size: 'small', required: true } }} />
+              <DatePicker label="掛號截止日" value={form.reg_deadline}
                 onChange={val => setForm(f => ({ ...f, reg_deadline: val }))}
-                slotProps={{ textField: { size: 'small', required: true } }}
-              />
+                slotProps={{ textField: { size: 'small', required: true } }} />
             </Box>
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>班別預設：壇主人才班、長青班、青少年班、兒童班</Typography>
             <Button type="submit" variant="contained" disabled={submitting} sx={{ alignSelf: 'flex-start', px: 3 }}>
@@ -110,10 +148,17 @@ export default function AdminPage() {
       </Card>
 
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>班會列表</Typography>
-      {loading ? <Typography sx={{ color: 'text.secondary' }}>載入中...</Typography> : (
+      <TextField
+        size="small" fullWidth placeholder="搜尋班會名稱"
+        value={search} onChange={e => setSearch(e.target.value)}
+        sx={{ mb: 2 }}
+      />
+      {loading ? <Loading /> : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {sessions.length === 0 && <Typography sx={{ color: 'text.secondary' }}>尚無班會</Typography>}
-          {sessions.map(s => (
+          {sessions
+            .filter(s => !search.trim() || s.name.toLowerCase().includes(search.trim().toLowerCase()))
+            .map(s => (
             <Card key={s.id}>
               <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2, '&:last-child': { pb: 2 } }}>
                 <Box>
@@ -127,12 +172,56 @@ export default function AdminPage() {
                     <MenuItem value="closed">已截止</MenuItem>
                     <MenuItem value="finished">已結束</MenuItem>
                   </Select>
+                  <IconButton size="small" onClick={() => openEdit(s)}>
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton size="small" color="error" onClick={() => setDeleteTarget(s)}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
                 </Box>
               </CardContent>
             </Card>
-          ))}
+            ))}
         </Box>
       )}
+
+      {/* Edit Session Dialog */}
+      <Dialog open={!!editTarget} onClose={() => !saving && setEditTarget(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 600 }}>編輯班會</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
+          <TextField label="班會名稱" size="small" fullWidth required
+            value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
+          <DatePicker label="班會日期" value={editForm.date}
+            onChange={val => setEditForm(f => ({ ...f, date: val }))}
+            slotProps={{ textField: { size: 'small', fullWidth: true } }} />
+          <DatePicker label="掛號截止日" value={editForm.reg_deadline}
+            onChange={val => setEditForm(f => ({ ...f, reg_deadline: val }))}
+            slotProps={{ textField: { size: 'small', fullWidth: true } }} />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button onClick={() => setEditTarget(null)} disabled={saving}>取消</Button>
+          <Button variant="contained" onClick={saveEdit} disabled={saving || !editForm.name || !editForm.date || !editForm.reg_deadline}>
+            {saving ? '儲存中...' : '儲存'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Session Dialog */}
+      <Dialog open={!!deleteTarget} onClose={() => !deleting && setDeleteTarget(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 600 }}>刪除班會</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            確定刪除「<Box component="span" sx={{ fontWeight: 600, color: 'text.primary' }}>{deleteTarget?.name}</Box>」？
+            <br />此操作無法復原，相關班別與報名資料也會一併刪除。
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button onClick={() => setDeleteTarget(null)} disabled={deleting}>取消</Button>
+          <Button variant="contained" color="error" onClick={confirmDelete} disabled={deleting}>
+            {deleting ? '刪除中...' : '確定刪除'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   )
 }

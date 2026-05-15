@@ -12,6 +12,7 @@ import ListAltIcon from '@mui/icons-material/ListAlt'
 import BarChartIcon from '@mui/icons-material/BarChart'
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
 import KitchenIcon from '@mui/icons-material/Kitchen'
+import PeopleIcon from '@mui/icons-material/People'
 import type { SvgIconComponent } from '@mui/icons-material'
 
 const publicNav = [
@@ -20,8 +21,13 @@ const publicNav = [
   { href: '/kitchen', label: '廚房看板', desc: '掛號及報到人數', Icon: KitchenIcon },
 ]
 
-const authNav = [
-  { href: '/admin', label: '管理員', desc: '建立班會、管理設定', Icon: SettingsIcon },
+const adminNav = [
+  { href: '/admin', label: '班會管理', desc: '建立班會、調整狀態', Icon: SettingsIcon },
+  { href: '/admin/users', label: '使用者管理', desc: '設定角色、單位與別名', Icon: PeopleIcon },
+  { href: '/secretary', label: '秘書掛號', desc: '填寫各單位報名名單', Icon: ListAltIcon },
+]
+
+const secretaryNav = [
   { href: '/secretary', label: '秘書掛號', desc: '填寫本單位報名名單', Icon: ListAltIcon },
 ]
 
@@ -51,13 +57,24 @@ export default function Home() {
         <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>掛號班會系統</Typography>
       </Box>
 
-      {profile && (
+      {profile?.role === 'admin' && (
         <Box sx={{ mb: 2.5 }}>
           <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1.5, pl: 0.5 }}>
             管理功能
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            {authNav.map(item => <NavCard key={item.href} {...item} />)}
+            {adminNav.map(item => <NavCard key={item.href} {...item} />)}
+          </Box>
+        </Box>
+      )}
+
+      {profile?.role === 'secretary' && (
+        <Box sx={{ mb: 2.5 }}>
+          <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1.5, pl: 0.5 }}>
+            秘書功能
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {secretaryNav.map(item => <NavCard key={item.href} {...item} />)}
           </Box>
         </Box>
       )}

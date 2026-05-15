@@ -18,6 +18,13 @@ import InputLabel from '@mui/material/InputLabel'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import DeleteIcon from '@mui/icons-material/Delete'
+import DownloadIcon from '@mui/icons-material/Download'
+import Checkbox from '@mui/material/Checkbox'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import DialogActions from '@mui/material/DialogActions'
+import { Loading } from '@/components/Loading'
 
 const supabase = createClient()
 
@@ -30,6 +37,15 @@ export default function SecretaryPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([])
   const [form, setForm] = useState({ name: '', gender: '乾' as Gender, class_id: '' })
   const [submitting, setSubmitting] = useState(false)
+
+  // 匯入歷史名單
+  const [importOpen, setImportOpen] = useState(false)
+  const [importSession, setImportSession] = useState<string>('')
+  const [importCandidates, setImportCandidates] = useState<Registration[]>([])
+  const [importSelected, setImportSelected] = useState<Set<string>>(new Set())
+  const [importClasses, setImportClasses] = useState<Class[]>([])
+  const [loadingCandidates, setLoadingCandidates] = useState(false)
+  const [importing, setImporting] = useState(false)
 
   useEffect(() => { if (profile?.unit) setSelectedUnit(profile.unit) }, [profile])
 
@@ -74,15 +90,91 @@ export default function SecretaryPage() {
     await loadRegistrations()
   }
 
+  // 匯入：選舊班會後載入名單
+  const pastSessions = sessions.filter(s => s.id !== selectedSession)
+
+  async function onImportSessionChange(sessionId: string) {
+    setImportSession(sessionId)
+    setImportCandidates([])
+    setImportSelected(new Set())
+    if (!sessionId || !selectedUnit) return
+    setLoadingCandidates(true)
+    const [{ data: regs }, { data: cls }] = await Promise.all([
+      supabase.from('registrations').select('*').eq('session_id', sessionId).eq('unit', selectedUnit).order('created_at'),
+      supabase.from('classes').select('*').eq('session_id', sessionId).order('sort_order'),
+    ])
+    setImportCandidates(regs ?? [])
+    setImportClasses(cls ?? [])
+    // 預設全選
+    setImportSelected(new Set((regs ?? []).map(r => r.id)))
+    setLoadingCandidates(false)
+  }
+
+  function toggleSelect(id: string) {
+    setImportSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  async function confirmImport() {
+    if (!selectedSession || !selectedUnit) return
+    const toImport = importCandidates.filter(r => importSelected.has(r.id))
+    if (toImport.length === 0) return
+    setImporting(true)
+
+    // 找當前班會的班別對照（用名稱比對）
+    const currentClassMap = Object.fromEntries(classes.map(c => [c.name, c.id]))
+    const importClassMap = Object.fromEntries(importClasses.map(c => [c.id, c.name]))
+
+    // 排除已存在（同姓名＋同性別）
+    const existingKeys = new Set(registrations.map(r => `${r.name}__${r.gender}`))
+    const deduped = toImport.filter(r => !existingKeys.has(`${r.name}__${r.gender}`))
+
+    if (deduped.length === 0) {
+      alert('選取的人員已全數存在於目前名單中，無需重複匯入。')
+      setImporting(false)
+      return
+    }
+
+    const rows = deduped.map(r => {
+      const className = importClassMap[r.class_id]
+      const classId = currentClassMap[className] ?? classes[0]?.id ?? ''
+      return {
+        session_id: selectedSession,
+        class_id: classId,
+        unit: selectedUnit,
+        name: r.name,
+        gender: r.gender,
+      }
+    })
+
+    const skipped = toImport.length - deduped.length
+
+    const { error } = await supabase.from('registrations').insert(rows)
+    if (error) alert('匯入失敗：' + error.message)
+    else {
+      setImportOpen(false)
+      setImportSession('')
+      setImportCandidates([])
+      setImportSelected(new Set())
+      await loadRegistrations()
+      if (skipped > 0) alert(`已匯入 ${deduped.length} 人，跳過 ${skipped} 位重複者。`)
+    }
+    setImporting(false)
+  }
+
+  const importClassMap = Object.fromEntries(importClasses.map(c => [c.id, c.name]))
   const classMap = Object.fromEntries(classes.map(c => [c.id, c.name]))
   const byGender = (gender: Gender) => registrations.filter(r => r.gender === gender)
 
-  if (authLoading) return <Container sx={{ py: 5 }}><Typography sx={{ color: 'text.secondary' }}>載入中...</Typography></Container>
+  if (authLoading) return <Loading fullPage />
 
   if (!profile) return (
     <Container sx={{ py: 5, textAlign: 'center' }}>
-      <Typography sx={{ color: 'text.secondary', mb: 2 }}>請先登入才能掛號</Typography>
-      <Button variant="contained" onClick={signIn}>Google 登入</Button>
+      <Typography sx={{ color: 'text.secondary', mb: 2 }}>此頁面僅供各單位秘書使用</Typography>
+      <Button variant="contained" onClick={signIn}>秘書登入</Button>
     </Container>
   )
 
@@ -116,7 +208,14 @@ export default function SecretaryPage() {
         <>
           <Card sx={{ mb: 3 }}>
             <CardContent sx={{ p: 3 }}>
-              <Typography sx={{ fontWeight: 600, mb: 2 }}>新增報名者</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography sx={{ fontWeight: 600 }}>新增報名者</Typography>
+                {pastSessions.length > 0 && (
+                  <Button size="small" startIcon={<DownloadIcon />} onClick={() => setImportOpen(true)} sx={{ fontSize: 13 }}>
+                    匯入歷史名單
+                  </Button>
+                )}
+              </Box>
               <Box component="form" onSubmit={addPerson} sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <TextField required label="姓名" size="small" value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))} sx={{ width: 140 }} />
@@ -173,6 +272,66 @@ export default function SecretaryPage() {
           </Card>
         </>
       )}
+
+      {/* 匯入歷史名單 Dialog */}
+      <Dialog open={importOpen} onClose={() => !importing && setImportOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 600 }}>匯入歷史名單</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
+          <FormControl size="small" fullWidth>
+            <InputLabel>選擇舊班會</InputLabel>
+            <Select label="選擇舊班會" value={importSession} onChange={e => onImportSessionChange(e.target.value)}>
+              {pastSessions.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
+            </Select>
+          </FormControl>
+
+          {loadingCandidates && <Loading />}
+
+          {!loadingCandidates && importSession && importCandidates.length === 0 && (
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>該班會此單位無報名記錄</Typography>
+          )}
+
+          {!loadingCandidates && importCandidates.length > 0 && (
+            <Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  共 {importCandidates.length} 人，已選 {importSelected.size} 人
+                </Typography>
+                <Button size="small" sx={{ fontSize: 12 }}
+                  onClick={() => setImportSelected(
+                    importSelected.size === importCandidates.length
+                      ? new Set()
+                      : new Set(importCandidates.map(r => r.id))
+                  )}>
+                  {importSelected.size === importCandidates.length ? '取消全選' : '全選'}
+                </Button>
+              </Box>
+              <Card variant="outlined">
+                {importCandidates.map((r, i) => (
+                  <Box key={r.id}>
+                    {i > 0 && <Divider />}
+                    <Box
+                      sx={{ display: 'flex', alignItems: 'center', px: 1, py: 0.5, cursor: 'pointer', '&:hover': { bgcolor: '#F8FAFC' } }}
+                      onClick={() => toggleSelect(r.id)}
+                    >
+                      <Checkbox size="small" checked={importSelected.has(r.id)} disableRipple />
+                      <Typography variant="body2" sx={{ fontWeight: 500, mr: 1 }}>{r.name}</Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', mr: 1 }}>{r.gender}</Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>{importClassMap[r.class_id]}</Typography>
+                    </Box>
+                  </Box>
+                ))}
+              </Card>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button onClick={() => setImportOpen(false)} disabled={importing}>取消</Button>
+          <Button variant="contained" onClick={confirmImport}
+            disabled={importing || importSelected.size === 0}>
+            {importing ? '匯入中...' : `匯入 ${importSelected.size} 人`}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   )
 }

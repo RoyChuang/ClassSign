@@ -11,6 +11,7 @@ import CardContent from '@mui/material/CardContent'
 import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
 import FormControl from '@mui/material/FormControl'
+import { Loading } from '@/components/Loading'
 
 const supabase = createClient()
 
@@ -72,7 +73,7 @@ export default function KitchenPage() {
         </Select>
       </FormControl>
 
-      {loading ? <Typography sx={{ color: 'text.secondary' }}>載入中...</Typography> : (
+      {loading ? <Loading /> : (
         <>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
             <Card sx={{ bgcolor: '#EFF6FF', borderColor: '#BFDBFE' }}>
