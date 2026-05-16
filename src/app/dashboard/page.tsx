@@ -106,14 +106,20 @@ export default function DashboardPage() {
           </Box>
 
           <Card sx={{ overflow: 'auto' }}>
-            <Table size="small">
+            <Table size="small" sx={{ minWidth: 320 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell>單位</TableCell>
-                  {GENDERS.map(g => (
-                    <TableCell key={g} align="center" colSpan={2}>{g}（掛號 / 報到）</TableCell>
+                  <TableCell rowSpan={2} sx={{ whiteSpace: 'nowrap', verticalAlign: 'middle' }}>單位</TableCell>
+                  <TableCell align="center" colSpan={2} sx={{ color: '#2563EB', fontWeight: 600, borderBottom: 'none', pb: 0.5 }}>乾</TableCell>
+                  <TableCell align="center" colSpan={2} sx={{ color: '#DB2777', fontWeight: 600, borderBottom: 'none', pb: 0.5 }}>坤</TableCell>
+                  <TableCell rowSpan={2} align="center" sx={{ whiteSpace: 'nowrap', verticalAlign: 'middle' }}>合計</TableCell>
+                </TableRow>
+                <TableRow>
+                  {['掛號', '報到', '掛號', '報到'].map((label, i) => (
+                    <TableCell key={i} align="center" sx={{ whiteSpace: 'nowrap', color: i % 2 === 0 ? (i < 2 ? '#2563EB' : '#DB2777') : '#16A34A', fontSize: 12, pt: 0.5 }}>
+                      {label}
+                    </TableCell>
                   ))}
-                  <TableCell align="center">合計</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -123,18 +129,18 @@ export default function DashboardPage() {
                   if (qian + kun === 0) return null
                   return (
                     <TableRow key={unit}>
-                      <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{unit}</Typography></TableCell>
-                      <TableCell align="center" sx={{ color: '#2563EB' }}>{qian}</TableCell>
-                      <TableCell align="center" sx={{ color: '#16A34A' }}>{qianIn}</TableCell>
-                      <TableCell align="center" sx={{ color: '#DB2777' }}>{kun}</TableCell>
-                      <TableCell align="center" sx={{ color: '#16A34A' }}>{kunIn}</TableCell>
-                      <TableCell align="center" sx={{ fontWeight: 600 }}>{qian + kun}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}><Typography variant="body2" sx={{ fontWeight: 500 }}>{unit}</Typography></TableCell>
+                      <TableCell align="center" sx={{ color: '#2563EB', whiteSpace: 'nowrap' }}>{qian}</TableCell>
+                      <TableCell align="center" sx={{ color: '#16A34A', whiteSpace: 'nowrap' }}>{qianIn}</TableCell>
+                      <TableCell align="center" sx={{ color: '#DB2777', whiteSpace: 'nowrap' }}>{kun}</TableCell>
+                      <TableCell align="center" sx={{ color: '#16A34A', whiteSpace: 'nowrap' }}>{kunIn}</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{qian + kun}</TableCell>
                     </TableRow>
                   )
                 })}
               </TableBody>
               <TableFooter>
-                <TableRow sx={{ '& td': { fontWeight: 700, borderTop: '2px solid', borderColor: 'divider' } }}>
+                <TableRow sx={{ '& td': { fontWeight: 700, borderTop: '2px solid', borderColor: 'divider', whiteSpace: 'nowrap' } }}>
                   <TableCell>合計</TableCell>
                   <TableCell align="center" sx={{ color: '#2563EB' }}>{totalByGender('乾')}</TableCell>
                   <TableCell align="center" sx={{ color: '#16A34A' }}>{filtered.filter(r => r.gender === '乾' && r.checked_in).length}</TableCell>
