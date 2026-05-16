@@ -194,7 +194,7 @@ export default function SecretaryPage() {
     const grouped: Record<string, typeof regs> = {}
     classes.forEach(c => { grouped[c.id] = [] })
     regs.forEach(r => { if (grouped[r.class_id]) grouped[r.class_id].push(r); else grouped[r.class_id] = [r] })
-    return classes.filter(c => grouped[c.id]?.length > 0).map(c => ({ class: c, regs: grouped[c.id] }))
+    return classes.map(c => ({ class: c, regs: grouped[c.id] ?? [] }))
   }
 
   if (authLoading) return <Loading fullPage />
@@ -274,48 +274,52 @@ export default function SecretaryPage() {
           </Card>
 
           <Card>
+            {/* 表頭 */}
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
               {GENDERS.map((gender, gi) => (
-                <Box key={gender} sx={{ borderRight: gi === 0 ? '1px solid' : 'none', borderColor: 'divider' }}>
-                  <Box sx={{
-                    px: 2, py: 1.5,
-                    bgcolor: gender === '乾' ? '#EFF6FF' : '#FDF2F8',
-                    borderBottom: '1px solid', borderColor: 'divider',
-                  }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: gender === '乾' ? '#2563EB' : '#DB2777' }}>
-                      {gender}（{byGender(gender).length} 人）
-                    </Typography>
+                <Box key={gender} sx={{ px: 2, py: 1.5, bgcolor: gender === '乾' ? '#EFF6FF' : '#FDF2F8', borderRight: gi === 0 ? '1px solid' : 'none', borderBottom: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: gender === '乾' ? '#2563EB' : '#DB2777' }}>
+                    {gender}（{byGender(gender).length} 人）
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+            {/* 按班別對齊顯示 */}
+            {classes.map(cls => {
+              const qian = registrations.filter(r => r.class_id === cls.id && r.gender === '乾')
+              const kun = registrations.filter(r => r.class_id === cls.id && r.gender === '坤')
+              const rows = Math.max(qian.length, kun.length, 1)
+              return (
+                <Box key={cls.id}>
+                  {/* 班別標題 */}
+                  <Box sx={{ px: 2, py: 0.75, bgcolor: '#F8FAFC', borderTop: '1px solid', borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', letterSpacing: '0.04em' }}>{cls.name}</Typography>
                   </Box>
-                  {byGenderAndClass(gender).map(({ class: cls, regs }) => (
-                    <Box key={cls.id}>
-                      <Box sx={{ px: 2, py: 0.75, bgcolor: '#F8FAFC', borderBottom: '1px solid', borderTop: '1px solid', borderColor: 'divider' }}>
-                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', letterSpacing: '0.04em' }}>
-                          {cls.name}
-                        </Typography>
-                      </Box>
-                      {regs.map((r, i) => (
-                        <Box key={r.id}>
-                          {i > 0 && <Divider />}
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 500 }}>{r.name}</Typography>
-                            <Box sx={{ display: 'flex' }}>
-                              <IconButton size="small" sx={{ color: 'text.disabled' }}
-                                onClick={e => setClassPopover({ anchorEl: e.currentTarget, regId: r.id })}>
-                                <SwapHorizIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton size="small" color="error" onClick={() => remove(r.id)}><DeleteIcon fontSize="small" /></IconButton>
-                            </Box>
-                          </Box>
+                  {/* 每列乾/坤對齊 */}
+                  {Array.from({ length: rows }).map((_, i) => (
+                    <Box key={i} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: i > 0 ? '1px solid' : 'none', borderColor: 'divider' }}>
+                      {[qian[i], kun[i]].map((r, gi) => (
+                        <Box key={gi} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, borderRight: gi === 0 ? '1px solid' : 'none', borderColor: 'divider', minHeight: 44 }}>
+                          {r ? (
+                            <>
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>{r.name}</Typography>
+                              <Box sx={{ display: 'flex' }}>
+                                <IconButton size="small" sx={{ color: 'text.disabled' }} onClick={e => setClassPopover({ anchorEl: e.currentTarget, regId: r.id })}>
+                                  <SwapHorizIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton size="small" color="error" onClick={() => remove(r.id)}><DeleteIcon fontSize="small" /></IconButton>
+                              </Box>
+                            </>
+                          ) : (
+                            <Typography variant="caption" sx={{ color: '#E2E8F0' }}>—</Typography>
+                          )}
                         </Box>
                       ))}
                     </Box>
                   ))}
-                  {byGender(gender).length === 0 && (
-                    <Typography variant="body2" sx={{ color: 'text.secondary', px: 2, py: 2 }}>尚無報名</Typography>
-                  )}
                 </Box>
-              ))}
-            </Box>
+              )
+            })}
           </Card>
         </>
       )}
