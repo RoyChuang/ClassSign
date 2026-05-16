@@ -20,6 +20,8 @@ import TableRow from '@mui/material/TableRow'
 import TableCell from '@mui/material/TableCell'
 import { Loading } from '@/components/Loading'
 import BarChartIcon from '@mui/icons-material/BarChart'
+import IconButton from '@mui/material/IconButton'
+import RefreshIcon from '@mui/icons-material/Refresh'
 
 const supabase = createClient()
 
@@ -62,10 +64,14 @@ export default function DashboardPage() {
         <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <BarChartIcon sx={{ color: 'primary.main', fontSize: 22 }} />
         </Box>
-        <Box>
+        <Box sx={{ flex: 1 }}>
           <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>統計總覽</Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>各單位乾坤人數一覽</Typography>
         </Box>
+        <IconButton onClick={() => selectedSession && loadRegistrations()} disabled={!selectedSession || loading}
+          sx={{ color: 'text.secondary' }} title="手動更新">
+          <RefreshIcon />
+        </IconButton>
       </Box>
 
       <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap' }}>

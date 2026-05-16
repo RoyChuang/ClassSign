@@ -14,6 +14,8 @@ import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
 import { Loading } from '@/components/Loading'
 import KitchenIcon from '@mui/icons-material/Kitchen'
+import IconButton from '@mui/material/IconButton'
+import RefreshIcon from '@mui/icons-material/Refresh'
 
 const supabase = createClient()
 
@@ -60,7 +62,7 @@ export default function KitchenPage() {
         <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <KitchenIcon sx={{ color: 'primary.main', fontSize: 22 }} />
         </Box>
-        <Box>
+        <Box sx={{ flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
             <Typography variant="h5" sx={{ fontWeight: 700 }}>廚房看板</Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
@@ -70,6 +72,10 @@ export default function KitchenPage() {
           </Box>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>掛號及報到人數</Typography>
         </Box>
+        <IconButton onClick={() => selectedSession && loadData()} disabled={!selectedSession || loading}
+          sx={{ color: 'text.secondary' }} title="手動更新">
+          <RefreshIcon />
+        </IconButton>
       </Box>
 
       <FormControl fullWidth size="small" sx={{ mb: 4 }}>
