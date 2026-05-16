@@ -11,6 +11,7 @@ import CardContent from '@mui/material/CardContent'
 import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
 import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
 import { Loading } from '@/components/Loading'
 import KitchenIcon from '@mui/icons-material/Kitchen'
 
@@ -23,11 +24,11 @@ export default function KitchenPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    supabase.from('sessions').select('*').order('date', { ascending: false })
+    supabase.from('sessions').select('*').neq('status', 'finished').order('date', { ascending: false })
       .then(({ data }) => {
         const list = data ?? []
         setSessions(list)
-        if (list.length > 0) setSelectedSession(list[0].id)
+        // 不預設選取，讓使用者手動選
       })
   }, [])
 
@@ -72,7 +73,8 @@ export default function KitchenPage() {
       </Box>
 
       <FormControl fullWidth size="small" sx={{ mb: 4 }}>
-        <Select value={selectedSession} onChange={e => setSelectedSession(e.target.value)}>
+        <InputLabel>班會</InputLabel>
+        <Select label="班會" value={selectedSession} onChange={e => setSelectedSession(e.target.value)}>
           {sessions.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
         </Select>
       </FormControl>

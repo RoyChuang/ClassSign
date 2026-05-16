@@ -129,19 +129,19 @@ export default function CheckinPage() {
 
   return (
     <Container maxWidth="sm" sx={{ py: 5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <QrCodeScannerIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+      <Box sx={{ mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <QrCodeScannerIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+            </Box>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>完成報到</Typography>
           </Box>
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>完成報到</Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>輸入單位與姓名搜尋，協助報到</Typography>
-          </Box>
+          <Button variant="outlined" size="small" startIcon={<PersonAddIcon />} onClick={openWalkIn} disabled={!selectedSession} sx={{ flexShrink: 0 }}>
+            現場報名
+          </Button>
         </Box>
-        <Button variant="outlined" startIcon={<PersonAddIcon />} onClick={openWalkIn} disabled={!selectedSession}>
-          現場報名
-        </Button>
+        <Typography variant="body2" sx={{ color: 'text.secondary', pl: 7 }}>輸入單位與姓名搜尋，協助報到</Typography>
       </Box>
 
       <Card sx={{ mb: 3 }}>

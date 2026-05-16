@@ -20,7 +20,9 @@ import IconButton from '@mui/material/IconButton'
 import DeleteIcon from '@mui/icons-material/Delete'
 import DownloadIcon from '@mui/icons-material/Download'
 import ListAltIcon from '@mui/icons-material/ListAlt'
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import Checkbox from '@mui/material/Checkbox'
+import Popover from '@mui/material/Popover'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -38,6 +40,9 @@ export default function SecretaryPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([])
   const [form, setForm] = useState({ name: '', gender: '乾' as Gender, class_id: '' })
   const [submitting, setSubmitting] = useState(false)
+
+  // 換班別 Popover
+  const [classPopover, setClassPopover] = useState<{ anchorEl: HTMLElement; regId: string } | null>(null)
 
   // 匯入歷史名單
   const [importOpen, setImportOpen] = useState(false)
@@ -75,14 +80,26 @@ export default function SecretaryPage() {
   async function addPerson(e: React.FormEvent) {
     e.preventDefault()
     if (!selectedSession || !selectedUnit || !form.class_id) return
+    const trimmedName = form.name.trim()
+    const isDuplicate = registrations.some(r => r.name === trimmedName && r.gender === form.gender)
+    if (isDuplicate) {
+      alert(`「${trimmedName}」（${form.gender}）已在名單中`)
+      return
+    }
     setSubmitting(true)
     const { error } = await supabase.from('registrations').insert({
       session_id: selectedSession, class_id: form.class_id,
-      unit: selectedUnit, name: form.name.trim(), gender: form.gender,
+      unit: selectedUnit, name: trimmedName, gender: form.gender,
     })
     if (error) alert('新增失敗：' + error.message)
     else { setForm(f => ({ ...f, name: '' })); await loadRegistrations() }
     setSubmitting(false)
+  }
+
+  async function changeClass(regId: string, classId: string) {
+    await supabase.from('registrations').update({ class_id: classId }).eq('id', regId)
+    setClassPopover(null)
+    await loadRegistrations()
   }
 
   async function remove(id: string) {
@@ -169,6 +186,13 @@ export default function SecretaryPage() {
   const importClassMap = Object.fromEntries(importClasses.map(c => [c.id, c.name]))
   const classMap = Object.fromEntries(classes.map(c => [c.id, c.name]))
   const byGender = (gender: Gender) => registrations.filter(r => r.gender === gender)
+  const byGenderAndClass = (gender: Gender) => {
+    const regs = byGender(gender)
+    const grouped: Record<string, typeof regs> = {}
+    classes.forEach(c => { grouped[c.id] = [] })
+    regs.forEach(r => { if (grouped[r.class_id]) grouped[r.class_id].push(r); else grouped[r.class_id] = [r] })
+    return classes.filter(c => grouped[c.id]?.length > 0).map(c => ({ class: c, regs: grouped[c.id] }))
+  }
 
   if (authLoading) return <Loading fullPage />
 
@@ -259,16 +283,28 @@ export default function SecretaryPage() {
                       {gender}（{byGender(gender).length} 人）
                     </Typography>
                   </Box>
-                  {byGender(gender).map((r, i) => (
-                    <Box key={r.id}>
-                      {i > 0 && <Divider />}
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1 }}>
-                        <Box>
-                          <Typography variant="body2" component="span" sx={{ fontWeight: 500 }}>{r.name}</Typography>
-                          <Typography variant="caption" sx={{ color: 'text.secondary', ml: 1 }}>{classMap[r.class_id]}</Typography>
-                        </Box>
-                        <IconButton size="small" color="error" onClick={() => remove(r.id)}><DeleteIcon fontSize="small" /></IconButton>
+                  {byGenderAndClass(gender).map(({ class: cls, regs }) => (
+                    <Box key={cls.id}>
+                      <Box sx={{ px: 2, py: 0.75, bgcolor: '#F8FAFC', borderBottom: '1px solid', borderTop: '1px solid', borderColor: 'divider' }}>
+                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', letterSpacing: '0.04em' }}>
+                          {cls.name}
+                        </Typography>
                       </Box>
+                      {regs.map((r, i) => (
+                        <Box key={r.id}>
+                          {i > 0 && <Divider />}
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>{r.name}</Typography>
+                            <Box sx={{ display: 'flex' }}>
+                              <IconButton size="small" sx={{ color: 'text.disabled' }}
+                                onClick={e => setClassPopover({ anchorEl: e.currentTarget, regId: r.id })}>
+                                <SwapHorizIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton size="small" color="error" onClick={() => remove(r.id)}><DeleteIcon fontSize="small" /></IconButton>
+                            </Box>
+                          </Box>
+                        </Box>
+                      ))}
                     </Box>
                   ))}
                   {byGender(gender).length === 0 && (
@@ -340,6 +376,25 @@ export default function SecretaryPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* 換班別 Popover */}
+      <Popover
+        open={!!classPopover}
+        anchorEl={classPopover?.anchorEl}
+        onClose={() => setClassPopover(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 140 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, px: 0.5 }}>換班別</Typography>
+          {classes.map(c => (
+            <Box key={c.id}
+              onClick={() => classPopover && changeClass(classPopover.regId, c.id)}
+              sx={{ px: 1.5, py: 0.75, borderRadius: 1, cursor: 'pointer', fontSize: 14, '&:hover': { bgcolor: '#EFF6FF', color: 'primary.main' } }}>
+              {c.name}
+            </Box>
+          ))}
+        </Box>
+      </Popover>
     </Container>
   )
 }
