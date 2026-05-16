@@ -29,8 +29,12 @@ import DialogActions from '@mui/material/DialogActions'
 
 const supabase = createClient()
 
-const statusLabel: Record<string, string> = { open: '掛號中', closed: '已截止', finished: '已結束' }
-const statusColor: Record<string, 'success' | 'warning' | 'default'> = { open: 'success', closed: 'warning', finished: 'default' }
+const today = new Date().toISOString().slice(0, 10)
+function sessionChip(s: Session) {
+  if (s.status === 'finished') return { label: '已結束', color: 'default' as const }
+  if (s.reg_deadline < today) return { label: '已截止', color: 'warning' as const }
+  return { label: '掛號中', color: 'success' as const }
+}
 
 export default function AdminPage() {
   const { profile, loading: authLoading, signIn } = useAuth()
@@ -180,10 +184,9 @@ export default function AdminPage() {
                   </Box>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Chip size="small" label={statusLabel[s.status]} color={statusColor[s.status]} />
+                  <Chip size="small" label={sessionChip(s).label} color={sessionChip(s).color} />
                   <Select size="small" value={s.status} onChange={e => updateStatus(s.id, e.target.value)} sx={{ fontSize: 13 }}>
                     <MenuItem value="open">掛號中</MenuItem>
-                    <MenuItem value="closed">已截止</MenuItem>
                     <MenuItem value="finished">已結束</MenuItem>
                   </Select>
                 </Box>

@@ -41,7 +41,7 @@ export default function CheckinPage() {
   // 現場報名
   const [walkInOpen, setWalkInOpen] = useState(false)
   const [classes, setClasses] = useState<Class[]>([])
-  const [walkInForm, setWalkInForm] = useState<{ name: string; gender: Gender; class_id: string }>({ name: '', gender: '乾', class_id: '' })
+  const [walkInForm, setWalkInForm] = useState<{ name: string; gender: Gender; class_id: string; unit: Unit | '' }>({ name: '', gender: '乾', class_id: '', unit: '' })
   const [walkInSubmitting, setWalkInSubmitting] = useState(false)
   const [walkInSuccess, setWalkInSuccess] = useState<string>('')
 
@@ -90,34 +90,48 @@ export default function CheckinPage() {
   }
 
   function openWalkIn() {
-    setWalkInForm({ name: name.trim(), gender: '乾', class_id: classes[0]?.id ?? '' })
+    setWalkInForm({ name: name.trim(), gender: '乾', class_id: classes[0]?.id ?? '', unit: selectedUnit })
     setWalkInSuccess('')
     setWalkInOpen(true)
   }
 
   async function submitWalkIn() {
-    if (!selectedSession || !selectedUnit || !walkInForm.name.trim() || !walkInForm.class_id) return
+    const trimmedName = walkInForm.name.trim()
+    const unit = walkInForm.unit || selectedUnit
+    if (!selectedSession || !unit || !trimmedName || !walkInForm.class_id) return
+
+    // 重複檢查
+    const { data: existing } = await supabase.from('registrations')
+      .select('id').eq('session_id', selectedSession).eq('unit', unit)
+      .eq('name', trimmedName).eq('gender', walkInForm.gender).limit(1)
+    if (existing && existing.length > 0) {
+      alert(`「${trimmedName}」（${walkInForm.gender}）已在報名名單中`)
+      return
+    }
+
     setWalkInSubmitting(true)
-    const { data, error } = await supabase.from('registrations').insert({
+    const { error } = await supabase.from('registrations').insert({
       session_id: selectedSession,
-      unit: selectedUnit,
-      name: walkInForm.name.trim(),
+      unit,
+      name: trimmedName,
       gender: walkInForm.gender,
       class_id: walkInForm.class_id,
       checked_in: true,
       checked_in_at: new Date().toISOString(),
-    }).select('*, classes(name)').single()
+    })
 
-    if (error || !data) {
-      alert('報名失敗：' + error?.message)
+    if (error) {
+      alert('報名失敗：' + error.message)
     } else {
-      setWalkInSuccess(walkInForm.name.trim())
+      setWalkInSuccess(trimmedName)
       setWalkInOpen(false)
-      // 重新搜尋以顯示新增者
+      // 以新增者姓名重新搜尋
+      setName(trimmedName)
+      if (unit !== selectedUnit) setSelectedUnit(unit as Unit)
       const { data: fresh } = await supabase
         .from('registrations').select('*, classes(name)')
-        .eq('session_id', selectedSession).eq('unit', selectedUnit)
-        .ilike('name', `%${name.trim()}%`).order('name')
+        .eq('session_id', selectedSession).eq('unit', unit)
+        .ilike('name', `%${trimmedName}%`).order('name')
       setResults((fresh ?? []) as Reg[])
       setCheckedIn(new Set((fresh ?? []).filter(r => r.checked_in).map(r => r.id)))
       setSearched(true)
@@ -137,7 +151,7 @@ export default function CheckinPage() {
             </Box>
             <Typography variant="h5" sx={{ fontWeight: 700 }}>完成報到</Typography>
           </Box>
-          <Button variant="outlined" size="small" startIcon={<PersonAddIcon />} onClick={openWalkIn} disabled={!selectedSession} sx={{ flexShrink: 0 }}>
+          <Button variant="outlined" size="small" startIcon={<PersonAddIcon />} onClick={openWalkIn} disabled={!selectedSession || !selectedUnit} sx={{ flexShrink: 0 }}>
             現場報名
           </Button>
         </Box>
@@ -228,13 +242,20 @@ export default function CheckinPage() {
         <DialogTitle sx={{ fontWeight: 600 }}>現場報名並報到</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
           <Typography variant="caption" sx={{ color: 'text.secondary', mt: -1 }}>
-            單位：{selectedUnit}　班會：{sessions.find(s => s.id === selectedSession)?.name}
+            班會：{sessions.find(s => s.id === selectedSession)?.name}
           </Typography>
           <TextField
             label="姓名" size="small" fullWidth required
             value={walkInForm.name}
             onChange={e => setWalkInForm(f => ({ ...f, name: e.target.value }))}
           />
+          <FormControl size="small" fullWidth>
+            <InputLabel>單位</InputLabel>
+            <Select label="單位" value={walkInForm.unit ?? selectedUnit}
+              onChange={e => setWalkInForm(f => ({ ...f, unit: e.target.value as Unit }))}>
+              {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
+            </Select>
+          </FormControl>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
             <FormControl size="small" fullWidth>
               <InputLabel>乾/坤</InputLabel>
@@ -253,7 +274,7 @@ export default function CheckinPage() {
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
           <Button onClick={() => setWalkInOpen(false)} disabled={walkInSubmitting}>取消</Button>
           <Button variant="contained" onClick={submitWalkIn}
-            disabled={walkInSubmitting || !walkInForm.name.trim() || !walkInForm.class_id}>
+            disabled={walkInSubmitting || !walkInForm.name.trim() || !walkInForm.class_id || !(walkInForm.unit || selectedUnit)}>
             {walkInSubmitting ? '處理中...' : '報名並報到'}
           </Button>
         </DialogActions>
