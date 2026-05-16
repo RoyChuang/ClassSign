@@ -52,12 +52,15 @@ export default function SecretaryPage() {
   const [importClasses, setImportClasses] = useState<Class[]>([])
   const [loadingCandidates, setLoadingCandidates] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [allSessions, setAllSessions] = useState<Session[]>([])
 
   useEffect(() => { if (profile?.unit) setSelectedUnit(profile.unit) }, [profile])
 
   useEffect(() => {
     supabase.from('sessions').select('*').eq('status', 'open').order('date', { ascending: false })
       .then(({ data }) => setSessions(data ?? []))
+    supabase.from('sessions').select('*').order('date', { ascending: false })
+      .then(({ data }) => setAllSessions(data ?? []))
   }, [])
 
   useEffect(() => {
@@ -109,7 +112,7 @@ export default function SecretaryPage() {
   }
 
   // 匯入：選舊班會後載入名單
-  const pastSessions = sessions.filter(s => s.id !== selectedSession)
+  const pastSessions = allSessions.filter(s => s.id !== selectedSession)
 
   async function onImportSessionChange(sessionId: string) {
     setImportSession(sessionId)
