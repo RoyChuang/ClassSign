@@ -50,7 +50,7 @@ export default function CheckinPage() {
       .then(({ data }) => {
         const list = data ?? []
         setSessions(list)
-        if (list.length > 0) setSelectedSession(list[0].id)
+        // 不預設選取，讓使用者手動選
       })
   }, [])
 
