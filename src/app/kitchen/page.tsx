@@ -30,7 +30,7 @@ export default function KitchenPage() {
 
   useEffect(() => {
     supabase.from('sessions').select('*').neq('status', 'finished').order('date', { ascending: false })
-      .then(({ data }) => setSessions(data ?? []))
+      .then(({ data, error }) => { if (!error) setSessions(data ?? []) })
   }, [])
 
   const loadData = useCallback(async () => {

@@ -93,24 +93,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
+    // 安全 timeout：手機上 getSession() 有時 hang 住，5 秒後強制解除 loading
+    const safetyTimer = setTimeout(() => setLoading(false), 5000)
+
     ;(async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
+        clearTimeout(safetyTimer)
         if (session?.user) {
           const { email, user_metadata } = session.user
           const googleName = user_metadata.full_name ?? user_metadata.name ?? ''
 
-          // 1. 先從快取顯示（即時）
+          // 先從快取顯示（即時）
           const cached = getCached(email!)
           if (cached) setProfile(cached)
           setLoading(false)
 
-          // 2. 背景從 DB 更新
+          // 背景從 DB 更新
           fetchAndSetProfile(email!, googleName)
         } else {
           setLoading(false)
         }
       } catch (err) {
+        clearTimeout(safetyTimer)
         console.error('Failed to get session:', err)
         setLoading(false)
       }
@@ -127,7 +132,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(safetyTimer)
+      subscription.unsubscribe()
+    }
   }, [])
 
   async function signIn() {

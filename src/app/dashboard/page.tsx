@@ -35,7 +35,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     supabase.from('sessions').select('*').order('date', { ascending: false })
-      .then(({ data }) => setSessions(data ?? []))
+      .then(({ data, error }) => { if (!error) setSessions(data ?? []) })
   }, [])
 
   const loadRegistrations = useCallback(async () => {

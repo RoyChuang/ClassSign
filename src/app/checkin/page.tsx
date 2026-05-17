@@ -47,11 +47,7 @@ export default function CheckinPage() {
 
   useEffect(() => {
     supabase.from('sessions').select('*').eq('status', 'open').order('date', { ascending: false })
-      .then(({ data }) => {
-        const list = data ?? []
-        setSessions(list)
-        // 不預設選取，讓使用者手動選
-      })
+      .then(({ data, error }) => { if (!error) setSessions(data ?? []) })
   }, [])
 
   useEffect(() => {
