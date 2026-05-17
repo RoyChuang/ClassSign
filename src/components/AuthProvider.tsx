@@ -122,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'INITIAL_SESSION') return  // 已由 getSession() 處理，跳過避免重複呼叫
+      if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return
       if (session?.user) {
         const { email, user_metadata } = session.user
         const googleName = user_metadata.full_name ?? user_metadata.name ?? ''
