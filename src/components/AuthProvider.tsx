@@ -20,18 +20,20 @@ const AuthContext = createContext<AuthContextType>({
 })
 
 const CACHE_KEY = 'cs_profile'
+const CACHE_TTL_MS = 5 * 60 * 1000
 
 function getCached(email: string): UserProfile | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY)
     if (!raw) return null
-    const p = JSON.parse(raw) as UserProfile
+    const { profile: p, cachedAt } = JSON.parse(raw) as { profile: UserProfile; cachedAt: number }
+    if (Date.now() - cachedAt > CACHE_TTL_MS) return null
     return p.email === email ? p : null
   } catch { return null }
 }
 
 function setCache(p: UserProfile) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify(p)) } catch {}
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ profile: p, cachedAt: Date.now() })) } catch {}
 }
 
 function clearCache() {

@@ -139,8 +139,6 @@ export default function CheckinPage() {
     setWalkInSubmitting(false)
   }
 
-  const classMap = Object.fromEntries(classes.map(c => [c.id, c.name]))
-
   return (
     <Container maxWidth="sm" sx={{ py: 5 }}>
       <Box sx={{ mb: 4 }}>

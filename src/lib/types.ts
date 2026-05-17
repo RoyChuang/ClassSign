@@ -1,6 +1,6 @@
 export type Unit = '北市' | '北縣' | '興一' | '道一' | '彰化' | '華山' | '基隆' | '三合' | '府城' | '嘉義'
 export type Gender = '乾' | '坤'
-export type SessionStatus = 'open' | 'closed' | 'finished'
+export type SessionStatus = 'open' | 'finished'
 
 export const UNITS: Unit[] = ['北市', '北縣', '興一', '道一', '彰化', '華山', '基隆', '三合', '府城', '嘉義']
 export const GENDERS: Gender[] = ['乾', '坤']

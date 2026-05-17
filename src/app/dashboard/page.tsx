@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Session, Class, Registration, Unit, UNITS, GENDERS } from '@/lib/types'
 import Container from '@mui/material/Container'
@@ -38,19 +38,20 @@ export default function DashboardPage() {
       .then(({ data }) => setSessions(data ?? []))
   }, [])
 
+  const loadRegistrations = useCallback(async () => {
+    if (!selectedSession) return
+    setLoading(true)
+    const { data } = await supabase.from('registrations').select('*').eq('session_id', selectedSession)
+    setRegistrations(data ?? [])
+    setLoading(false)
+  }, [selectedSession])
+
   useEffect(() => {
     if (!selectedSession) { setClasses([]); setRegistrations([]); return }
     supabase.from('classes').select('*').eq('session_id', selectedSession).order('sort_order')
       .then(({ data }) => setClasses(data ?? []))
     loadRegistrations()
-  }, [selectedSession])
-
-  async function loadRegistrations() {
-    setLoading(true)
-    const { data } = await supabase.from('registrations').select('*').eq('session_id', selectedSession)
-    setRegistrations(data ?? [])
-    setLoading(false)
-  }
+  }, [selectedSession, loadRegistrations])
 
   const filtered = selectedClass === 'all' ? registrations : registrations.filter(r => r.class_id === selectedClass)
   const count = (unit: Unit, gender: string, checked?: boolean) =>
@@ -121,9 +122,9 @@ export default function DashboardPage() {
                   <TableCell rowSpan={2} align="center" sx={{ whiteSpace: 'nowrap', verticalAlign: 'middle' }}>合計</TableCell>
                 </TableRow>
                 <TableRow>
-                  {['掛號', '報到', '掛號', '報到'].map((label, i) => (
-                    <TableCell key={i} align="center" sx={{ whiteSpace: 'nowrap', color: i % 2 === 0 ? (i < 2 ? '#2563EB' : '#DB2777') : '#16A34A', fontSize: 12, pt: 0.5 }}>
-                      {label}
+                  {(['#2563EB', '#16A34A', '#DB2777', '#16A34A'] as const).map((color, i) => (
+                    <TableCell key={i} align="center" sx={{ whiteSpace: 'nowrap', color, fontSize: 12, pt: 0.5 }}>
+                      {['掛號', '報到', '掛號', '報到'][i]}
                     </TableCell>
                   ))}
                 </TableRow>

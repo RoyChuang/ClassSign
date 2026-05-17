@@ -40,6 +40,9 @@ export default function SecretaryPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([])
   const [form, setForm] = useState({ name: '', gender: '乾' as Gender, class_id: '' })
   const [submitting, setSubmitting] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   // 換班別 Popover
   const [classPopover, setClassPopover] = useState<{ anchorEl: HTMLElement; regId: string } | null>(null)
@@ -75,9 +78,11 @@ export default function SecretaryPage() {
   }, [selectedSession, selectedUnit])
 
   async function loadRegistrations() {
+    setLoading(true)
     const { data } = await supabase.from('registrations')
       .select('*').eq('session_id', selectedSession).eq('unit', selectedUnit).order('created_at')
     setRegistrations(data ?? [])
+    setLoading(false)
   }
 
   async function addPerson(e: React.FormEvent) {
@@ -105,9 +110,12 @@ export default function SecretaryPage() {
     await loadRegistrations()
   }
 
-  async function remove(id: string) {
-    if (!confirm('確定刪除？')) return
-    await supabase.from('registrations').delete().eq('id', id)
+  async function confirmDelete() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    await supabase.from('registrations').delete().eq('id', deleteTarget)
+    setDeleteTarget(null)
+    setDeleting(false)
     await loadRegistrations()
   }
 
@@ -187,15 +195,7 @@ export default function SecretaryPage() {
   }
 
   const importClassMap = Object.fromEntries(importClasses.map(c => [c.id, c.name]))
-  const classMap = Object.fromEntries(classes.map(c => [c.id, c.name]))
   const byGender = (gender: Gender) => registrations.filter(r => r.gender === gender)
-  const byGenderAndClass = (gender: Gender) => {
-    const regs = byGender(gender)
-    const grouped: Record<string, typeof regs> = {}
-    classes.forEach(c => { grouped[c.id] = [] })
-    regs.forEach(r => { if (grouped[r.class_id]) grouped[r.class_id].push(r); else grouped[r.class_id] = [r] })
-    return classes.map(c => ({ class: c, regs: grouped[c.id] ?? [] }))
-  }
 
   if (authLoading) return <Loading fullPage />
 
@@ -273,54 +273,56 @@ export default function SecretaryPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            {/* 表頭 */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
-              {GENDERS.map((gender, gi) => (
-                <Box key={gender} sx={{ px: 2, py: 1.5, bgcolor: gender === '乾' ? '#EFF6FF' : '#FDF2F8', borderRight: gi === 0 ? '1px solid' : 'none', borderBottom: '1px solid', borderColor: 'divider' }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: gender === '乾' ? '#2563EB' : '#DB2777' }}>
-                    {gender}（{byGender(gender).length} 人）
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-            {/* 按班別對齊顯示 */}
-            {classes.map(cls => {
-              const qian = registrations.filter(r => r.class_id === cls.id && r.gender === '乾')
-              const kun = registrations.filter(r => r.class_id === cls.id && r.gender === '坤')
-              const rows = Math.max(qian.length, kun.length, 1)
-              return (
-                <Box key={cls.id}>
-                  {/* 班別標題 */}
-                  <Box sx={{ px: 2, py: 0.75, bgcolor: '#F8FAFC', borderTop: '1px solid', borderBottom: '1px solid', borderColor: 'divider' }}>
-                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', letterSpacing: '0.04em' }}>{cls.name}</Typography>
+          {loading ? <Loading /> : (
+            <Card>
+              {/* 表頭 */}
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+                {GENDERS.map((gender, gi) => (
+                  <Box key={gender} sx={{ px: 2, py: 1.5, bgcolor: gender === '乾' ? '#EFF6FF' : '#FDF2F8', borderRight: gi === 0 ? '1px solid' : 'none', borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: gender === '乾' ? '#2563EB' : '#DB2777' }}>
+                      {gender}（{byGender(gender).length} 人）
+                    </Typography>
                   </Box>
-                  {/* 每列乾/坤對齊 */}
-                  {Array.from({ length: rows }).map((_, i) => (
-                    <Box key={i} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: i > 0 ? '1px solid' : 'none', borderColor: 'divider' }}>
-                      {[qian[i], kun[i]].map((r, gi) => (
-                        <Box key={gi} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, borderRight: gi === 0 ? '1px solid' : 'none', borderColor: 'divider', minHeight: 44 }}>
-                          {r ? (
-                            <>
-                              <Typography variant="body2" sx={{ fontWeight: 500 }}>{r.name}</Typography>
-                              <Box sx={{ display: 'flex' }}>
-                                <IconButton size="small" sx={{ color: 'text.disabled' }} onClick={e => setClassPopover({ anchorEl: e.currentTarget, regId: r.id })}>
-                                  <SwapHorizIcon fontSize="small" />
-                                </IconButton>
-                                <IconButton size="small" color="error" onClick={() => remove(r.id)}><DeleteIcon fontSize="small" /></IconButton>
-                              </Box>
-                            </>
-                          ) : (
-                            <Typography variant="caption" sx={{ color: '#E2E8F0' }}>—</Typography>
-                          )}
-                        </Box>
-                      ))}
+                ))}
+              </Box>
+              {/* 按班別對齊顯示 */}
+              {classes.map(cls => {
+                const qian = registrations.filter(r => r.class_id === cls.id && r.gender === '乾')
+                const kun = registrations.filter(r => r.class_id === cls.id && r.gender === '坤')
+                const rows = Math.max(qian.length, kun.length, 1)
+                return (
+                  <Box key={cls.id}>
+                    {/* 班別標題 */}
+                    <Box sx={{ px: 2, py: 0.75, bgcolor: '#F8FAFC', borderTop: '1px solid', borderBottom: '1px solid', borderColor: 'divider' }}>
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', letterSpacing: '0.04em' }}>{cls.name}</Typography>
                     </Box>
-                  ))}
-                </Box>
-              )
-            })}
-          </Card>
+                    {/* 每列乾/坤對齊 */}
+                    {Array.from({ length: rows }).map((_, i) => (
+                      <Box key={i} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: i > 0 ? '1px solid' : 'none', borderColor: 'divider' }}>
+                        {[qian[i], kun[i]].map((r, gi) => (
+                          <Box key={gi} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, borderRight: gi === 0 ? '1px solid' : 'none', borderColor: 'divider', minHeight: 44 }}>
+                            {r ? (
+                              <>
+                                <Typography variant="body2" sx={{ fontWeight: 500 }}>{r.name}</Typography>
+                                <Box sx={{ display: 'flex' }}>
+                                  <IconButton size="small" sx={{ color: 'text.disabled' }} onClick={e => setClassPopover({ anchorEl: e.currentTarget, regId: r.id })}>
+                                    <SwapHorizIcon fontSize="small" />
+                                  </IconButton>
+                                  <IconButton size="small" color="error" onClick={() => setDeleteTarget(r.id)}><DeleteIcon fontSize="small" /></IconButton>
+                                </Box>
+                              </>
+                            ) : (
+                              <Typography variant="caption" sx={{ color: '#E2E8F0' }}>—</Typography>
+                            )}
+                          </Box>
+                        ))}
+                      </Box>
+                    ))}
+                  </Box>
+                )
+              })}
+            </Card>
+          )}
         </>
       )}
 
@@ -402,6 +404,20 @@ export default function SecretaryPage() {
           ))}
         </Box>
       </Popover>
+
+      {/* 刪除確認 Dialog */}
+      <Dialog open={!!deleteTarget} onClose={() => !deleting && setDeleteTarget(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 600 }}>刪除報名者</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ pt: 1 }}>確定要刪除這筆報名記錄？此操作無法復原。</Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button onClick={() => setDeleteTarget(null)} disabled={deleting}>取消</Button>
+          <Button variant="contained" color="error" onClick={confirmDelete} disabled={deleting}>
+            {deleting ? '刪除中...' : '確定刪除'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   )
 }

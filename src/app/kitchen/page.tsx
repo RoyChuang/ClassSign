@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Session, Registration } from '@/lib/types'
 import Container from '@mui/material/Container'
@@ -34,6 +34,12 @@ export default function KitchenPage() {
       })
   }, [])
 
+  const loadData = useCallback(async () => {
+    const { data } = await supabase.from('registrations').select('*').eq('session_id', selectedSession)
+    setRegistrations(data ?? [])
+    setLoading(false)
+  }, [selectedSession])
+
   useEffect(() => {
     if (!selectedSession) return
     setLoading(true)
@@ -42,13 +48,7 @@ export default function KitchenPage() {
       .subscribe()
     loadData()
     return () => { supabase.removeChannel(channel) }
-  }, [selectedSession])
-
-  async function loadData() {
-    const { data } = await supabase.from('registrations').select('*').eq('session_id', selectedSession)
-    setRegistrations(data ?? [])
-    setLoading(false)
-  }
+  }, [selectedSession, loadData])
 
   const total = registrations.length
   const checkedIn = registrations.filter(r => r.checked_in).length

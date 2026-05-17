@@ -170,29 +170,32 @@ export default function AdminPage() {
           {sessions.length === 0 && <Typography sx={{ color: 'text.secondary' }}>尚無班會</Typography>}
           {sessions
             .filter(s => !search.trim() || s.name.toLowerCase().includes(search.trim().toLowerCase()))
-            .map(s => (
-            <Card key={s.id}>
-              <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
-                  <Box>
-                    <Typography sx={{ fontWeight: 500 }}>{s.name}</Typography>
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>{s.date} · 截止 {s.reg_deadline}</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0, ml: 1 }}>
-                    <IconButton size="small" onClick={() => openEdit(s)}><EditIcon fontSize="small" /></IconButton>
-                    <IconButton size="small" color="error" onClick={() => setDeleteTarget(s)}><DeleteIcon fontSize="small" /></IconButton>
-                  </Box>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Chip size="small" label={sessionChip(s).label} color={sessionChip(s).color} />
-                  <Select size="small" value={s.status} onChange={e => updateStatus(s.id, e.target.value)} sx={{ fontSize: 13 }}>
-                    <MenuItem value="open">掛號中</MenuItem>
-                    <MenuItem value="finished">已結束</MenuItem>
-                  </Select>
-                </Box>
-              </CardContent>
-            </Card>
-            ))}
+            .map(s => {
+              const chip = sessionChip(s)
+              return (
+                <Card key={s.id}>
+                  <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
+                      <Box>
+                        <Typography sx={{ fontWeight: 500 }}>{s.name}</Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>{s.date} · 截止 {s.reg_deadline}</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0, ml: 1 }}>
+                        <IconButton size="small" onClick={() => openEdit(s)}><EditIcon fontSize="small" /></IconButton>
+                        <IconButton size="small" color="error" onClick={() => setDeleteTarget(s)}><DeleteIcon fontSize="small" /></IconButton>
+                      </Box>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Chip size="small" label={chip.label} color={chip.color} />
+                      <Select size="small" value={s.status} onChange={e => updateStatus(s.id, e.target.value)} sx={{ fontSize: 13 }}>
+                        <MenuItem value="open">掛號中</MenuItem>
+                        <MenuItem value="finished">已結束</MenuItem>
+                      </Select>
+                    </Box>
+                  </CardContent>
+                </Card>
+              )
+            })}
         </Box>
       )}
 
