@@ -218,7 +218,7 @@ export default function SecretaryPage() {
         </Box>
       </Box>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 3 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
         <FormControl size="small" fullWidth>
           <InputLabel>選擇班會</InputLabel>
           <Select label="選擇班會" value={selectedSession} onChange={e => setSelectedSession(e.target.value)}>
