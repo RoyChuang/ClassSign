@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Session, Class, Registration, Unit, Gender, UNITS, GENDERS } from '@/lib/types'
@@ -15,7 +15,6 @@ import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
 import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
-import Chip from '@mui/material/Chip'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -40,46 +39,30 @@ export default function CheckinSessionPage() {
   const [sessionNotFound, setSessionNotFound] = useState(false)
 
   const [selectedUnit, setSelectedUnit] = useState<Unit | ''>('')
-  const [name, setName] = useState('')
-  const [results, setResults] = useState<Reg[]>([])
-  const [searched, setSearched] = useState(false)
-  const [searching, setSearching] = useState(false)
+  const [nameFilter, setNameFilter] = useState('')
+  const [allResults, setAllResults] = useState<Reg[]>([])
+  const [unitLoading, setUnitLoading] = useState(false)
   const [checkedIn, setCheckedIn] = useState<Set<string>>(new Set())
   const [cancelTarget, setCancelTarget] = useState<Reg | null>(null)
   const [copied, setCopied] = useState(false)
-
-  async function shareLink() {
-    const url = window.location.href
-    if (navigator.share) {
-      await navigator.share({ title: session?.name, url })
-    } else {
-      await navigator.clipboard.writeText(url)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
-  }
+  const [walkInSuccess, setWalkInSuccess] = useState<string>('')
 
   // 現場報名
   const [walkInOpen, setWalkInOpen] = useState(false)
   const [classes, setClasses] = useState<Class[]>([])
   const [walkInForm, setWalkInForm] = useState<{ name: string; gender: Gender; class_id: string; unit: Unit | '' }>({ name: '', gender: '乾', class_id: '', unit: '' })
   const [walkInSubmitting, setWalkInSubmitting] = useState(false)
-  const [walkInSuccess, setWalkInSuccess] = useState<string>('')
 
   useEffect(() => {
     supabase.from('sessions').select('*').eq('id', sessionId).eq('status', 'open').single()
       .then(({ data, error }) => {
-        if (error || !data) {
-          setSessionNotFound(true)
-        } else {
-          setSession(data)
-        }
+        if (error || !data) setSessionNotFound(true)
+        else setSession(data)
         setSessionLoading(false)
       })
   }, [sessionId])
 
   useEffect(() => {
-    if (!sessionId) { setClasses([]); return }
     supabase.from('classes').select('*').eq('session_id', sessionId).order('sort_order')
       .then(({ data }) => {
         setClasses(data ?? [])
@@ -87,23 +70,30 @@ export default function CheckinSessionPage() {
       })
   }, [sessionId])
 
-  async function search(e: React.FormEvent) {
-    e.preventDefault()
-    if (!selectedUnit || !name.trim()) return
-    setSearching(true)
-    setSearched(false)
+  const loadUnit = useCallback(async (unit: Unit) => {
+    setUnitLoading(true)
     const { data } = await supabase
       .from('registrations')
       .select('*, classes(name)')
       .eq('session_id', sessionId)
-      .eq('unit', selectedUnit)
-      .ilike('name', `%${name.trim()}%`)
+      .eq('unit', unit)
       .order('name')
-    setResults((data ?? []) as Reg[])
-    setCheckedIn(new Set((data ?? []).filter(r => r.checked_in).map(r => r.id)))
-    setSearched(true)
-    setSearching(false)
-  }
+    const list = (data ?? []) as Reg[]
+    setAllResults(list)
+    setCheckedIn(new Set(list.filter(r => r.checked_in).map(r => r.id)))
+    setUnitLoading(false)
+  }, [sessionId])
+
+  useEffect(() => {
+    if (!selectedUnit) { setAllResults([]); return }
+    loadUnit(selectedUnit as Unit)
+  }, [selectedUnit, loadUnit])
+
+  const filtered = nameFilter.trim()
+    ? allResults.filter(r => r.name.includes(nameFilter.trim()))
+    : allResults
+  const qian = filtered.filter(r => r.gender === '乾')
+  const kun = filtered.filter(r => r.gender === '坤')
 
   async function checkIn(reg: Reg) {
     if (checkedIn.has(reg.id)) return
@@ -122,8 +112,19 @@ export default function CheckinSessionPage() {
     setCancelTarget(null)
   }
 
+  async function shareLink() {
+    const url = window.location.href
+    if (navigator.share) {
+      await navigator.share({ title: session?.name, url })
+    } else {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
   function openWalkIn() {
-    setWalkInForm({ name: name.trim(), gender: '乾', class_id: classes[0]?.id ?? '', unit: selectedUnit })
+    setWalkInForm({ name: nameFilter.trim(), gender: '乾', class_id: classes[0]?.id ?? '', unit: selectedUnit })
     setWalkInSuccess('')
     setWalkInOpen(true)
   }
@@ -157,15 +158,8 @@ export default function CheckinSessionPage() {
     } else {
       setWalkInSuccess(trimmedName)
       setWalkInOpen(false)
-      setName(trimmedName)
       if (unit !== selectedUnit) setSelectedUnit(unit as Unit)
-      const { data: fresh } = await supabase
-        .from('registrations').select('*, classes(name)')
-        .eq('session_id', sessionId).eq('unit', unit)
-        .ilike('name', `%${trimmedName}%`).order('name')
-      setResults((fresh ?? []) as Reg[])
-      setCheckedIn(new Set((fresh ?? []).filter(r => r.checked_in).map(r => r.id)))
-      setSearched(true)
+      else await loadUnit(unit as Unit)
     }
     setWalkInSubmitting(false)
   }
@@ -197,11 +191,10 @@ export default function CheckinSessionPage() {
             現場報名
           </Button>
         </Box>
-        <Typography variant="body2" sx={{ color: 'text.secondary', pl: 7 }}>輸入姓名搜尋，協助完成報到</Typography>
       </Box>
 
       {/* 班會名稱 */}
-      <Box sx={{ mb: 4, textAlign: 'center' }}>
+      <Box sx={{ mb: 3, textAlign: 'center' }}>
         <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
             {session?.name}
@@ -213,30 +206,25 @@ export default function CheckinSessionPage() {
         </Box>
       </Box>
 
-      {/* 搜尋表單 */}
+      {/* 單位 + 姓名篩選 */}
       <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ p: 3 }}>
-          <Box component="form" onSubmit={search} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-              <FormControl size="small" fullWidth>
-                <InputLabel>單位</InputLabel>
-                <Select label="單位" value={selectedUnit} onChange={e => { setSelectedUnit(e.target.value as Unit); setSearched(false) }}>
-                  {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
-                </Select>
-              </FormControl>
-              <TextField
-                size="small" label="姓名" placeholder="輸入姓名搜尋"
-                value={name} onChange={e => { setName(e.target.value); setSearched(false) }}
-              />
-            </Box>
-            <Button type="submit" variant="contained" disabled={searching || !selectedUnit || !name.trim()}>
-              {searching ? '搜尋中...' : '搜尋'}
-            </Button>
+        <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+            <FormControl size="small" fullWidth>
+              <InputLabel>單位</InputLabel>
+              <Select label="單位" value={selectedUnit}
+                onChange={e => { setSelectedUnit(e.target.value as Unit); setNameFilter(''); setWalkInSuccess('') }}>
+                {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <TextField
+              size="small" label="篩選姓名" placeholder="輸入篩選"
+              value={nameFilter} onChange={e => setNameFilter(e.target.value)}
+              disabled={!selectedUnit}
+            />
           </Box>
         </CardContent>
       </Card>
-
-      {searching && <Loading />}
 
       {walkInSuccess && (
         <Card sx={{ mb: 2, borderColor: '#BBF7D0', bgcolor: '#F0FDF4' }}>
@@ -247,46 +235,36 @@ export default function CheckinSessionPage() {
         </Card>
       )}
 
-      {searched && !searching && (
-        results.length === 0 ? (
-          <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>
-            找不到「{name}」的報名記錄
-          </Typography>
-        ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            {results.map(r => {
-              const done = checkedIn.has(r.id)
-              return (
-                <Card key={r.id} sx={{ borderColor: done ? '#BBF7D0' : 'divider', bgcolor: done ? '#F0FDF4' : 'background.paper' }}>
-                  <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2, '&:last-child': { pb: 2 } }}>
-                    <Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.3 }}>
-                        <Typography sx={{ fontWeight: 600, fontSize: 16 }}>{r.name}</Typography>
-                        <Chip size="small" label={r.gender}
-                          sx={{ bgcolor: r.gender === '乾' ? '#EFF6FF' : '#FDF2F8', color: r.gender === '乾' ? '#2563EB' : '#DB2777', fontWeight: 500 }} />
-                      </Box>
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                        {r.unit} · {r.classes?.name}
-                      </Typography>
-                    </Box>
-                    {done ? (
-                      <Button size="small" onClick={() => setCancelTarget(r)}
-                        sx={{ color: '#16A34A', borderColor: '#BBF7D0', minWidth: 0, px: 1.5, gap: 0.5 }}
-                        variant="outlined">
-                        <CheckCircleIcon fontSize="small" />
-                        已報到
-                      </Button>
-                    ) : (
-                      <Button variant="contained" size="small" onClick={() => checkIn(r)} sx={{ px: 2.5 }}>
-                        報到
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              )
-            })}
+      {unitLoading && <Loading />}
+
+      {/* 乾坤雙欄 */}
+      {selectedUnit && !unitLoading && allResults.length > 0 && (
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+          {/* 乾 */}
+          <Box>
+            <Typography sx={{ fontWeight: 700, color: '#2563EB', mb: 1, textAlign: 'center', fontSize: 15 }}>
+              乾 {qian.length} 人
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {qian.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} onCheckin={() => checkIn(r)} onCancel={() => setCancelTarget(r)} />)}
+              {qian.length === 0 && <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>無資料</Typography>}
+            </Box>
           </Box>
-        )
+          {/* 坤 */}
+          <Box>
+            <Typography sx={{ fontWeight: 700, color: '#DB2777', mb: 1, textAlign: 'center', fontSize: 15 }}>
+              坤 {kun.length} 人
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {kun.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} onCheckin={() => checkIn(r)} onCancel={() => setCancelTarget(r)} />)}
+              {kun.length === 0 && <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>無資料</Typography>}
+            </Box>
+          </Box>
+        </Box>
+      )}
+
+      {selectedUnit && !unitLoading && allResults.length === 0 && (
+        <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>此單位沒有報名記錄</Typography>
       )}
 
       {/* 取消報到確認 Dialog */}
@@ -344,5 +322,26 @@ export default function CheckinSessionPage() {
         </DialogActions>
       </Dialog>
     </Container>
+  )
+}
+
+function PersonCard({ r, done, onCheckin, onCancel }: { r: Reg; done: boolean; onCheckin: () => void; onCancel: () => void }) {
+  return (
+    <Card sx={{ borderColor: done ? '#BBF7D0' : 'divider', bgcolor: done ? '#F0FDF4' : 'background.paper' }}>
+      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+        <Typography sx={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3 }}>{r.name}</Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary', lineHeight: 1.2 }}>{r.classes?.name}</Typography>
+        {done ? (
+          <Button size="small" fullWidth onClick={onCancel}
+            sx={{ color: '#16A34A', borderColor: '#BBF7D0', fontSize: 12, py: 0.25, minHeight: 0 }} variant="outlined">
+            <CheckCircleIcon sx={{ fontSize: 14, mr: 0.5 }} />已報到
+          </Button>
+        ) : (
+          <Button variant="contained" size="small" fullWidth onClick={onCheckin} sx={{ fontSize: 12, py: 0.25, minHeight: 0 }}>
+            報到
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   )
 }
