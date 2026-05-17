@@ -12,10 +12,12 @@ import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
 import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
+import Button from '@mui/material/Button'
 import { Loading } from '@/components/Loading'
 import KitchenIcon from '@mui/icons-material/Kitchen'
 import IconButton from '@mui/material/IconButton'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined'
 
 const supabase = createClient()
 
@@ -24,25 +26,30 @@ export default function KitchenPage() {
   const [selectedSession, setSelectedSession] = useState<string>('')
   const [registrations, setRegistrations] = useState<Registration[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     supabase.from('sessions').select('*').neq('status', 'finished').order('date', { ascending: false })
-      .then(({ data }) => {
-        const list = data ?? []
-        setSessions(list)
-        // 不預設選取，讓使用者手動選
-      })
+      .then(({ data }) => setSessions(data ?? []))
   }, [])
 
   const loadData = useCallback(async () => {
-    const { data } = await supabase.from('registrations').select('*').eq('session_id', selectedSession)
-    setRegistrations(data ?? [])
-    setLoading(false)
+    try {
+      const { data, error } = await supabase.from('registrations').select('*').eq('session_id', selectedSession)
+      if (error) throw error
+      setRegistrations(data ?? [])
+      setError(null)
+    } catch {
+      setError('載入失敗，請重試')
+    } finally {
+      setLoading(false)
+    }
   }, [selectedSession])
 
   useEffect(() => {
     if (!selectedSession) return
     setLoading(true)
+    setError(null)
     const channel = supabase.channel('kitchen-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, () => loadData())
       .subscribe()
@@ -50,11 +57,18 @@ export default function KitchenPage() {
     return () => { supabase.removeChannel(channel) }
   }, [selectedSession, loadData])
 
+  // 手機鎖屏或切換 app 後回到頁面時自動重新載入
+  useEffect(() => {
+    if (!selectedSession) return
+    const handleVisible = () => { if (document.visibilityState === 'visible') loadData() }
+    document.addEventListener('visibilitychange', handleVisible)
+    return () => document.removeEventListener('visibilitychange', handleVisible)
+  }, [selectedSession, loadData])
+
   const total = registrations.length
   const checkedIn = registrations.filter(r => r.checked_in).length
   const qian = registrations.filter(r => r.gender === '乾').length
   const kun = registrations.filter(r => r.gender === '坤').length
-  const session = sessions.find(s => s.id === selectedSession)
 
   return (
     <Container maxWidth="sm" sx={{ py: 5 }}>
@@ -85,7 +99,18 @@ export default function KitchenPage() {
         </Select>
       </FormControl>
 
-      {loading ? <Loading /> : (
+      {loading ? <Loading /> : error ? (
+        <Card sx={{ borderColor: '#FECACA', bgcolor: '#FEF2F2' }}>
+          <CardContent sx={{ textAlign: 'center', py: 4 }}>
+            <ErrorOutlineIcon sx={{ color: '#DC2626', fontSize: 36, mb: 1 }} />
+            <Typography sx={{ color: '#DC2626', fontWeight: 600, mb: 0.5 }}>資料載入失敗</Typography>
+            <Typography variant="body2" sx={{ color: '#EF4444', mb: 2 }}>請確認網路連線後重試</Typography>
+            <Button variant="outlined" color="error" size="small" onClick={() => { setLoading(true); loadData() }}>
+              重新載入
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
         <>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
             <Card sx={{ bgcolor: '#EFF6FF', borderColor: '#BFDBFE' }}>
