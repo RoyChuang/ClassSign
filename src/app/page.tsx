@@ -59,8 +59,19 @@ export default function Home() {
         <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>班會掛號系統</Typography>
       </Box>
 
+      <Box sx={{ mb: profile?.role === 'admin' || profile?.role === 'secretary' ? 2.5 : 0 }}>
+        {profile && (
+          <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1.5, pl: 0.5 }}>
+            公開功能
+          </Typography>
+        )}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {publicNav.map(item => <NavCard key={item.href} {...item} />)}
+        </Box>
+      </Box>
+
       {profile?.role === 'admin' && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box sx={{ mt: 0 }}>
           <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1.5, pl: 0.5 }}>
             管理功能
           </Typography>
@@ -71,7 +82,7 @@ export default function Home() {
       )}
 
       {profile?.role === 'secretary' && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box sx={{ mt: 0 }}>
           <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1.5, pl: 0.5 }}>
             秘書功能
           </Typography>
@@ -80,17 +91,6 @@ export default function Home() {
           </Box>
         </Box>
       )}
-
-      <Box>
-        {profile && (
-          <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1.5, pl: 0.5 }}>
-            公開功能
-          </Typography>
-        )}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {publicNav.map(item => <NavCard key={item.href} {...item} />)}
-        </Box>
-      </Box>
     </Container>
   )
 }
