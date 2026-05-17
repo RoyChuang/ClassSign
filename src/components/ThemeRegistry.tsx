@@ -30,12 +30,12 @@ const theme = createTheme({
   },
   typography: {
     fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif',
-    h1: { fontFamily: '"Noto Serif TC", "STSong", "SimSun", serif', fontWeight: 700 },
-    h2: { fontFamily: '"Noto Serif TC", "STSong", "SimSun", serif', fontWeight: 700 },
-    h3: { fontFamily: '"Noto Serif TC", "STSong", "SimSun", serif', fontWeight: 700 },
-    h4: { fontFamily: '"Noto Serif TC", "STSong", "SimSun", serif', fontWeight: 700 },
-    h5: { fontFamily: '"Noto Serif TC", "STSong", "SimSun", serif', fontWeight: 700 },
-    h6: { fontFamily: '"Noto Serif TC", "STSong", "SimSun", serif', fontWeight: 600 },
+    h1: { fontWeight: 900 },
+    h2: { fontWeight: 900 },
+    h3: { fontWeight: 800 },
+    h4: { fontWeight: 700 },
+    h5: { fontWeight: 700 },
+    h6: { fontWeight: 600 },
   },
   shape: { borderRadius: 8 },
   components: {
