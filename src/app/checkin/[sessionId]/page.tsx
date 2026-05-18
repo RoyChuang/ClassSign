@@ -42,6 +42,7 @@ export default function CheckinSessionPage() {
   const [nameFilter, setNameFilter] = useState('')
   const [allResults, setAllResults] = useState<Reg[]>([])
   const [unitLoading, setUnitLoading] = useState(false)
+  const [loadError, setLoadError] = useState(false)
   const [checkedIn, setCheckedIn] = useState<Set<string>>(new Set())
   const [cancelTarget, setCancelTarget] = useState<Reg | null>(null)
   const [copied, setCopied] = useState(false)
@@ -72,12 +73,18 @@ export default function CheckinSessionPage() {
 
   const loadUnit = useCallback(async (unit: Unit) => {
     setUnitLoading(true)
-    const { data } = await supabase
+    setLoadError(false)
+    const { data, error } = await supabase
       .from('registrations')
       .select('*, classes(name)')
       .eq('session_id', sessionId)
       .eq('unit', unit)
       .order('name')
+    if (error) {
+      setLoadError(true)
+      setUnitLoading(false)
+      return
+    }
     const list = (data ?? []) as Reg[]
     setAllResults(list)
     setCheckedIn(new Set(list.filter(r => r.checked_in).map(r => r.id)))
@@ -97,18 +104,18 @@ export default function CheckinSessionPage() {
 
   async function checkIn(reg: Reg) {
     if (checkedIn.has(reg.id)) return
-    await supabase.from('registrations')
+    const { error } = await supabase.from('registrations')
       .update({ checked_in: true, checked_in_at: new Date().toISOString() })
       .eq('id', reg.id)
-    setCheckedIn(prev => new Set([...prev, reg.id]))
+    if (!error) setCheckedIn(prev => new Set([...prev, reg.id]))
   }
 
   async function cancelCheckIn() {
     if (!cancelTarget) return
-    await supabase.from('registrations')
+    const { error } = await supabase.from('registrations')
       .update({ checked_in: false, checked_in_at: null })
       .eq('id', cancelTarget.id)
-    setCheckedIn(prev => { const s = new Set(prev); s.delete(cancelTarget.id); return s })
+    if (!error) setCheckedIn(prev => { const s = new Set(prev); s.delete(cancelTarget.id); return s })
     setCancelTarget(null)
   }
 
@@ -237,8 +244,12 @@ export default function CheckinSessionPage() {
 
       {unitLoading && <Loading />}
 
+      {loadError && (
+        <Typography sx={{ color: 'error.main', textAlign: 'center', py: 3 }}>載入失敗，請重新選擇單位</Typography>
+      )}
+
       {/* 乾坤雙欄 */}
-      {selectedUnit && !unitLoading && allResults.length > 0 && (
+      {selectedUnit && !unitLoading && !loadError && allResults.length > 0 && filtered.length > 0 && (
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
           {/* 乾 */}
           <Box>
@@ -263,7 +274,11 @@ export default function CheckinSessionPage() {
         </Box>
       )}
 
-      {selectedUnit && !unitLoading && allResults.length === 0 && (
+      {selectedUnit && !unitLoading && !loadError && allResults.length > 0 && filtered.length === 0 && (
+        <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>找不到含「{nameFilter}」的記錄</Typography>
+      )}
+
+      {selectedUnit && !unitLoading && !loadError && allResults.length === 0 && (
         <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>此單位沒有報名記錄</Typography>
       )}
 
@@ -333,11 +348,11 @@ function PersonCard({ r, done, onCheckin, onCancel }: { r: Reg; done: boolean; o
         <Typography variant="caption" sx={{ color: 'text.secondary', lineHeight: 1.2 }}>{r.classes?.name}</Typography>
         {done ? (
           <Button size="small" fullWidth onClick={onCancel}
-            sx={{ color: '#16A34A', borderColor: '#BBF7D0', fontSize: 12, py: 0.25, minHeight: 0 }} variant="outlined">
+            sx={{ color: '#16A34A', borderColor: '#BBF7D0', fontSize: 12, py: 0.5 }} variant="outlined">
             <CheckCircleIcon sx={{ fontSize: 14, mr: 0.5 }} />已報到
           </Button>
         ) : (
-          <Button variant="contained" size="small" fullWidth onClick={onCheckin} sx={{ fontSize: 12, py: 0.25, minHeight: 0 }}>
+          <Button variant="contained" size="small" fullWidth onClick={onCheckin} sx={{ fontSize: 12, py: 0.5 }}>
             報到
           </Button>
         )}

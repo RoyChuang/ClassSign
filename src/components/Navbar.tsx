@@ -13,6 +13,7 @@ import Popover from '@mui/material/Popover'
 import Divider from '@mui/material/Divider'
 import LogoutIcon from '@mui/icons-material/Logout'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
+import AccountCircleIcon from '@mui/icons-material/AccountCircle'
 
 const roleLabel: Record<string, string> = {
   admin: '管理員',
@@ -25,8 +26,8 @@ export function Navbar() {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
 
   return (
-    <AppBar position="static" color="default" elevation={0}
-      sx={{ borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+    <AppBar position="sticky" color="default" elevation={0}
+      sx={{ top: 0, zIndex: 1100, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
       <Toolbar variant="dense" sx={{ gap: 2, minHeight: 52 }}>
         <Box component={Link} href="/" sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none', flexGrow: 1 }}>
           <Image src="/logo.jpg" alt="logo" width={28} height={28} style={{ borderRadius: 6 }} />
@@ -39,6 +40,7 @@ export function Navbar() {
           <>
             <ButtonBase onClick={e => setAnchor(e.currentTarget)}
               sx={{ display: 'flex', alignItems: 'center', gap: 0.75, px: 1.5, py: 0.75, borderRadius: '8px', border: '1px solid', borderColor: 'divider', '&:hover': { bgcolor: '#F8FAFC' } }}>
+              <AccountCircleIcon sx={{ fontSize: 28, color: 'text.disabled', flexShrink: 0 }} />
               <Box sx={{ textAlign: 'left' }}>
                 <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#2563EB', lineHeight: 1.2 }}>
                   {roleLabel[profile.role]}{profile.unit ? ` · ${profile.unit}` : ''}
