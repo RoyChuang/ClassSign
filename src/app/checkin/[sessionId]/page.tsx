@@ -96,6 +96,35 @@ export default function CheckinSessionPage() {
     loadUnit(selectedUnit as Unit)
   }, [selectedUnit, loadUnit])
 
+  useEffect(() => {
+    if (!selectedUnit) return
+    const channel = supabase
+      .channel(`checkin-${sessionId}-${selectedUnit}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'registrations', filter: `session_id=eq.${sessionId}` },
+        (payload) => {
+          const updated = payload.new as Registration
+          if (updated.unit !== selectedUnit) return
+          setCheckedIn(prev => {
+            const s = new Set(prev)
+            if (updated.checked_in) s.add(updated.id)
+            else s.delete(updated.id)
+            return s
+          })
+        })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations', filter: `session_id=eq.${sessionId}` },
+        (payload) => {
+          const inserted = payload.new as Reg
+          if (inserted.unit !== selectedUnit) return
+          setAllResults(prev => {
+            if (prev.some(r => r.id === inserted.id)) return prev
+            return [...prev, inserted].sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'))
+          })
+          if (inserted.checked_in) setCheckedIn(prev => new Set([...prev, inserted.id]))
+        })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [sessionId, selectedUnit])
+
   const filtered = nameFilter.trim()
     ? allResults.filter(r => r.name.includes(nameFilter.trim()))
     : allResults
