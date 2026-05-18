@@ -14,6 +14,7 @@ import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
 import Button from '@mui/material/Button'
 import { Loading } from '@/components/Loading'
+import { RealtimeStatus, RealtimeStatusType } from '@/components/RealtimeStatus'
 import KitchenIcon from '@mui/icons-material/Kitchen'
 import IconButton from '@mui/material/IconButton'
 import RefreshIcon from '@mui/icons-material/Refresh'
@@ -27,7 +28,7 @@ export default function KitchenPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [realtimeStatus, setRealtimeStatus] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle')
+  const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatusType>('idle')
 
   useEffect(() => {
     supabase.from('sessions').select('*').neq('status', 'finished').order('date', { ascending: false })
@@ -84,19 +85,7 @@ export default function KitchenPage() {
         <Box sx={{ flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
             <Typography variant="h5" sx={{ fontWeight: 700 }}>廚房看板</Typography>
-            {realtimeStatus !== 'idle' && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                {{
-                  idle: null,
-                  connecting: <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#F59E0B', animation: 'pulse 1s infinite', flexShrink: 0 }} />,
-                  connected: <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#16A34A', flexShrink: 0 }} />,
-                  error: <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#DC2626', flexShrink: 0 }} />,
-                }[realtimeStatus]}
-                <Typography variant="caption" sx={{ color: realtimeStatus === 'connected' ? '#16A34A' : realtimeStatus === 'error' ? '#DC2626' : '#F59E0B', fontWeight: 500 }}>
-                  {{ idle: '', connecting: '連線中', connected: '即時更新', error: '連線失敗' }[realtimeStatus]}
-                </Typography>
-              </Box>
-            )}
+            <RealtimeStatus status={realtimeStatus} />
           </Box>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>掛號及報到人數</Typography>
         </Box>
