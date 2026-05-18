@@ -47,6 +47,7 @@ export default function CheckinSessionPage() {
   const [cancelTarget, setCancelTarget] = useState<Reg | null>(null)
   const [copied, setCopied] = useState(false)
   const [walkInSuccess, setWalkInSuccess] = useState<string>('')
+  const [realtimeStatus, setRealtimeStatus] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle')
 
   // 現場報名
   const [walkInOpen, setWalkInOpen] = useState(false)
@@ -97,7 +98,8 @@ export default function CheckinSessionPage() {
   }, [selectedUnit, loadUnit])
 
   useEffect(() => {
-    if (!selectedUnit) return
+    if (!selectedUnit) { setRealtimeStatus('idle'); return }
+    setRealtimeStatus('connecting')
     const channel = supabase
       .channel(`checkin-${sessionId}-${selectedUnit}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'registrations', filter: `session_id=eq.${sessionId}` },
@@ -121,7 +123,10 @@ export default function CheckinSessionPage() {
           })
           if (inserted.checked_in) setCheckedIn(prev => new Set([...prev, inserted.id]))
         })
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') setRealtimeStatus('connected')
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRealtimeStatus('error')
+      })
     return () => { supabase.removeChannel(channel) }
   }, [sessionId, selectedUnit])
 
@@ -221,6 +226,12 @@ export default function CheckinSessionPage() {
               <QrCodeScannerIcon sx={{ color: 'primary.main', fontSize: 22 }} />
             </Box>
             <Typography variant="h5" sx={{ fontWeight: 700 }}>完成報到</Typography>
+            {{
+              idle: <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#CBD5E1' }} />,
+              connecting: <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#F59E0B', animation: 'pulse 1s infinite' }} />,
+              connected: <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#16A34A' }} />,
+              error: <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#DC2626' }} />,
+            }[realtimeStatus]}
           </Box>
           <Button variant="outlined" size="small" startIcon={<PersonAddIcon />} onClick={openWalkIn}
             disabled={!selectedUnit} sx={{ flexShrink: 0 }}>

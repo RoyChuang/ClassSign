@@ -27,6 +27,7 @@ export default function KitchenPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [realtimeStatus, setRealtimeStatus] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle')
 
   useEffect(() => {
     supabase.from('sessions').select('*').neq('status', 'finished').order('date', { ascending: false })
@@ -47,12 +48,16 @@ export default function KitchenPage() {
   }, [selectedSession])
 
   useEffect(() => {
-    if (!selectedSession) return
+    if (!selectedSession) { setRealtimeStatus('idle'); return }
     setLoading(true)
     setError(null)
+    setRealtimeStatus('connecting')
     const channel = supabase.channel('kitchen-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, () => loadData())
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') setRealtimeStatus('connected')
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRealtimeStatus('error')
+      })
     loadData()
     return () => { supabase.removeChannel(channel) }
   }, [selectedSession, loadData])
@@ -79,10 +84,19 @@ export default function KitchenPage() {
         <Box sx={{ flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
             <Typography variant="h5" sx={{ fontWeight: 700 }}>廚房看板</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-              <span className="live-dot" />
-              <Typography variant="caption" sx={{ color: '#16A34A', fontWeight: 500 }}>即時更新</Typography>
-            </Box>
+            {realtimeStatus !== 'idle' && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                {{
+                  idle: null,
+                  connecting: <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#F59E0B', animation: 'pulse 1s infinite', flexShrink: 0 }} />,
+                  connected: <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#16A34A', flexShrink: 0 }} />,
+                  error: <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#DC2626', flexShrink: 0 }} />,
+                }[realtimeStatus]}
+                <Typography variant="caption" sx={{ color: realtimeStatus === 'connected' ? '#16A34A' : realtimeStatus === 'error' ? '#DC2626' : '#F59E0B', fontWeight: 500 }}>
+                  {{ idle: '', connecting: '連線中', connected: '即時更新', error: '連線失敗' }[realtimeStatus]}
+                </Typography>
+              </Box>
+            )}
           </Box>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>掛號及報到人數</Typography>
         </Box>
