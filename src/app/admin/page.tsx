@@ -18,6 +18,8 @@ import MenuItem from '@mui/material/MenuItem'
 import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
 import Chip from '@mui/material/Chip'
+import Tabs from '@mui/material/Tabs'
+import Tab from '@mui/material/Tab'
 import IconButton from '@mui/material/IconButton'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
@@ -54,11 +56,16 @@ export default function AdminPage() {
   const [editTarget, setEditTarget] = useState<Session | null>(null)
   const [editForm, setEditForm] = useState<{ name: string; date: Dayjs | null; reg_deadline: Dayjs | null; unit: string }>({ name: '', date: null, reg_deadline: null, unit: '' })
   const [saving, setSaving] = useState(false)
+  const [unitTab, setUnitTab] = useState<string>('none')
+  const [createOpen, setCreateOpen] = useState(false)
 
   async function loadSessions() {
     const { data } = await supabase.from('sessions').select('*').order('date', { ascending: false })
-    setSessions(data ?? [])
+    const list = data ?? []
+    setSessions(list)
     setLoading(false)
+    const validTabs = ['none', ...Array.from(new Set(list.map(s => s.unit).filter(Boolean)))]
+    setUnitTab(t => validTabs.includes(t) ? t : 'none')
   }
 
   useEffect(() => { loadSessions() }, [])
@@ -82,7 +89,7 @@ export default function AdminPage() {
     await loadSessions()
   }
 
-  async function createSession(e: React.FormEvent) {
+  async function createSession(e: React.FormEvent | React.MouseEvent) {
     e.preventDefault()
     if (!form.date || !form.reg_deadline) return
     setSubmitting(true)
@@ -97,6 +104,7 @@ export default function AdminPage() {
       DEFAULT_CLASSES.map((name, i) => ({ session_id: session.id, name, sort_order: i }))
     )
     setForm({ name: '', date: null, reg_deadline: null, unit: '' })
+    setCreateOpen(false)
     await loadSessions()
     setSubmitting(false)
   }
@@ -117,73 +125,91 @@ export default function AdminPage() {
     await loadSessions()
   }
 
-  if (authLoading) return <Loading fullPage />
-
-  if (!profile) return (
-    <Container sx={{ py: 5, textAlign: 'center' }}>
-      <Typography sx={{ color: 'text.secondary', mb: 2 }}>此頁面僅供管理員使用</Typography>
-      <Button variant="contained" startIcon={<LoginIcon />} onClick={signIn}>管理員登入</Button>
-    </Container>
-  )
-
-  if (profile.role !== 'admin') return (
-    <Container sx={{ py: 5, textAlign: 'center' }}>
-      <Typography sx={{ color: 'text.secondary' }}>此頁面僅限管理員使用</Typography>
-    </Container>
-  )
-
   return (
     <Container maxWidth="md" sx={{ py: 5 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
         <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <SettingsIcon sx={{ color: 'primary.main', fontSize: 22 }} />
         </Box>
-        <Box>
+        <Box sx={{ flex: 1 }}>
           <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>班會管理</Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>建立班會、調整狀態</Typography>
         </Box>
+        {profile?.role === 'admin' && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}>建立班會</Button>
+        )}
       </Box>
 
-      <Card sx={{ mb: 4 }}>
-        <CardContent sx={{ p: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>建立新班會</Typography>
-          <Box component="form" onSubmit={createSession} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            <TextField required label="班會名稱" placeholder="例：115年5月全家福班"
-              value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} fullWidth size="small" />
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-              <DatePicker label="班會日期" value={form.date}
-                onChange={val => setForm(f => ({ ...f, date: val }))}
-                slotProps={{ textField: { size: 'small', required: true } }} />
-              <DatePicker label="掛號截止日" value={form.reg_deadline}
-                onChange={val => setForm(f => ({ ...f, reg_deadline: val }))}
-                slotProps={{ textField: { size: 'small', required: true } }} />
-            </Box>
-            <FormControl size="small" sx={{ width: 160 }}>
-              <InputLabel>適用單位</InputLabel>
-              <Select label="適用單位" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}>
-                <MenuItem value=''>不限</MenuItem>
-                {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
-              </Select>
-            </FormControl>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>班別預設：壇主人才班、長青班、青少年班、兒童班</Typography>
-            <Button type="submit" variant="contained" startIcon={<AddIcon />} disabled={submitting} sx={{ alignSelf: 'flex-start', px: 3 }}>
-              {submitting ? '建立中...' : '建立班會'}
-            </Button>
+      {authLoading ? <Loading /> : !profile ? (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography sx={{ color: 'text.secondary', mb: 2 }}>此頁面僅供管理員使用</Typography>
+          <Button variant="contained" startIcon={<LoginIcon />} onClick={signIn}>管理員登入</Button>
+        </Box>
+      ) : profile.role !== 'admin' ? (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography sx={{ color: 'text.secondary' }}>此頁面僅限管理員使用</Typography>
+        </Box>
+      ) : null}
+
+      {/* 建立班會 Dialog */}
+      <Dialog open={createOpen} onClose={() => !submitting && setCreateOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 600 }}>建立新班會</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
+          <TextField required label="班會名稱" placeholder="例：115年5月全家福班"
+            value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} fullWidth size="small" />
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+            <DatePicker label="班會日期" value={form.date}
+              onChange={val => setForm(f => ({ ...f, date: val }))}
+              slotProps={{ textField: { size: 'small', required: true } }} />
+            <DatePicker label="掛號截止日" value={form.reg_deadline}
+              onChange={val => setForm(f => ({ ...f, reg_deadline: val }))}
+              slotProps={{ textField: { size: 'small', required: true } }} />
           </Box>
-        </CardContent>
-      </Card>
+          <FormControl size="small" fullWidth>
+            <InputLabel>適用單位</InputLabel>
+            <Select label="適用單位" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}>
+              <MenuItem value=''>聯合</MenuItem>
+              {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button startIcon={<CloseIcon />} onClick={() => setCreateOpen(false)} disabled={submitting}>取消</Button>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={e => createSession(e as unknown as React.FormEvent)}
+            disabled={submitting || !form.name || !form.date || !form.reg_deadline}>
+            {submitting ? '建立中...' : '建立班會'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>班會列表</Typography>
       <TextField
         size="small" fullWidth placeholder="搜尋班會名稱"
         value={search} onChange={e => setSearch(e.target.value)}
-        sx={{ mb: 2 }}
+        sx={{ mb: 1.5 }}
       />
+      {(() => {
+        const unitTabs = Array.from(new Set(sessions.map(s => s.unit).filter(Boolean))) as string[]
+        return unitTabs.length > 0 && (
+          <Tabs value={unitTab} onChange={(_, v) => setUnitTab(v)} variant="scrollable" scrollButtons="auto"
+            sx={{ mb: 2, minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5, fontSize: 13 } }}>
+            <Tab label="聯合" value="none" />
+            {unitTabs.map(u => <Tab key={u} label={u} value={u} />)}
+          </Tabs>
+        )
+      })()}
       {loading ? <Loading /> : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {sessions.length === 0 && <Typography sx={{ color: 'text.secondary' }}>尚無班會</Typography>}
-          {sessions
-            .filter(s => !search.trim() || s.name.toLowerCase().includes(search.trim().toLowerCase()))
+          {(() => {
+            const filtered = sessions.filter(s => {
+              const matchSearch = !search.trim() || s.name.toLowerCase().includes(search.trim().toLowerCase())
+              const matchUnit = unitTab === 'all' || (unitTab === 'none' ? !s.unit : s.unit === unitTab)
+              return matchSearch && matchUnit
+            })
+            if (filtered.length === 0) return (
+              <Typography sx={{ color: 'text.secondary', py: 2, textAlign: 'center' }}>尚無班會</Typography>
+            )
+            return filtered
             .map(s => {
               const chip = sessionChip(s)
               return (
@@ -212,7 +238,8 @@ export default function AdminPage() {
                   </CardContent>
                 </Card>
               )
-            })}
+            })
+          })()}
         </Box>
       )}
 
@@ -231,7 +258,7 @@ export default function AdminPage() {
           <FormControl size="small" fullWidth>
             <InputLabel>適用單位</InputLabel>
             <Select label="適用單位" value={editForm.unit} onChange={e => setEditForm(f => ({ ...f, unit: e.target.value }))}>
-              <MenuItem value=''>不限</MenuItem>
+              <MenuItem value=''>聯合</MenuItem>
               {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
             </Select>
           </FormControl>
