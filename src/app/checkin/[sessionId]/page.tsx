@@ -49,6 +49,7 @@ export default function CheckinSessionPage() {
   const [copied, setCopied] = useState(false)
   const [walkInSuccess, setWalkInSuccess] = useState<string>('')
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatusType>('idle')
+  const [realtimeKey, setRealtimeKey] = useState(0)
 
   // 現場報名
   const [walkInOpen, setWalkInOpen] = useState(false)
@@ -129,7 +130,18 @@ export default function CheckinSessionPage() {
         else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRealtimeStatus('error')
       })
     return () => { supabase.removeChannel(channel) }
-  }, [sessionId, selectedUnit])
+  }, [sessionId, selectedUnit, realtimeKey])
+
+  useEffect(() => {
+    const handleVisible = () => {
+      if (document.visibilityState === 'visible' && selectedUnit) {
+        loadUnit(selectedUnit as Unit)
+        setRealtimeKey(k => k + 1)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisible)
+    return () => document.removeEventListener('visibilitychange', handleVisible)
+  }, [selectedUnit, loadUnit])
 
   const filtered = nameFilter.trim()
     ? allResults.filter(r => r.name.includes(nameFilter.trim()))

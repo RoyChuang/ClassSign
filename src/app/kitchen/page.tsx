@@ -29,6 +29,7 @@ export default function KitchenPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatusType>('idle')
+  const [realtimeKey, setRealtimeKey] = useState(0)
 
   useEffect(() => {
     supabase.from('sessions').select('*').neq('status', 'finished').order('date', { ascending: false })
@@ -61,12 +62,17 @@ export default function KitchenPage() {
       })
     loadData()
     return () => { supabase.removeChannel(channel) }
-  }, [selectedSession, loadData])
+  }, [selectedSession, loadData, realtimeKey])
 
-  // 手機鎖屏或切換 app 後回到頁面時自動重新載入
+  // 手機鎖屏或切換 app 後回到頁面時自動重新載入並重建 Realtime 訂閱
   useEffect(() => {
     if (!selectedSession) return
-    const handleVisible = () => { if (document.visibilityState === 'visible') loadData() }
+    const handleVisible = () => {
+      if (document.visibilityState === 'visible') {
+        loadData()
+        setRealtimeKey(k => k + 1)
+      }
+    }
     document.addEventListener('visibilitychange', handleVisible)
     return () => document.removeEventListener('visibilitychange', handleVisible)
   }, [selectedSession, loadData])
