@@ -153,12 +153,13 @@ export default function CheckinSessionPage() {
 
   async function checkIn(reg: Reg) {
     if (checkedIn.has(reg.id)) return
-    const { error } = await supabase.from('registrations')
+    const { data, error } = await supabase.from('registrations')
       .update({ checked_in: true, checked_in_at: new Date().toISOString() })
       .eq('id', reg.id)
-    if (error) {
-      const { data } = await supabase.from('sessions').select('status').eq('id', sessionId).single()
-      if (data?.status === 'finished') setSessionEnded(true)
+      .select('id')
+    if (error || !data || data.length === 0) {
+      const { data: s } = await supabase.from('sessions').select('status').eq('id', sessionId).single()
+      if (s?.status === 'finished') setSessionEnded(true)
       return
     }
     setCheckedIn(prev => new Set([...prev, reg.id]))
