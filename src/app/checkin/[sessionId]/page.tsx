@@ -38,6 +38,7 @@ export default function CheckinSessionPage() {
   const [session, setSession] = useState<Session | null>(null)
   const [sessionLoading, setSessionLoading] = useState(true)
   const [sessionNotFound, setSessionNotFound] = useState(false)
+  const [sessionEnded, setSessionEnded] = useState(false)
 
   const [selectedUnit, setSelectedUnit] = useState<Unit | ''>('')
   const [nameFilter, setNameFilter] = useState('')
@@ -134,7 +135,8 @@ export default function CheckinSessionPage() {
 
   useEffect(() => {
     const handleVisible = () => {
-      if (document.visibilityState === 'visible' && selectedUnit) {
+      if (document.visibilityState !== 'visible') return
+      if (selectedUnit) {
         loadUnit(selectedUnit as Unit)
         setRealtimeKey(k => k + 1)
       }
@@ -154,7 +156,12 @@ export default function CheckinSessionPage() {
     const { error } = await supabase.from('registrations')
       .update({ checked_in: true, checked_in_at: new Date().toISOString() })
       .eq('id', reg.id)
-    if (!error) setCheckedIn(prev => new Set([...prev, reg.id]))
+    if (error) {
+      const { data } = await supabase.from('sessions').select('status').eq('id', sessionId).single()
+      if (data?.status === 'finished') setSessionEnded(true)
+      return
+    }
+    setCheckedIn(prev => new Set([...prev, reg.id]))
   }
 
   async function cancelCheckIn() {
@@ -225,6 +232,15 @@ export default function CheckinSessionPage() {
       <ErrorOutlineIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
       <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }}>找不到此班會</Typography>
       <Typography variant="body2" sx={{ color: 'text.disabled', mb: 3 }}>連結可能已失效或班會已結束</Typography>
+      <Button variant="outlined" onClick={() => router.push('/checkin')}>回選班會</Button>
+    </Container>
+  )
+
+  if (sessionEnded) return (
+    <Container maxWidth="sm" sx={{ py: 5, textAlign: 'center' }}>
+      <ErrorOutlineIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
+      <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }}>班會已結束</Typography>
+      <Typography variant="body2" sx={{ color: 'text.disabled', mb: 3 }}>此班會的報到已關閉</Typography>
       <Button variant="outlined" onClick={() => router.push('/checkin')}>回選班會</Button>
     </Container>
   )
