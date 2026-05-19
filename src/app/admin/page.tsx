@@ -20,6 +20,10 @@ import IconButton from '@mui/material/IconButton'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import SettingsIcon from '@mui/icons-material/Settings'
+import LoginIcon from '@mui/icons-material/Login'
+import AddIcon from '@mui/icons-material/Add'
+import SaveIcon from '@mui/icons-material/Save'
+import CloseIcon from '@mui/icons-material/Close'
 import { Loading } from '@/components/Loading'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -115,7 +119,7 @@ export default function AdminPage() {
   if (!profile) return (
     <Container sx={{ py: 5, textAlign: 'center' }}>
       <Typography sx={{ color: 'text.secondary', mb: 2 }}>此頁面僅供管理員使用</Typography>
-      <Button variant="contained" onClick={signIn}>管理員登入</Button>
+      <Button variant="contained" startIcon={<LoginIcon />} onClick={signIn}>管理員登入</Button>
     </Container>
   )
 
@@ -152,7 +156,7 @@ export default function AdminPage() {
                 slotProps={{ textField: { size: 'small', required: true } }} />
             </Box>
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>班別預設：壇主人才班、長青班、青少年班、兒童班</Typography>
-            <Button type="submit" variant="contained" disabled={submitting} sx={{ alignSelf: 'flex-start', px: 3 }}>
+            <Button type="submit" variant="contained" startIcon={<AddIcon />} disabled={submitting} sx={{ alignSelf: 'flex-start', px: 3 }}>
               {submitting ? '建立中...' : '建立班會'}
             </Button>
           </Box>
@@ -213,8 +217,8 @@ export default function AdminPage() {
             slotProps={{ textField: { size: 'small', fullWidth: true } }} />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button onClick={() => setEditTarget(null)} disabled={saving}>取消</Button>
-          <Button variant="contained" onClick={saveEdit} disabled={saving || !editForm.name || !editForm.date || !editForm.reg_deadline}>
+          <Button startIcon={<CloseIcon />} onClick={() => setEditTarget(null)} disabled={saving}>取消</Button>
+          <Button variant="contained" startIcon={<SaveIcon />} onClick={saveEdit} disabled={saving || !editForm.name || !editForm.date || !editForm.reg_deadline}>
             {saving ? '儲存中...' : '儲存'}
           </Button>
         </DialogActions>
@@ -230,8 +234,8 @@ export default function AdminPage() {
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button onClick={() => setDeleteTarget(null)} disabled={deleting}>取消</Button>
-          <Button variant="contained" color="error" onClick={confirmDelete} disabled={deleting}>
+          <Button startIcon={<CloseIcon />} onClick={() => setDeleteTarget(null)} disabled={deleting}>取消</Button>
+          <Button variant="contained" color="error" startIcon={<DeleteIcon />} onClick={confirmDelete} disabled={deleting}>
             {deleting ? '刪除中...' : '確定刪除'}
           </Button>
         </DialogActions>

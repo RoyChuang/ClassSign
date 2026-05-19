@@ -16,6 +16,9 @@ import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import EditIcon from '@mui/icons-material/Edit'
 import PeopleIcon from '@mui/icons-material/People'
+import LoginIcon from '@mui/icons-material/Login'
+import SaveIcon from '@mui/icons-material/Save'
+import CloseIcon from '@mui/icons-material/Close'
 import TextField from '@mui/material/TextField'
 import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
@@ -76,7 +79,7 @@ export default function UsersPage() {
   if (!profile) return (
     <Container sx={{ py: 5, textAlign: 'center' }}>
       <Typography sx={{ color: 'text.secondary', mb: 2 }}>此頁面僅供管理員使用</Typography>
-      <Button variant="contained" onClick={signIn}>管理員登入</Button>
+      <Button variant="contained" startIcon={<LoginIcon />} onClick={signIn}>管理員登入</Button>
     </Container>
   )
 
@@ -164,9 +167,9 @@ export default function UsersPage() {
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button onClick={() => setEditTarget(null)} disabled={saving}>取消</Button>
+          <Button startIcon={<CloseIcon />} onClick={() => setEditTarget(null)} disabled={saving}>取消</Button>
           <Button
-            variant="contained" onClick={save}
+            variant="contained" startIcon={<SaveIcon />} onClick={save}
             disabled={saving || !form.display_name || (form.role === 'secretary' && !form.unit)}
           >
             {saving ? '儲存中...' : '儲存'}

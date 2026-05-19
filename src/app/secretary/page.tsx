@@ -21,6 +21,9 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import DownloadIcon from '@mui/icons-material/Download'
 import ListAltIcon from '@mui/icons-material/ListAlt'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
+import LoginIcon from '@mui/icons-material/Login'
+import AddIcon from '@mui/icons-material/Add'
+import CloseIcon from '@mui/icons-material/Close'
 import Checkbox from '@mui/material/Checkbox'
 import Popover from '@mui/material/Popover'
 import Dialog from '@mui/material/Dialog'
@@ -202,7 +205,7 @@ export default function SecretaryPage() {
   if (!profile) return (
     <Container sx={{ py: 5, textAlign: 'center' }}>
       <Typography sx={{ color: 'text.secondary', mb: 2 }}>此頁面僅供各單位秘書使用</Typography>
-      <Button variant="contained" onClick={signIn}>秘書登入</Button>
+      <Button variant="contained" startIcon={<LoginIcon />} onClick={signIn}>秘書登入</Button>
     </Container>
   )
 
@@ -266,7 +269,7 @@ export default function SecretaryPage() {
                     {classes.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
                   </Select>
                 </FormControl>
-                <Button type="submit" variant="contained" disabled={submitting}>
+                <Button type="submit" variant="contained" startIcon={<AddIcon />} disabled={submitting}>
                   {submitting ? '新增中...' : '新增'}
                 </Button>
               </Box>
@@ -378,8 +381,8 @@ export default function SecretaryPage() {
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button onClick={() => setImportOpen(false)} disabled={importing}>取消</Button>
-          <Button variant="contained" onClick={confirmImport}
+          <Button startIcon={<CloseIcon />} onClick={() => setImportOpen(false)} disabled={importing}>取消</Button>
+          <Button variant="contained" startIcon={<DownloadIcon />} onClick={confirmImport}
             disabled={importing || importSelected.size === 0}>
             {importing ? '匯入中...' : `匯入 ${importSelected.size} 人`}
           </Button>
@@ -412,8 +415,8 @@ export default function SecretaryPage() {
           <Typography sx={{ pt: 1 }}>確定要刪除這筆報名記錄？此操作無法復原。</Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button onClick={() => setDeleteTarget(null)} disabled={deleting}>取消</Button>
-          <Button variant="contained" color="error" onClick={confirmDelete} disabled={deleting}>
+          <Button startIcon={<CloseIcon />} onClick={() => setDeleteTarget(null)} disabled={deleting}>取消</Button>
+          <Button variant="contained" color="error" startIcon={<DeleteIcon />} onClick={confirmDelete} disabled={deleting}>
             {deleting ? '刪除中...' : '確定刪除'}
           </Button>
         </DialogActions>

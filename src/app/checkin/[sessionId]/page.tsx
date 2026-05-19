@@ -23,6 +23,10 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import PersonAddIcon from '@mui/icons-material/PersonAdd'
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import CloseIcon from '@mui/icons-material/Close'
+import UndoIcon from '@mui/icons-material/Undo'
+import CheckIcon from '@mui/icons-material/Check'
 import { Loading } from '@/components/Loading'
 import { RealtimeStatus, RealtimeStatusType } from '@/components/RealtimeStatus'
 
@@ -233,7 +237,7 @@ export default function CheckinSessionPage() {
       <ErrorOutlineIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
       <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }}>找不到此班會</Typography>
       <Typography variant="body2" sx={{ color: 'text.disabled', mb: 3 }}>連結可能已失效或班會已結束</Typography>
-      <Button variant="outlined" onClick={() => router.push('/checkin')}>回選班會</Button>
+      <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => router.push('/checkin')}>回選班會</Button>
     </Container>
   )
 
@@ -242,7 +246,7 @@ export default function CheckinSessionPage() {
       <ErrorOutlineIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
       <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }}>班會已結束</Typography>
       <Typography variant="body2" sx={{ color: 'text.disabled', mb: 3 }}>此班會的報到已關閉</Typography>
-      <Button variant="outlined" onClick={() => router.push('/checkin')}>回選班會</Button>
+      <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => router.push('/checkin')}>回選班會</Button>
     </Container>
   )
 
@@ -354,8 +358,8 @@ export default function CheckinSessionPage() {
           <Typography>確定要取消「{cancelTarget?.name}」的報到？</Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button onClick={() => setCancelTarget(null)}>不取消</Button>
-          <Button variant="contained" color="error" onClick={cancelCheckIn}>確定取消</Button>
+          <Button startIcon={<CloseIcon />} onClick={() => setCancelTarget(null)}>不取消</Button>
+          <Button variant="contained" color="error" startIcon={<UndoIcon />} onClick={cancelCheckIn}>確定取消</Button>
         </DialogActions>
       </Dialog>
 
@@ -394,8 +398,8 @@ export default function CheckinSessionPage() {
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button onClick={() => setWalkInOpen(false)} disabled={walkInSubmitting}>取消</Button>
-          <Button variant="contained" onClick={submitWalkIn}
+          <Button startIcon={<CloseIcon />} onClick={() => setWalkInOpen(false)} disabled={walkInSubmitting}>取消</Button>
+          <Button variant="contained" startIcon={<PersonAddIcon />} onClick={submitWalkIn}
             disabled={walkInSubmitting || !walkInForm.name.trim() || !walkInForm.class_id || !(walkInForm.unit || selectedUnit)}>
             {walkInSubmitting ? '處理中...' : '報名並報到'}
           </Button>
@@ -417,7 +421,7 @@ function PersonCard({ r, done, onCheckin, onCancel }: { r: Reg; done: boolean; o
             <CheckCircleIcon sx={{ fontSize: 14, mr: 0.5 }} />已報到
           </Button>
         ) : (
-          <Button variant="contained" size="small" fullWidth onClick={onCheckin} sx={{ fontSize: 12, py: 0.5 }}>
+          <Button variant="contained" size="small" fullWidth startIcon={<CheckIcon />} onClick={onCheckin} sx={{ fontSize: 12, py: 0.5 }}>
             報到
           </Button>
         )}
