@@ -182,7 +182,7 @@ export default function AdminPage() {
         </DialogActions>
       </Dialog>
 
-      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>班會列表</Typography>
+      {profile?.role === 'admin' && <><Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>班會列表</Typography>
       <TextField
         size="small" fullWidth placeholder="搜尋班會名稱"
         value={search} onChange={e => setSearch(e.target.value)}
@@ -242,6 +242,8 @@ export default function AdminPage() {
           })()}
         </Box>
       )}
+
+      </>}
 
       {/* Edit Session Dialog */}
       <Dialog open={!!editTarget} onClose={() => !saving && setEditTarget(null)} maxWidth="xs" fullWidth>
