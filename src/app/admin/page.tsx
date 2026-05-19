@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/AuthProvider'
-import { Session, DEFAULT_CLASSES } from '@/lib/types'
+import { Session, DEFAULT_CLASSES, UNITS } from '@/lib/types'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs, { Dayjs } from 'dayjs'
 import Container from '@mui/material/Container'
@@ -15,6 +15,8 @@ import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -45,12 +47,12 @@ export default function AdminPage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState<{ name: string; date: Dayjs | null; reg_deadline: Dayjs | null }>({ name: '', date: null, reg_deadline: null })
+  const [form, setForm] = useState<{ name: string; date: Dayjs | null; reg_deadline: Dayjs | null; unit: string }>({ name: '', date: null, reg_deadline: null, unit: '' })
   const [submitting, setSubmitting] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Session | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [editTarget, setEditTarget] = useState<Session | null>(null)
-  const [editForm, setEditForm] = useState<{ name: string; date: Dayjs | null; reg_deadline: Dayjs | null }>({ name: '', date: null, reg_deadline: null })
+  const [editForm, setEditForm] = useState<{ name: string; date: Dayjs | null; reg_deadline: Dayjs | null; unit: string }>({ name: '', date: null, reg_deadline: null, unit: '' })
   const [saving, setSaving] = useState(false)
 
   async function loadSessions() {
@@ -63,7 +65,7 @@ export default function AdminPage() {
 
   function openEdit(s: Session) {
     setEditTarget(s)
-    setEditForm({ name: s.name, date: dayjs(s.date), reg_deadline: dayjs(s.reg_deadline) })
+    setEditForm({ name: s.name, date: dayjs(s.date), reg_deadline: dayjs(s.reg_deadline), unit: s.unit ?? '' })
   }
 
   async function saveEdit() {
@@ -73,6 +75,7 @@ export default function AdminPage() {
       name: editForm.name,
       date: editForm.date.format('YYYY-MM-DD'),
       reg_deadline: editForm.reg_deadline.format('YYYY-MM-DD'),
+      unit: editForm.unit || null,
     }).eq('id', editTarget.id)
     setEditTarget(null)
     setSaving(false)
@@ -85,7 +88,7 @@ export default function AdminPage() {
     setSubmitting(true)
     const { data: session, error } = await supabase
       .from('sessions')
-      .insert({ name: form.name, date: form.date?.format('YYYY-MM-DD') ?? '', reg_deadline: form.reg_deadline?.format('YYYY-MM-DD') ?? '' })
+      .insert({ name: form.name, date: form.date?.format('YYYY-MM-DD') ?? '', reg_deadline: form.reg_deadline?.format('YYYY-MM-DD') ?? '', unit: form.unit || null })
       .select().single()
 
     if (error || !session) { alert('建立失敗：' + error?.message); setSubmitting(false); return }
@@ -93,7 +96,7 @@ export default function AdminPage() {
     await supabase.from('classes').insert(
       DEFAULT_CLASSES.map((name, i) => ({ session_id: session.id, name, sort_order: i }))
     )
-    setForm({ name: '', date: null, reg_deadline: null })
+    setForm({ name: '', date: null, reg_deadline: null, unit: '' })
     await loadSessions()
     setSubmitting(false)
   }
@@ -155,6 +158,13 @@ export default function AdminPage() {
                 onChange={val => setForm(f => ({ ...f, reg_deadline: val }))}
                 slotProps={{ textField: { size: 'small', required: true } }} />
             </Box>
+            <FormControl size="small" sx={{ width: 160 }}>
+              <InputLabel>適用單位</InputLabel>
+              <Select label="適用單位" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}>
+                <MenuItem value=''>不限</MenuItem>
+                {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
+              </Select>
+            </FormControl>
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>班別預設：壇主人才班、長青班、青少年班、兒童班</Typography>
             <Button type="submit" variant="contained" startIcon={<AddIcon />} disabled={submitting} sx={{ alignSelf: 'flex-start', px: 3 }}>
               {submitting ? '建立中...' : '建立班會'}
@@ -181,7 +191,10 @@ export default function AdminPage() {
                   <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
                     <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
                       <Box>
-                        <Typography sx={{ fontWeight: 500 }}>{s.name}</Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography sx={{ fontWeight: 500 }}>{s.name}</Typography>
+                          {s.unit && <Chip size="small" label={s.unit} variant="outlined" sx={{ fontSize: 11, height: 20 }} />}
+                        </Box>
                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>{s.date} · 截止 {s.reg_deadline}</Typography>
                       </Box>
                       <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0, ml: 1 }}>
@@ -215,6 +228,13 @@ export default function AdminPage() {
           <DatePicker label="掛號截止日" value={editForm.reg_deadline}
             onChange={val => setEditForm(f => ({ ...f, reg_deadline: val }))}
             slotProps={{ textField: { size: 'small', fullWidth: true } }} />
+          <FormControl size="small" fullWidth>
+            <InputLabel>適用單位</InputLabel>
+            <Select label="適用單位" value={editForm.unit} onChange={e => setEditForm(f => ({ ...f, unit: e.target.value }))}>
+              <MenuItem value=''>不限</MenuItem>
+              {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
           <Button startIcon={<CloseIcon />} onClick={() => setEditTarget(null)} disabled={saving}>取消</Button>

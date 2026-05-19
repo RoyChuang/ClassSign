@@ -12,6 +12,7 @@ export interface Session {
   date: string
   reg_deadline: string
   status: SessionStatus
+  unit: string | null
   created_at: string
 }
 

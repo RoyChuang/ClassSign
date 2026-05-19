@@ -63,11 +63,19 @@ export default function SecretaryPage() {
   useEffect(() => { if (profile?.unit) setSelectedUnit(profile.unit) }, [profile])
 
   useEffect(() => {
+    const session = sessions.find(s => s.id === selectedSession)
+    if (session?.unit) setSelectedUnit(session.unit as Unit)
+    else if (profile?.unit) setSelectedUnit(profile.unit)
+  }, [selectedSession, sessions, profile])
+
+  useEffect(() => {
+    if (!profile) return
+    const unitFilter = (s: Session) => profile.role === 'admin' || !s.unit || s.unit === profile.unit
     supabase.from('sessions').select('*').eq('status', 'open').order('date', { ascending: false })
-      .then(({ data }) => setSessions(data ?? []))
+      .then(({ data }) => setSessions((data ?? []).filter(unitFilter)))
     supabase.from('sessions').select('*').order('date', { ascending: false })
-      .then(({ data }) => setAllSessions(data ?? []))
-  }, [])
+      .then(({ data }) => setAllSessions((data ?? []).filter(unitFilter)))
+  }, [profile])
 
   useEffect(() => {
     if (!selectedSession) { setClasses([]); return }
@@ -230,15 +238,19 @@ export default function SecretaryPage() {
         </FormControl>
         <FormControl size="small" fullWidth>
           <InputLabel>單位</InputLabel>
-          {profile.role === 'admin' ? (
-            <Select label="單位" value={selectedUnit} onChange={e => setSelectedUnit(e.target.value as Unit)}>
-              {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
-            </Select>
-          ) : (
-            <Select label="單位" value={selectedUnit} disabled>
-              <MenuItem value={profile.unit ?? ''}>{profile.unit}（已鎖定）</MenuItem>
-            </Select>
-          )}
+          {(() => {
+            const sessionUnit = sessions.find(s => s.id === selectedSession)?.unit
+            const locked = profile.role !== 'admin' || !!sessionUnit
+            return locked ? (
+              <Select label="單位" value={selectedUnit} disabled>
+                <MenuItem value={selectedUnit}>{selectedUnit}（已鎖定）</MenuItem>
+              </Select>
+            ) : (
+              <Select label="單位" value={selectedUnit} onChange={e => setSelectedUnit(e.target.value as Unit)}>
+                {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
+              </Select>
+            )
+          })()}
         </FormControl>
       </Box>
 

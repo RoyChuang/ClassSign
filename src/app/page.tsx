@@ -24,8 +24,8 @@ const publicNav = [
 
 const adminNav = [
   { href: '/admin', label: '班會管理', desc: '建立班會、調整狀態', Icon: SettingsIcon },
-  { href: '/admin/users', label: '使用者管理', desc: '設定角色、單位與別名', Icon: PeopleIcon },
   { href: '/secretary', label: '秘書掛號', desc: '填寫各單位報名名單', Icon: ListAltIcon },
+  { href: '/admin/users', label: '使用者管理', desc: '設定角色、單位與別名', Icon: PeopleIcon },
 ]
 
 const secretaryNav = [

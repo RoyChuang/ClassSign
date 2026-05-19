@@ -79,6 +79,10 @@ export default function CheckinSessionPage() {
       })
   }, [sessionId])
 
+  useEffect(() => {
+    if (session?.unit) setSelectedUnit(session.unit as Unit)
+  }, [session])
+
   const loadUnit = useCallback(async (unit: Unit) => {
     setUnitLoading(true)
     setLoadError(false)
@@ -288,10 +292,16 @@ export default function CheckinSessionPage() {
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
             <FormControl size="small" fullWidth>
               <InputLabel>單位</InputLabel>
-              <Select label="單位" value={selectedUnit}
-                onChange={e => { setSelectedUnit(e.target.value as Unit); setNameFilter(''); setWalkInSuccess('') }}>
-                {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
-              </Select>
+              {session?.unit ? (
+                <Select label="單位" value={selectedUnit} disabled>
+                  <MenuItem value={selectedUnit}>{selectedUnit}</MenuItem>
+                </Select>
+              ) : (
+                <Select label="單位" value={selectedUnit}
+                  onChange={e => { setSelectedUnit(e.target.value as Unit); setNameFilter(''); setWalkInSuccess('') }}>
+                  {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
+                </Select>
+              )}
             </FormControl>
             <TextField
               size="small" label="篩選姓名" placeholder="輸入篩選"
