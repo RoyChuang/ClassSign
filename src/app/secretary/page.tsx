@@ -106,28 +106,30 @@ export default function SecretaryPage() {
       return
     }
     setSubmitting(true)
-    const { error } = await supabase.from('registrations').insert({
+    const { data, error } = await supabase.from('registrations').insert({
       session_id: selectedSession, class_id: form.class_id,
       unit: selectedUnit, name: trimmedName, gender: form.gender,
-    })
+    }).select().single()
     if (error) alert('新增失敗：' + error.message)
-    else { setForm(f => ({ ...f, name: '' })); await loadRegistrations() }
+    else { setForm(f => ({ ...f, name: '' })); setRegistrations(prev => [...prev, data]) }
     setSubmitting(false)
   }
 
   async function changeClass(regId: string, classId: string) {
-    await supabase.from('registrations').update({ class_id: classId }).eq('id', regId)
+    const { error } = await supabase.from('registrations').update({ class_id: classId }).eq('id', regId)
     setClassPopover(null)
-    await loadRegistrations()
+    if (error) { alert('更新失敗：' + error.message); return }
+    setRegistrations(prev => prev.map(r => r.id === regId ? { ...r, class_id: classId } : r))
   }
 
   async function confirmDelete() {
     if (!deleteTarget) return
     setDeleting(true)
-    await supabase.from('registrations').delete().eq('id', deleteTarget)
+    const { error } = await supabase.from('registrations').delete().eq('id', deleteTarget)
+    if (error) { alert('刪除失敗：' + error.message); setDeleting(false); return }
+    setRegistrations(prev => prev.filter(r => r.id !== deleteTarget))
     setDeleteTarget(null)
     setDeleting(false)
-    await loadRegistrations()
   }
 
   // 匯入：選舊班會後載入名單
@@ -192,14 +194,14 @@ export default function SecretaryPage() {
 
     const skipped = toImport.length - deduped.length
 
-    const { error } = await supabase.from('registrations').insert(rows)
+    const { data: inserted, error } = await supabase.from('registrations').insert(rows).select()
     if (error) alert('匯入失敗：' + error.message)
     else {
+      setRegistrations(prev => [...prev, ...(inserted ?? [])])
       setImportOpen(false)
       setImportSession('')
       setImportCandidates([])
       setImportSelected(new Set())
-      await loadRegistrations()
       if (skipped > 0) alert(`已匯入 ${deduped.length} 人，跳過 ${skipped} 位重複者。`)
     }
     setImporting(false)
