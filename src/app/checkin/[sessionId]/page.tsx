@@ -373,7 +373,9 @@ export default function CheckinSessionPage() {
       )}
 
       {selectedUnit && !unitLoading && !loadError && allResults.length > 0 && filtered.length === 0 && (
-        <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>找不到含「{nameFilter}」的記錄</Typography>
+        <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>
+          {nameFilter.trim() ? `找不到含「${nameFilter.trim()}」的記錄` : '此班別沒有報名記錄'}
+        </Typography>
       )}
 
       {selectedUnit && !unitLoading && !loadError && allResults.length === 0 && (
