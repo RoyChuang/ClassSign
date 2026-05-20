@@ -28,6 +28,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import UndoIcon from '@mui/icons-material/Undo'
 import CheckIcon from '@mui/icons-material/Check'
 import Chip from '@mui/material/Chip'
+import Badge from '@mui/material/Badge'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import { Loading } from '@/components/Loading'
@@ -185,11 +186,9 @@ export default function CheckinSessionPage() {
     return () => document.removeEventListener('visibilitychange', handleVisible)
   }, [selectedUnit, loadUnit])
 
-  const filtered = allResults.filter(r => {
-    const matchName = !nameFilter.trim() || r.name.includes(nameFilter.trim())
-    const matchClass = !classFilter || r.class_id === classFilter
-    return matchName && matchClass
-  })
+  const nameFiltered = allResults.filter(r => !nameFilter.trim() || r.name.includes(nameFilter.trim()))
+  const filtered = nameFiltered.filter(r => !classFilter || r.class_id === classFilter)
+  const classCounts = new Map(classes.map(c => [c.id, nameFiltered.filter(r => r.class_id === c.id).length]))
   const qian = filtered.filter(r => r.gender === '乾')
   const kun = filtered.filter(r => r.gender === '坤')
 
@@ -357,13 +356,20 @@ export default function CheckinSessionPage() {
       {/* 班別篩選 */}
       {selectedUnit && classes.length > 0 && (
         <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-          <Chip label="全部" color={!classFilter ? 'primary' : 'default'} onClick={() => setClassFilter('')} sx={{ flexShrink: 0, fontSize: 16, height: 40, px: 0.5 }} />
-          {classes.map(c => (
-            <Chip key={c.id} label={c.name}
-              color={classFilter === c.id ? 'primary' : 'default'}
-              onClick={() => setClassFilter(prev => prev === c.id ? '' : c.id)}
-              sx={{ flexShrink: 0, fontSize: 16, height: 40, px: 0.5 }} />
-          ))}
+          <Badge badgeContent={nameFiltered.length} sx={{ '& .MuiBadge-badge': { fontSize: 11, fontWeight: 700, bgcolor: !classFilter ? 'primary.main' : 'rgba(0,0,0,0.2)', color: 'white', top: 4, right: 4 } }}>
+            <Chip label="全部" color={!classFilter ? 'primary' : 'default'} onClick={() => setClassFilter('')} sx={{ flexShrink: 0, fontSize: 16, height: 40, px: 0.5 }} />
+          </Badge>
+          {classes.map(c => {
+            const count = classCounts.get(c.id) ?? 0
+            const selected = classFilter === c.id
+            return (
+              <Badge key={c.id} badgeContent={count} sx={{ '& .MuiBadge-badge': { fontSize: 11, fontWeight: 700, bgcolor: selected ? 'primary.main' : 'rgba(0,0,0,0.2)', color: 'white', top: 4, right: 4 } }}>
+                <Chip label={c.name} color={selected ? 'primary' : 'default'}
+                  onClick={() => setClassFilter(prev => prev === c.id ? '' : c.id)}
+                  sx={{ flexShrink: 0, fontSize: 16, height: 40, px: 0.5 }} />
+              </Badge>
+            )
+          })}
         </Box>
       )}
 
