@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Session, Class, Registration, Unit, Gender, UNITS, GENDERS } from '@/lib/types'
@@ -53,6 +53,7 @@ export default function CheckinSessionPage() {
   const [checkedIn, setCheckedIn] = useState<Set<string>>(new Set())
   const [cancelTarget, setCancelTarget] = useState<Reg | null>(null)
   const [copied, setCopied] = useState(false)
+  const sharingRef = useRef(false)
   const [walkInSuccess, setWalkInSuccess] = useState<string>('')
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatusType>('idle')
   const [realtimeKey, setRealtimeKey] = useState(0)
@@ -189,9 +190,17 @@ export default function CheckinSessionPage() {
   }
 
   async function shareLink() {
+    if (sharingRef.current) return
     const url = window.location.href
     if (navigator.share) {
-      await navigator.share({ title: session?.name, url })
+      sharingRef.current = true
+      try {
+        await navigator.share({ title: session?.name, url })
+      } catch {
+        // user cancelled
+      } finally {
+        sharingRef.current = false
+      }
     } else {
       await navigator.clipboard.writeText(url)
       setCopied(true)
@@ -409,6 +418,7 @@ export default function CheckinSessionPage() {
           <FormControl size="small" fullWidth>
             <InputLabel>單位</InputLabel>
             <Select label="單位" value={walkInForm.unit ?? selectedUnit}
+              disabled={!!session?.unit}
               onChange={e => setWalkInForm(f => ({ ...f, unit: e.target.value as Unit }))}>
               {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
             </Select>
