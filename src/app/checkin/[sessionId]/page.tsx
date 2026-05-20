@@ -443,19 +443,17 @@ export default function CheckinSessionPage() {
 function PersonCard({ r, done, onCheckin, onCancel }: { r: Reg; done: boolean; onCheckin: () => void; onCancel: () => void }) {
   return (
     <Card sx={{ borderColor: done ? '#BBF7D0' : 'divider', bgcolor: done ? '#F0FDF4' : 'background.paper' }}>
-      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', alignItems: 'stretch', gap: 1.5 }}>
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 0.25 }}>
-          <Typography sx={{ fontWeight: 600, fontSize: 20, lineHeight: 1.3 }}>{r.name}</Typography>
-          <Typography variant="caption" sx={{ color: 'text.secondary', lineHeight: 1.2 }}>{r.classes?.name}</Typography>
-        </Box>
+      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+        <Typography variant="caption" sx={{ color: 'text.secondary', lineHeight: 1.2 }}>{r.classes?.name}</Typography>
+        <Typography sx={{ fontWeight: 600, fontSize: 20, lineHeight: 1.3, textAlign: 'center' }}>{r.name}</Typography>
         {done ? (
-          <Button variant="outlined" onClick={onCancel}
-            sx={{ color: '#16A34A', borderColor: '#BBF7D0', fontSize: 16, width: 140, alignSelf: 'stretch', flexShrink: 0 }}>
-            <CheckCircleIcon sx={{ fontSize: 17, mr: 0.5 }} />已報到
+          <Button variant="outlined" fullWidth onClick={onCancel}
+            sx={{ color: '#16A34A', borderColor: '#BBF7D0', fontSize: 15, py: 0.75 }}>
+            <CheckCircleIcon sx={{ fontSize: 16, mr: 0.5 }} />已報到
           </Button>
         ) : (
-          <Button variant="contained" startIcon={<CheckIcon />} onClick={onCheckin}
-            sx={{ fontSize: 16, width: 140, alignSelf: 'stretch', flexShrink: 0 }}>
+          <Button variant="contained" fullWidth startIcon={<CheckIcon />} onClick={onCheckin}
+            sx={{ fontSize: 15, py: 0.75 }}>
             報到
           </Button>
         )}
