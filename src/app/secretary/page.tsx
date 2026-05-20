@@ -24,6 +24,8 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import LoginIcon from '@mui/icons-material/Login'
 import AddIcon from '@mui/icons-material/Add'
 import CloseIcon from '@mui/icons-material/Close'
+import ToggleButton from '@mui/material/ToggleButton'
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Checkbox from '@mui/material/Checkbox'
 import Popover from '@mui/material/Popover'
 import Dialog from '@mui/material/Dialog'
@@ -271,12 +273,11 @@ export default function SecretaryPage() {
               <Box component="form" onSubmit={addPerson} sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <TextField required label="姓名" size="small" value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))} sx={{ width: 140 }} />
-                <FormControl size="small" sx={{ width: 90 }}>
-                  <InputLabel>乾/坤</InputLabel>
-                  <Select label="乾/坤" value={form.gender} onChange={e => setForm(f => ({ ...f, gender: e.target.value as Gender }))}>
-                    {GENDERS.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
-                  </Select>
-                </FormControl>
+                <ToggleButtonGroup size="small" exclusive value={form.gender}
+                  onChange={(_, v) => v && setForm(f => ({ ...f, gender: v as Gender }))}>
+                  <ToggleButton value="乾" sx={{ px: 2, fontWeight: 600, '&.Mui-selected': { bgcolor: '#DBEAFE', color: '#2563EB', '&:hover': { bgcolor: '#BFDBFE' } } }}>乾</ToggleButton>
+                  <ToggleButton value="坤" sx={{ px: 2, fontWeight: 600, '&.Mui-selected': { bgcolor: '#FCE7F3', color: '#DB2777', '&:hover': { bgcolor: '#FBCFE8' } } }}>坤</ToggleButton>
+                </ToggleButtonGroup>
                 <FormControl size="small" sx={{ width: 150 }}>
                   <InputLabel>班別</InputLabel>
                   <Select label="班別" value={form.class_id} onChange={e => setForm(f => ({ ...f, class_id: e.target.value }))}>

@@ -28,6 +28,8 @@ import CloseIcon from '@mui/icons-material/Close'
 import UndoIcon from '@mui/icons-material/Undo'
 import CheckIcon from '@mui/icons-material/Check'
 import Chip from '@mui/material/Chip'
+import ToggleButton from '@mui/material/ToggleButton'
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import { Loading } from '@/components/Loading'
 import { RealtimeStatus, RealtimeStatusType } from '@/components/RealtimeStatus'
 
@@ -449,12 +451,11 @@ export default function CheckinSessionPage() {
             </Select>
           </FormControl>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-            <FormControl size="small" fullWidth>
-              <InputLabel>乾/坤</InputLabel>
-              <Select label="乾/坤" value={walkInForm.gender} onChange={e => setWalkInForm(f => ({ ...f, gender: e.target.value as Gender }))}>
-                {GENDERS.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
-              </Select>
-            </FormControl>
+            <ToggleButtonGroup size="small" exclusive fullWidth value={walkInForm.gender}
+              onChange={(_, v) => v && setWalkInForm(f => ({ ...f, gender: v as Gender }))}>
+              <ToggleButton value="乾" sx={{ fontWeight: 600, '&.Mui-selected': { bgcolor: '#DBEAFE', color: '#2563EB', '&:hover': { bgcolor: '#BFDBFE' } } }}>乾</ToggleButton>
+              <ToggleButton value="坤" sx={{ fontWeight: 600, '&.Mui-selected': { bgcolor: '#FCE7F3', color: '#DB2777', '&:hover': { bgcolor: '#FBCFE8' } } }}>坤</ToggleButton>
+            </ToggleButtonGroup>
             <FormControl size="small" fullWidth>
               <InputLabel>班別</InputLabel>
               <Select label="班別" value={walkInForm.class_id} onChange={e => setWalkInForm(f => ({ ...f, class_id: e.target.value }))}>
