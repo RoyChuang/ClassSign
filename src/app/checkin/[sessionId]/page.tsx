@@ -320,7 +320,7 @@ export default function CheckinSessionPage() {
 
       {/* 班別篩選 */}
       {selectedUnit && classes.length > 0 && (
-        <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 0.5, mb: 2, flexWrap: 'nowrap', '&::-webkit-scrollbar': { display: 'none' } }}>
+        <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
           <Chip label="全部" color={!classFilter ? 'primary' : 'default'} onClick={() => setClassFilter('')} sx={{ flexShrink: 0, fontSize: 16, height: 40, px: 0.5 }} />
           {classes.map(c => (
             <Chip key={c.id} label={c.name}
@@ -443,16 +443,19 @@ export default function CheckinSessionPage() {
 function PersonCard({ r, done, onCheckin, onCancel }: { r: Reg; done: boolean; onCheckin: () => void; onCancel: () => void }) {
   return (
     <Card sx={{ borderColor: done ? '#BBF7D0' : 'divider', bgcolor: done ? '#F0FDF4' : 'background.paper' }}>
-      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-        <Typography sx={{ fontWeight: 600, fontSize: 20, lineHeight: 1.3 }}>{r.name}</Typography>
-        <Typography variant="caption" sx={{ color: 'text.secondary', lineHeight: 1.2 }}>{r.classes?.name}</Typography>
+      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', alignItems: 'stretch', gap: 1.5 }}>
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 0.25 }}>
+          <Typography sx={{ fontWeight: 600, fontSize: 20, lineHeight: 1.3 }}>{r.name}</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary', lineHeight: 1.2 }}>{r.classes?.name}</Typography>
+        </Box>
         {done ? (
-          <Button size="small" fullWidth onClick={onCancel}
-            sx={{ color: '#16A34A', borderColor: '#BBF7D0', fontSize: 12, py: 0.5 }} variant="outlined">
-            <CheckCircleIcon sx={{ fontSize: 14, mr: 0.5 }} />已報到
+          <Button variant="outlined" onClick={onCancel}
+            sx={{ color: '#16A34A', borderColor: '#BBF7D0', fontSize: 16, width: 140, alignSelf: 'stretch', flexShrink: 0 }}>
+            <CheckCircleIcon sx={{ fontSize: 17, mr: 0.5 }} />已報到
           </Button>
         ) : (
-          <Button variant="contained" size="small" fullWidth startIcon={<CheckIcon />} onClick={onCheckin} sx={{ fontSize: 12, py: 0.5 }}>
+          <Button variant="contained" startIcon={<CheckIcon />} onClick={onCheckin}
+            sx={{ fontSize: 16, width: 140, alignSelf: 'stretch', flexShrink: 0 }}>
             報到
           </Button>
         )}
