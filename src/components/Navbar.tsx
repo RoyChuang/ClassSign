@@ -28,12 +28,23 @@ export function Navbar() {
   return (
     <AppBar position="sticky" color="default" elevation={0}
       sx={{ top: 0, zIndex: 1100, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-      <Toolbar variant="dense" sx={{ gap: 2, minHeight: 52 }}>
-        <Box component={Link} href="/" sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none', flexGrow: 1 }}>
-          <Image src="/logo.jpg" alt="logo" width={28} height={28} style={{ borderRadius: 6 }} />
-          <Typography variant="h6" color="primary" sx={{ fontWeight: 700, fontSize: 18, letterSpacing: '-0.01em' }}>
-            ClassSign
-          </Typography>
+      <Toolbar variant="dense" sx={{ gap: 2, minHeight: 64 }}>
+        <Box component={Link} href="/" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, textDecoration: 'none', flexGrow: 1 }}>
+          <Box sx={{ position: 'relative', flexShrink: 0 }}>
+            <Image src="/logo.jpg" alt="logo" width={36} height={36} style={{ borderRadius: 8, display: 'block', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }} />
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: 20, letterSpacing: '-0.03em', lineHeight: 1,
+              pb: '3px', mb: '-3px',
+              background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 60%, #3B82F6 100%)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+              ClassSign
+            </Typography>
+            <Box sx={{ width: '1px', height: 14, bgcolor: 'divider', flexShrink: 0, display: { xs: 'none', sm: 'block' } }} />
+            <Typography sx={{ fontSize: 12, color: 'text.secondary', letterSpacing: '0.04em', fontWeight: 500, lineHeight: 1, display: { xs: 'none', sm: 'block' } }}>
+              班會掛號系統
+            </Typography>
+          </Box>
         </Box>
 
         {profile && (

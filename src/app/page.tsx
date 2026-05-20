@@ -53,12 +53,6 @@ export default function Home() {
 
   return (
     <Container maxWidth="sm" sx={{ py: 7 }}>
-      <Box sx={{ textAlign: 'center', mb: 6 }}>
-        <Image src="/logo.jpg" alt="興毅 logo" width={80} height={80} style={{ borderRadius: 12, marginBottom: 16 }} />
-        <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, color: 'text.primary', letterSpacing: '-0.02em' }}>ClassSign</Typography>
-        <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>班會掛號系統</Typography>
-      </Box>
-
       <Box sx={{ mb: profile?.role === 'admin' || profile?.role === 'secretary' ? 2.5 : 0 }}>
         {profile && (
           <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1.5, pl: 0.5 }}>
