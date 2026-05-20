@@ -57,6 +57,7 @@ export default function CheckinSessionPage() {
   const [walkInSuccess, setWalkInSuccess] = useState<string>('')
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatusType>('idle')
   const [realtimeKey, setRealtimeKey] = useState(0)
+  const unitCacheRef = useRef<Map<string, Reg[]>>(new Map())
 
   // 現場報名
   const [classFilter, setClassFilter] = useState<string>('')
@@ -89,6 +90,12 @@ export default function CheckinSessionPage() {
   }, [session])
 
   const loadUnit = useCallback(async (unit: Unit) => {
+    const cached = unitCacheRef.current.get(unit)
+    if (cached) {
+      setAllResults(cached)
+      setCheckedIn(new Set(cached.filter(r => r.checked_in).map(r => r.id)))
+      return
+    }
     setUnitLoading(true)
     setLoadError(false)
     const { data, error } = await supabase
@@ -103,6 +110,7 @@ export default function CheckinSessionPage() {
       return
     }
     const list = (data ?? []) as Reg[]
+    unitCacheRef.current.set(unit, list)
     setAllResults(list)
     setCheckedIn(new Set(list.filter(r => r.checked_in).map(r => r.id)))
     setUnitLoading(false)
@@ -116,6 +124,7 @@ export default function CheckinSessionPage() {
   useEffect(() => {
     if (!selectedUnit) { setRealtimeStatus('idle'); return }
     setRealtimeStatus('connecting')
+    let connectionCount = 0
     const channel = supabase
       .channel(`checkin-${sessionId}-${selectedUnit}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'registrations', filter: `session_id=eq.${sessionId}` },
@@ -128,6 +137,11 @@ export default function CheckinSessionPage() {
             else s.delete(updated.id)
             return s
           })
+          unitCacheRef.current.set(selectedUnit as Unit,
+            (unitCacheRef.current.get(selectedUnit as Unit) ?? []).map(r =>
+              r.id === updated.id ? { ...r, checked_in: updated.checked_in, checked_in_at: updated.checked_in_at } : r
+            )
+          )
         })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations', filter: `session_id=eq.${sessionId}` },
         (payload) => {
@@ -135,21 +149,32 @@ export default function CheckinSessionPage() {
           if (inserted.unit !== selectedUnit) return
           setAllResults(prev => {
             if (prev.some(r => r.id === inserted.id)) return prev
-            return [...prev, inserted].sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'))
+            const newList = [...prev, inserted].sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'))
+            unitCacheRef.current.set(selectedUnit as Unit, newList)
+            return newList
           })
           if (inserted.checked_in) setCheckedIn(prev => new Set([...prev, inserted.id]))
         })
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') setRealtimeStatus('connected')
-        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRealtimeStatus('error')
+        if (status === 'SUBSCRIBED') {
+          connectionCount++
+          if (connectionCount > 1) {
+            unitCacheRef.current.delete(selectedUnit as Unit)
+            loadUnit(selectedUnit as Unit)
+          }
+          setRealtimeStatus('connected')
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setRealtimeStatus('error')
+        }
       })
     return () => { supabase.removeChannel(channel) }
-  }, [sessionId, selectedUnit, realtimeKey])
+  }, [sessionId, selectedUnit, realtimeKey, loadUnit])
 
   useEffect(() => {
     const handleVisible = () => {
       if (document.visibilityState !== 'visible') return
       if (selectedUnit) {
+        unitCacheRef.current.delete(selectedUnit as Unit)
         loadUnit(selectedUnit as Unit)
         setRealtimeKey(k => k + 1)
       }
