@@ -27,6 +27,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CloseIcon from '@mui/icons-material/Close'
 import UndoIcon from '@mui/icons-material/Undo'
 import CheckIcon from '@mui/icons-material/Check'
+import Chip from '@mui/material/Chip'
 import { Loading } from '@/components/Loading'
 import { RealtimeStatus, RealtimeStatusType } from '@/components/RealtimeStatus'
 
@@ -55,6 +56,9 @@ export default function CheckinSessionPage() {
   const [walkInSuccess, setWalkInSuccess] = useState<string>('')
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatusType>('idle')
   const [realtimeKey, setRealtimeKey] = useState(0)
+
+  // 現場報名
+  const [classFilter, setClassFilter] = useState<string>('')
 
   // 現場報名
   const [walkInOpen, setWalkInOpen] = useState(false)
@@ -153,9 +157,11 @@ export default function CheckinSessionPage() {
     return () => document.removeEventListener('visibilitychange', handleVisible)
   }, [selectedUnit, loadUnit])
 
-  const filtered = nameFilter.trim()
-    ? allResults.filter(r => r.name.includes(nameFilter.trim()))
-    : allResults
+  const filtered = allResults.filter(r => {
+    const matchName = !nameFilter.trim() || r.name.includes(nameFilter.trim())
+    const matchClass = !classFilter || r.class_id === classFilter
+    return matchName && matchClass
+  })
   const qian = filtered.filter(r => r.gender === '乾')
   const kun = filtered.filter(r => r.gender === '坤')
 
@@ -255,7 +261,7 @@ export default function CheckinSessionPage() {
   )
 
   return (
-    <Container maxWidth="sm" sx={{ py: 5 }}>
+    <Container maxWidth="md" sx={{ py: 5 }}>
       {/* 頁面標題 */}
       <Box sx={{ mb: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
@@ -298,7 +304,7 @@ export default function CheckinSessionPage() {
                 </Select>
               ) : (
                 <Select label="單位" value={selectedUnit}
-                  onChange={e => { setSelectedUnit(e.target.value as Unit); setNameFilter(''); setWalkInSuccess('') }}>
+                  onChange={e => { setSelectedUnit(e.target.value as Unit); setNameFilter(''); setClassFilter(''); setWalkInSuccess('') }}>
                   {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
                 </Select>
               )}
@@ -311,6 +317,19 @@ export default function CheckinSessionPage() {
           </Box>
         </CardContent>
       </Card>
+
+      {/* 班別篩選 */}
+      {selectedUnit && classes.length > 0 && (
+        <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 0.5, mb: 2, flexWrap: 'nowrap', '&::-webkit-scrollbar': { display: 'none' } }}>
+          <Chip label="全部" color={!classFilter ? 'primary' : 'default'} onClick={() => setClassFilter('')} sx={{ flexShrink: 0, fontSize: 16, height: 40, px: 0.5 }} />
+          {classes.map(c => (
+            <Chip key={c.id} label={c.name}
+              color={classFilter === c.id ? 'primary' : 'default'}
+              onClick={() => setClassFilter(prev => prev === c.id ? '' : c.id)}
+              sx={{ flexShrink: 0, fontSize: 16, height: 40, px: 0.5 }} />
+          ))}
+        </Box>
+      )}
 
       {walkInSuccess && (
         <Card sx={{ mb: 2, borderColor: '#BBF7D0', bgcolor: '#F0FDF4' }}>
@@ -423,7 +442,7 @@ function PersonCard({ r, done, onCheckin, onCancel }: { r: Reg; done: boolean; o
   return (
     <Card sx={{ borderColor: done ? '#BBF7D0' : 'divider', bgcolor: done ? '#F0FDF4' : 'background.paper' }}>
       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-        <Typography sx={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3 }}>{r.name}</Typography>
+        <Typography sx={{ fontWeight: 600, fontSize: 20, lineHeight: 1.3 }}>{r.name}</Typography>
         <Typography variant="caption" sx={{ color: 'text.secondary', lineHeight: 1.2 }}>{r.classes?.name}</Typography>
         {done ? (
           <Button size="small" fullWidth onClick={onCancel}
