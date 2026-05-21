@@ -54,6 +54,7 @@ export default function CheckinSessionPage() {
   const [unitLoading, setUnitLoading] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [checkedIn, setCheckedIn] = useState<Set<string>>(new Set())
+  const [confirmTarget, setConfirmTarget] = useState<Reg | null>(null)
   const [cancelTarget, setCancelTarget] = useState<Reg | null>(null)
   const [copied, setCopied] = useState(false)
   const sharingRef = useRef(false)
@@ -397,7 +398,7 @@ export default function CheckinSessionPage() {
               乾 {qian.length} 人
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {qian.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} onCheckin={() => checkIn(r)} onCancel={() => setCancelTarget(r)} />)}
+              {qian.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} onCheckin={() => setConfirmTarget(r)} onCancel={() => setCancelTarget(r)} />)}
               {qian.length === 0 && <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>無資料</Typography>}
             </Box>
           </Box>
@@ -407,7 +408,7 @@ export default function CheckinSessionPage() {
               坤 {kun.length} 人
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {kun.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} onCheckin={() => checkIn(r)} onCancel={() => setCancelTarget(r)} />)}
+              {kun.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} onCheckin={() => setConfirmTarget(r)} onCancel={() => setCancelTarget(r)} />)}
               {kun.length === 0 && <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>無資料</Typography>}
             </Box>
           </Box>
@@ -423,6 +424,18 @@ export default function CheckinSessionPage() {
       {selectedUnit && !unitLoading && !loadError && allResults.length === 0 && (
         <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>此單位沒有報名記錄</Typography>
       )}
+
+      {/* 報到確認 Dialog */}
+      <Dialog open={!!confirmTarget} onClose={() => setConfirmTarget(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 600 }}>確認報到</DialogTitle>
+        <DialogContent>
+          <Typography>確定為「{confirmTarget?.name}」報到？</Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button startIcon={<CloseIcon />} onClick={() => setConfirmTarget(null)}>取消</Button>
+          <Button variant="contained" startIcon={<CheckIcon />} onClick={() => { checkIn(confirmTarget!); setConfirmTarget(null) }}>確定報到</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* 取消報到確認 Dialog */}
       <Dialog open={!!cancelTarget} onClose={() => setCancelTarget(null)} maxWidth="xs" fullWidth>
