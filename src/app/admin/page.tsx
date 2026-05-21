@@ -193,8 +193,25 @@ export default function AdminPage() {
         return unitTabs.length > 0 && (
           <Tabs value={unitTab} onChange={(_, v) => setUnitTab(v)} variant="scrollable" scrollButtons="auto"
             sx={{ mb: 2, minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5, fontSize: 13 } }}>
-            <Tab label="聯合" value="none" />
-            {unitTabs.map(u => <Tab key={u} label={u} value={u} />)}
+            <Tab value="none" label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <span>聯合</span>
+                <Box component="span" sx={{ fontSize: 10, fontWeight: 700, bgcolor: unitTab === 'none' ? 'primary.main' : 'rgba(0,0,0,0.15)', color: unitTab === 'none' ? 'white' : 'text.secondary', borderRadius: 10, px: 0.7, lineHeight: '16px', minWidth: 16, textAlign: 'center' }}>
+                  {sessions.filter(s => !s.unit).length}
+                </Box>
+              </Box>
+            } />
+            {unitTabs.map(u => {
+              const selected = unitTab === u
+              return <Tab key={u} value={u} label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <span>{u}</span>
+                  <Box component="span" sx={{ fontSize: 10, fontWeight: 700, bgcolor: selected ? 'primary.main' : 'rgba(0,0,0,0.15)', color: selected ? 'white' : 'text.secondary', borderRadius: 10, px: 0.7, lineHeight: '16px', minWidth: 16, textAlign: 'center' }}>
+                    {sessions.filter(s => s.unit === u).length}
+                  </Box>
+                </Box>
+              } />
+            })}
           </Tabs>
         )
       })()}

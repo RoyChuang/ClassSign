@@ -34,7 +34,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    supabase.from('sessions').select('*').order('date', { ascending: false })
+    supabase.from('sessions').select('*').eq('status', 'open').order('date', { ascending: false })
       .then(({ data, error }) => { if (!error) setSessions(data ?? []) })
   }, [])
 
