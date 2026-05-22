@@ -90,6 +90,12 @@ export default function SecretaryPage() {
     loadRegistrations()
   }, [selectedSession, selectedUnit])
 
+  useEffect(() => {
+    setImportSession('')
+    setImportCandidates([])
+    setImportSelected(new Set())
+  }, [selectedUnit])
+
   async function loadRegistrations() {
     setLoading(true)
     const { data } = await supabase.from('registrations')
@@ -132,6 +138,13 @@ export default function SecretaryPage() {
     setRegistrations(prev => prev.filter(r => r.id !== deleteTarget))
     setDeleteTarget(null)
     setDeleting(false)
+  }
+
+  function closeImport() {
+    setImportOpen(false)
+    setImportSession('')
+    setImportCandidates([])
+    setImportSelected(new Set())
   }
 
   // 匯入：選舊班會後載入名單
@@ -200,10 +213,7 @@ export default function SecretaryPage() {
     if (error) alert('匯入失敗：' + error.message)
     else {
       setRegistrations(prev => [...prev, ...(inserted ?? [])])
-      setImportOpen(false)
-      setImportSession('')
-      setImportCandidates([])
-      setImportSelected(new Set())
+      closeImport()
       if (skipped > 0) alert(`已匯入 ${deduped.length} 人，跳過 ${skipped} 位重複者。`)
     }
     setImporting(false)
@@ -345,7 +355,7 @@ export default function SecretaryPage() {
       )}
 
       {/* 匯入歷史名單 Dialog */}
-      <Dialog open={importOpen} onClose={() => !importing && setImportOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={importOpen} onClose={() => !importing && closeImport()} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 600 }}>匯入歷史名單</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
           <FormControl size="small" fullWidth>
@@ -396,7 +406,7 @@ export default function SecretaryPage() {
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button startIcon={<CloseIcon />} onClick={() => setImportOpen(false)} disabled={importing}>取消</Button>
+          <Button startIcon={<CloseIcon />} onClick={closeImport} disabled={importing}>取消</Button>
           <Button variant="contained" startIcon={<DownloadIcon />} onClick={confirmImport}
             disabled={importing || importSelected.size === 0}>
             {importing ? '匯入中...' : `匯入 ${importSelected.size} 人`}

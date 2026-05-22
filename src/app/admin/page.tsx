@@ -60,15 +60,24 @@ export default function AdminPage() {
   const [createOpen, setCreateOpen] = useState(false)
 
   async function loadSessions() {
-    const { data } = await supabase.from('sessions').select('*').order('date', { ascending: false })
+    let query = supabase.from('sessions').select('*').order('date', { ascending: false })
+    if (profile?.role === 'secretary' && profile.unit) {
+      query = query.eq('unit', profile.unit)
+      setUnitTab(profile.unit)
+    }
+    const { data } = await query
     const list = data ?? []
     setSessions(list)
     setLoading(false)
-    const validTabs = ['none', ...Array.from(new Set(list.map(s => s.unit).filter(Boolean)))]
-    setUnitTab(t => validTabs.includes(t) ? t : 'none')
+    if (profile?.role === 'admin') {
+      const validTabs = ['none', ...Array.from(new Set(list.map(s => s.unit).filter(Boolean)))]
+      setUnitTab(t => validTabs.includes(t) ? t : 'none')
+    }
   }
 
-  useEffect(() => { loadSessions() }, [])
+  useEffect(() => {
+    if (!authLoading && profile) loadSessions()
+  }, [authLoading, profile?.role, profile?.unit])
 
   function openEdit(s: Session) {
     setEditTarget(s)
@@ -93,9 +102,10 @@ export default function AdminPage() {
     e.preventDefault()
     if (!form.date || !form.reg_deadline) return
     setSubmitting(true)
+    const sessionUnit = profile?.role === 'secretary' ? (profile.unit ?? null) : (form.unit || null)
     const { data: session, error } = await supabase
       .from('sessions')
-      .insert({ name: form.name, date: form.date?.format('YYYY-MM-DD') ?? '', reg_deadline: form.reg_deadline?.format('YYYY-MM-DD') ?? '', unit: form.unit || null })
+      .insert({ name: form.name, date: form.date?.format('YYYY-MM-DD') ?? '', reg_deadline: form.reg_deadline?.format('YYYY-MM-DD') ?? '', unit: sessionUnit })
       .select().single()
 
     if (error || !session) { alert('建立失敗：' + error?.message); setSubmitting(false); return }
@@ -135,7 +145,7 @@ export default function AdminPage() {
           <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>班會管理</Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>建立班會、調整狀態</Typography>
         </Box>
-        {profile?.role === 'admin' && (
+        {(profile?.role === 'admin' || profile?.role === 'secretary') && (
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}>建立班會</Button>
         )}
       </Box>
@@ -145,9 +155,9 @@ export default function AdminPage() {
           <Typography sx={{ color: 'text.secondary', mb: 2 }}>此頁面僅供管理員使用</Typography>
           <Button variant="contained" startIcon={<LoginIcon />} onClick={signIn}>管理員登入</Button>
         </Box>
-      ) : profile.role !== 'admin' ? (
+      ) : profile.role !== 'admin' && profile.role !== 'secretary' ? (
         <Box sx={{ textAlign: 'center', py: 4 }}>
-          <Typography sx={{ color: 'text.secondary' }}>此頁面僅限管理員使用</Typography>
+          <Typography sx={{ color: 'text.secondary' }}>此頁面僅限管理員或秘書使用</Typography>
         </Box>
       ) : null}
 
@@ -167,10 +177,16 @@ export default function AdminPage() {
           </Box>
           <FormControl size="small" fullWidth>
             <InputLabel>適用單位</InputLabel>
-            <Select label="適用單位" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}>
-              <MenuItem value=''>聯合</MenuItem>
-              {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
-            </Select>
+            {profile?.role === 'secretary' ? (
+              <Select label="適用單位" value={profile.unit ?? ''} disabled>
+                <MenuItem value={profile.unit ?? ''}>{profile.unit}</MenuItem>
+              </Select>
+            ) : (
+              <Select label="適用單位" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}>
+                <MenuItem value=''>聯合</MenuItem>
+                {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
+              </Select>
+            )}
           </FormControl>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
@@ -182,7 +198,7 @@ export default function AdminPage() {
         </DialogActions>
       </Dialog>
 
-      {profile?.role === 'admin' && <><Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>班會列表</Typography>
+      {(profile?.role === 'admin' || profile?.role === 'secretary') && <><Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>班會列表</Typography>
       <TextField
         size="small" fullWidth placeholder="搜尋班會名稱"
         value={search} onChange={e => setSearch(e.target.value)}
@@ -190,7 +206,7 @@ export default function AdminPage() {
       />
       {(() => {
         const unitTabs = Array.from(new Set(sessions.map(s => s.unit).filter(Boolean))) as string[]
-        return unitTabs.length > 0 && (
+        return profile?.role === 'admin' && unitTabs.length > 0 && (
           <Tabs value={unitTab} onChange={(_, v) => setUnitTab(v)} variant="scrollable" scrollButtons="auto"
             sx={{ mb: 2, minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5, fontSize: 13 } }}>
             <Tab value="none" label={
@@ -276,10 +292,16 @@ export default function AdminPage() {
             slotProps={{ textField: { size: 'small', fullWidth: true } }} />
           <FormControl size="small" fullWidth>
             <InputLabel>適用單位</InputLabel>
-            <Select label="適用單位" value={editForm.unit} onChange={e => setEditForm(f => ({ ...f, unit: e.target.value }))}>
-              <MenuItem value=''>聯合</MenuItem>
-              {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
-            </Select>
+            {profile?.role === 'secretary' ? (
+              <Select label="適用單位" value={editForm.unit} disabled>
+                <MenuItem value={editForm.unit}>{editForm.unit}</MenuItem>
+              </Select>
+            ) : (
+              <Select label="適用單位" value={editForm.unit} onChange={e => setEditForm(f => ({ ...f, unit: e.target.value }))}>
+                <MenuItem value=''>聯合</MenuItem>
+                {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
+              </Select>
+            )}
           </FormControl>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>

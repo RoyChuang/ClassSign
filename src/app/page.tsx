@@ -29,6 +29,7 @@ const adminNav = [
 ]
 
 const secretaryNav = [
+  { href: '/admin', label: '班會管理', desc: '建立本單位班會、調整狀態', Icon: SettingsIcon },
   { href: '/secretary', label: '秘書掛號', desc: '填寫本單位報名名單', Icon: ListAltIcon },
 ]
 
