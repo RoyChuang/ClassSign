@@ -35,14 +35,26 @@ const secretaryNav = [
 
 function NavCard({ href, label, desc, Icon }: { href: string; label: string; desc: string; Icon: SvgIconComponent }) {
   return (
-    <Card sx={{ transition: 'border-color 0.15s, box-shadow 0.15s', '&:hover': { borderColor: 'primary.main', boxShadow: '0 1px 8px rgba(37,99,235,0.1)' } }}>
+    <Card sx={{
+      background: 'rgba(255,255,255,0.6)',
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255,255,255,0.85)',
+      boxShadow: '0 2px 16px rgba(37,99,235,0.06)',
+      transition: 'box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease',
+      '&:hover': {
+        background: 'rgba(255,255,255,0.85)',
+        borderColor: 'rgba(37,99,235,0.3)',
+        boxShadow: '0 8px 32px rgba(37,99,235,0.14)',
+      }
+    }}>
       <CardActionArea component={Link} href={href} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 2.5, p: 2.5 }}>
-        <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: 'rgba(37,99,235,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <Icon sx={{ color: 'primary.main', fontSize: 22 }} />
         </Box>
         <Box>
           <Typography sx={{ fontWeight: 600, fontSize: 17, color: 'text.primary' }}>{label}</Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.3, fontSize: 15 }}>{desc}</Typography>
+          <Typography sx={{ color: 'text.secondary', mt: 0.3, fontSize: 15 }}>{desc}</Typography>
         </Box>
       </CardActionArea>
     </Card>
@@ -53,6 +65,13 @@ export default function Home() {
   const { profile } = useAuth()
 
   return (
+    <>
+      {/* 漸層背景 */}
+      <Box sx={{ position: 'fixed', inset: 0, zIndex: -1, background: 'linear-gradient(135deg, #EFF6FF 0%, #F1F5F9 50%, #EEF2FF 100%)' }}>
+        <Box sx={{ position: 'absolute', top: '8%', left: '5%', width: 320, height: 320, borderRadius: '50%', background: 'rgba(37,99,235,0.08)', filter: 'blur(70px)' }} />
+        <Box sx={{ position: 'absolute', bottom: '15%', right: '5%', width: 240, height: 240, borderRadius: '50%', background: 'rgba(99,102,241,0.07)', filter: 'blur(60px)' }} />
+        <Box sx={{ position: 'absolute', top: '50%', right: '20%', width: 180, height: 180, borderRadius: '50%', background: 'rgba(219,39,119,0.04)', filter: 'blur(50px)' }} />
+      </Box>
     <Container maxWidth="sm" sx={{ py: 7 }}>
       <Box sx={{ mb: profile?.role === 'admin' || profile?.role === 'secretary' ? 2.5 : 0 }}>
         {profile && (
@@ -87,5 +106,6 @@ export default function Home() {
         </Box>
       )}
     </Container>
+    </>
   )
 }
