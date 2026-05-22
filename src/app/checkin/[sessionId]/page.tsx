@@ -85,7 +85,8 @@ export default function CheckinSessionPage() {
     supabase.from('classes').select('*').eq('session_id', sessionId).order('sort_order')
       .then(({ data }) => {
         setClasses(data ?? [])
-        setWalkInForm(f => ({ ...f, class_id: data?.[0]?.id ?? '' }))
+        const defaultClass = (data ?? []).find(c => c.name === '壇主人才班') ?? data?.[0]
+        setWalkInForm(f => ({ ...f, class_id: defaultClass?.id ?? '' }))
       })
   }, [sessionId])
 
@@ -236,7 +237,8 @@ export default function CheckinSessionPage() {
   }
 
   function openWalkIn() {
-    setWalkInForm({ name: nameFilter.trim(), gender: '乾', class_id: classes[0]?.id ?? '', unit: selectedUnit })
+    const defaultClass = classes.find(c => c.name === '壇主人才班') ?? classes[0]
+    setWalkInForm({ name: nameFilter.trim(), gender: '乾', class_id: defaultClass?.id ?? '', unit: selectedUnit })
     setWalkInSuccess('')
     setWalkInOpen(true)
   }
@@ -308,7 +310,7 @@ export default function CheckinSessionPage() {
             <Typography variant="h5" sx={{ fontWeight: 700 }}>完成報到</Typography>
             <RealtimeStatus status={realtimeStatus} />
           </Box>
-          <Button variant="outlined" size="small" startIcon={<PersonAddIcon />} onClick={openWalkIn}
+          <Button variant="outlined" startIcon={<PersonAddIcon />} onClick={openWalkIn}
             disabled={!selectedUnit} sx={{ flexShrink: 0 }}>
             現場報名
           </Button>
@@ -321,8 +323,8 @@ export default function CheckinSessionPage() {
           <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
             {session?.name}
           </Typography>
-          <Button size="small" onClick={shareLink} variant="outlined"
-            sx={{ fontSize: 12, color: copied ? '#16A34A' : 'text.secondary', borderColor: copied ? '#BBF7D0' : 'divider', minWidth: 0, px: 1.5, mt: 0.5 }}>
+          <Button onClick={shareLink} variant="outlined"
+            sx={{ fontSize: 14, color: copied ? '#16A34A' : 'text.secondary', borderColor: copied ? '#BBF7D0' : 'divider', minWidth: 0, px: 1.5, mt: 0.5 }}>
             {copied ? '已複製' : '分享連結'}
           </Button>
         </Box>
@@ -332,7 +334,7 @@ export default function CheckinSessionPage() {
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-            <FormControl size="small" fullWidth>
+            <FormControl fullWidth>
               <InputLabel>單位</InputLabel>
               {session?.unit ? (
                 <Select label="單位" value={selectedUnit} disabled>
@@ -346,7 +348,7 @@ export default function CheckinSessionPage() {
               )}
             </FormControl>
             <TextField
-              size="small" label="篩選姓名" placeholder="輸入篩選"
+              label="篩選姓名" placeholder="輸入篩選"
               value={nameFilter} onChange={e => setNameFilter(e.target.value)}
               disabled={!selectedUnit}
             />
@@ -394,7 +396,7 @@ export default function CheckinSessionPage() {
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
           {/* 乾 */}
           <Box>
-            <Typography sx={{ fontWeight: 700, color: '#2563EB', mb: 1, textAlign: 'center', fontSize: 15 }}>
+            <Typography sx={{ fontWeight: 700, color: '#2563EB', mb: 1, textAlign: 'center', fontSize: 17 }}>
               乾 {qian.length} 人
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -404,7 +406,7 @@ export default function CheckinSessionPage() {
           </Box>
           {/* 坤 */}
           <Box>
-            <Typography sx={{ fontWeight: 700, color: '#DB2777', mb: 1, textAlign: 'center', fontSize: 15 }}>
+            <Typography sx={{ fontWeight: 700, color: '#DB2777', mb: 1, textAlign: 'center', fontSize: 17 }}>
               坤 {kun.length} 人
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -453,15 +455,15 @@ export default function CheckinSessionPage() {
       <Dialog open={walkInOpen} onClose={() => !walkInSubmitting && setWalkInOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 600 }}>現場報名並報到</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
-          <Typography variant="caption" sx={{ color: 'text.secondary', mt: -1 }}>
+          <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: -1 }}>
             班會：{session?.name}
           </Typography>
           <TextField
-            label="姓名" size="small" fullWidth required
+            label="姓名" fullWidth required
             value={walkInForm.name}
             onChange={e => setWalkInForm(f => ({ ...f, name: e.target.value }))}
           />
-          <FormControl size="small" fullWidth>
+          <FormControl fullWidth>
             <InputLabel>單位</InputLabel>
             <Select label="單位" value={walkInForm.unit ?? selectedUnit}
               disabled={!!session?.unit}
@@ -470,12 +472,12 @@ export default function CheckinSessionPage() {
             </Select>
           </FormControl>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-            <ToggleButtonGroup size="small" exclusive fullWidth value={walkInForm.gender}
+            <ToggleButtonGroup exclusive fullWidth value={walkInForm.gender}
               onChange={(_, v) => v && setWalkInForm(f => ({ ...f, gender: v as Gender }))}>
               <ToggleButton value="乾" sx={{ fontWeight: 600, '&.Mui-selected': { bgcolor: '#DBEAFE', color: '#2563EB', '&:hover': { bgcolor: '#BFDBFE' } } }}>乾</ToggleButton>
               <ToggleButton value="坤" sx={{ fontWeight: 600, '&.Mui-selected': { bgcolor: '#FCE7F3', color: '#DB2777', '&:hover': { bgcolor: '#FBCFE8' } } }}>坤</ToggleButton>
             </ToggleButtonGroup>
-            <FormControl size="small" fullWidth>
+            <FormControl fullWidth>
               <InputLabel>班別</InputLabel>
               <Select label="班別" value={walkInForm.class_id} onChange={e => setWalkInForm(f => ({ ...f, class_id: e.target.value }))}>
                 {classes.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
@@ -499,16 +501,16 @@ function PersonCard({ r, done, onCheckin, onCancel }: { r: Reg; done: boolean; o
   return (
     <Card sx={{ borderColor: done ? '#BBF7D0' : 'divider', bgcolor: done ? '#F0FDF4' : 'background.paper' }}>
       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-        <Typography variant="caption" sx={{ color: 'text.secondary', lineHeight: 1.2 }}>{r.classes?.name}</Typography>
+        <Typography sx={{ fontSize: 14, color: 'text.secondary', lineHeight: 1.2 }}>{r.classes?.name}</Typography>
         <Typography sx={{ fontWeight: 600, fontSize: 20, lineHeight: 1.3, textAlign: 'center' }}>{r.name}</Typography>
         {done ? (
           <Button variant="outlined" fullWidth onClick={onCancel}
-            sx={{ color: '#16A34A', borderColor: '#BBF7D0', fontSize: 15, py: 0.75 }}>
+            sx={{ color: '#16A34A', borderColor: '#BBF7D0', fontSize: 16, py: 0.75 }}>
             <CheckCircleIcon sx={{ fontSize: 16, mr: 0.5 }} />已報到
           </Button>
         ) : (
           <Button variant="contained" fullWidth startIcon={<CheckIcon />} onClick={onCheckin}
-            sx={{ fontSize: 15, py: 0.75 }}>
+            sx={{ fontSize: 16, py: 0.75 }}>
             報到
           </Button>
         )}

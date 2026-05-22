@@ -52,7 +52,7 @@ const theme = createTheme({
     },
     MuiTableCell: {
       styleOverrides: {
-        head: { fontWeight: 600, backgroundColor: '#F8FAFC', color: '#64748B', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' },
+        head: { fontWeight: 600, backgroundColor: '#F8FAFC', color: '#64748B', fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.05em' },
         body: { borderBottomColor: '#F1F5F9' },
       },
     },

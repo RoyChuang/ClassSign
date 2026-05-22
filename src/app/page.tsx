@@ -41,8 +41,8 @@ function NavCard({ href, label, desc, Icon }: { href: string; label: string; des
           <Icon sx={{ color: 'primary.main', fontSize: 22 }} />
         </Box>
         <Box>
-          <Typography sx={{ fontWeight: 600, fontSize: 15, color: 'text.primary' }}>{label}</Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.3, fontSize: 13 }}>{desc}</Typography>
+          <Typography sx={{ fontWeight: 600, fontSize: 17, color: 'text.primary' }}>{label}</Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.3, fontSize: 15 }}>{desc}</Typography>
         </Box>
       </CardActionArea>
     </Card>
@@ -56,7 +56,7 @@ export default function Home() {
     <Container maxWidth="sm" sx={{ py: 7 }}>
       <Box sx={{ mb: profile?.role === 'admin' || profile?.role === 'secretary' ? 2.5 : 0 }}>
         {profile && (
-          <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1.5, pl: 0.5 }}>
+          <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1.5, pl: 0.5 }}>
             公開功能
           </Typography>
         )}
@@ -67,7 +67,7 @@ export default function Home() {
 
       {profile?.role === 'admin' && (
         <Box sx={{ mt: 0 }}>
-          <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1.5, pl: 0.5 }}>
+          <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1.5, pl: 0.5 }}>
             管理功能
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -78,7 +78,7 @@ export default function Home() {
 
       {profile?.role === 'secretary' && (
         <Box sx={{ mt: 0 }}>
-          <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1.5, pl: 0.5 }}>
+          <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1.5, pl: 0.5 }}>
             秘書功能
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>

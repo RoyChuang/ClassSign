@@ -166,7 +166,7 @@ export default function AdminPage() {
         <DialogTitle sx={{ fontWeight: 600 }}>建立新班會</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
           <TextField required label="班會名稱" placeholder="例：115年5月全家福班"
-            value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} fullWidth size="small" />
+            value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} fullWidth />
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
             <DatePicker label="班會日期" value={form.date}
               onChange={val => setForm(f => ({ ...f, date: val }))}
@@ -175,7 +175,7 @@ export default function AdminPage() {
               onChange={val => setForm(f => ({ ...f, reg_deadline: val }))}
               slotProps={{ textField: { size: 'small', required: true } }} />
           </Box>
-          <FormControl size="small" fullWidth>
+          <FormControl fullWidth>
             <InputLabel>適用單位</InputLabel>
             {profile?.role === 'secretary' ? (
               <Select label="適用單位" value={profile.unit ?? ''} disabled>
@@ -200,7 +200,7 @@ export default function AdminPage() {
 
       {(profile?.role === 'admin' || profile?.role === 'secretary') && <><Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>班會列表</Typography>
       <TextField
-        size="small" fullWidth placeholder="搜尋班會名稱"
+        fullWidth placeholder="搜尋班會名稱"
         value={search} onChange={e => setSearch(e.target.value)}
         sx={{ mb: 1.5 }}
       />
@@ -208,7 +208,7 @@ export default function AdminPage() {
         const unitTabs = Array.from(new Set(sessions.map(s => s.unit).filter(Boolean))) as string[]
         return profile?.role === 'admin' && unitTabs.length > 0 && (
           <Tabs value={unitTab} onChange={(_, v) => setUnitTab(v)} variant="scrollable" scrollButtons="auto"
-            sx={{ mb: 2, minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5, fontSize: 13 } }}>
+            sx={{ mb: 2, minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5, fontSize: 14 } }}>
             <Tab value="none" label={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                 <span>聯合</span>
@@ -252,18 +252,18 @@ export default function AdminPage() {
                       <Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <Typography sx={{ fontWeight: 500 }}>{s.name}</Typography>
-                          {s.unit && <Chip size="small" label={s.unit} variant="outlined" sx={{ fontSize: 11, height: 20 }} />}
+                          {s.unit && <Chip label={s.unit} variant="outlined" sx={{ fontSize: 14, height: 24 }} />}
                         </Box>
                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>{s.date} · 截止 {s.reg_deadline}</Typography>
                       </Box>
                       <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0, ml: 1 }}>
-                        <IconButton size="small" onClick={() => openEdit(s)}><EditIcon fontSize="small" /></IconButton>
-                        <IconButton size="small" color="error" onClick={() => setDeleteTarget(s)}><DeleteIcon fontSize="small" /></IconButton>
+                        <IconButton onClick={() => openEdit(s)}><EditIcon fontSize="small" /></IconButton>
+                        <IconButton color="error" onClick={() => setDeleteTarget(s)}><DeleteIcon fontSize="small" /></IconButton>
                       </Box>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip size="small" label={chip.label} color={chip.color} />
-                      <Select size="small" value={s.status} onChange={e => updateStatus(s.id, e.target.value)} sx={{ fontSize: 13 }}>
+                      <Chip label={chip.label} color={chip.color} />
+                      <Select value={s.status} onChange={e => updateStatus(s.id, e.target.value)} sx={{ fontSize: 14 }}>
                         <MenuItem value="open">掛號中</MenuItem>
                         <MenuItem value="finished">已結束</MenuItem>
                       </Select>
@@ -282,7 +282,7 @@ export default function AdminPage() {
       <Dialog open={!!editTarget} onClose={() => !saving && setEditTarget(null)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 600 }}>編輯班會</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
-          <TextField label="班會名稱" size="small" fullWidth required
+          <TextField label="班會名稱" fullWidth required
             value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
           <DatePicker label="班會日期" value={editForm.date}
             onChange={val => setEditForm(f => ({ ...f, date: val }))}
@@ -290,7 +290,7 @@ export default function AdminPage() {
           <DatePicker label="掛號截止日" value={editForm.reg_deadline}
             onChange={val => setEditForm(f => ({ ...f, reg_deadline: val }))}
             slotProps={{ textField: { size: 'small', fullWidth: true } }} />
-          <FormControl size="small" fullWidth>
+          <FormControl fullWidth>
             <InputLabel>適用單位</InputLabel>
             {profile?.role === 'secretary' ? (
               <Select label="適用單位" value={editForm.unit} disabled>

@@ -82,7 +82,11 @@ export default function SecretaryPage() {
   useEffect(() => {
     if (!selectedSession) { setClasses([]); return }
     supabase.from('classes').select('*').eq('session_id', selectedSession).order('sort_order')
-      .then(({ data }) => { setClasses(data ?? []); setForm(f => ({ ...f, class_id: data?.[0]?.id ?? '' })) })
+      .then(({ data }) => {
+        setClasses(data ?? [])
+        const defaultClass = (data ?? []).find(c => c.name === '壇主人才班') ?? data?.[0]
+        setForm(f => ({ ...f, class_id: defaultClass?.id ?? '' }))
+      })
   }, [selectedSession])
 
   useEffect(() => {
@@ -244,13 +248,13 @@ export default function SecretaryPage() {
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
-        <FormControl size="small" fullWidth>
+        <FormControl fullWidth>
           <InputLabel>選擇班會</InputLabel>
           <Select label="選擇班會" value={selectedSession} onChange={e => setSelectedSession(e.target.value)}>
             {sessions.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
           </Select>
         </FormControl>
-        <FormControl size="small" fullWidth>
+        <FormControl fullWidth>
           <InputLabel>單位</InputLabel>
           {(() => {
             const sessionUnit = sessions.find(s => s.id === selectedSession)?.unit
@@ -275,20 +279,20 @@ export default function SecretaryPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                 <Typography sx={{ fontWeight: 600 }}>新增報名者</Typography>
                 {pastSessions.length > 0 && (
-                  <Button size="small" startIcon={<DownloadIcon />} onClick={() => setImportOpen(true)} sx={{ fontSize: 13 }}>
+                  <Button startIcon={<DownloadIcon />} onClick={() => setImportOpen(true)} sx={{ fontSize: 14 }}>
                     匯入歷史名單
                   </Button>
                 )}
               </Box>
               <Box component="form" onSubmit={addPerson} sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                <TextField required label="姓名" size="small" value={form.name}
+                <TextField required label="姓名" value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))} sx={{ width: 140 }} />
-                <ToggleButtonGroup size="small" exclusive value={form.gender}
+                <ToggleButtonGroup exclusive value={form.gender}
                   onChange={(_, v) => v && setForm(f => ({ ...f, gender: v as Gender }))}>
                   <ToggleButton value="乾" sx={{ px: 2, fontWeight: 600, '&.Mui-selected': { bgcolor: '#DBEAFE', color: '#2563EB', '&:hover': { bgcolor: '#BFDBFE' } } }}>乾</ToggleButton>
                   <ToggleButton value="坤" sx={{ px: 2, fontWeight: 600, '&.Mui-selected': { bgcolor: '#FCE7F3', color: '#DB2777', '&:hover': { bgcolor: '#FBCFE8' } } }}>坤</ToggleButton>
                 </ToggleButtonGroup>
-                <FormControl size="small" sx={{ width: 150 }}>
+                <FormControl sx={{ width: 150 }}>
                   <InputLabel>班別</InputLabel>
                   <Select label="班別" value={form.class_id} onChange={e => setForm(f => ({ ...f, class_id: e.target.value }))}>
                     {classes.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
@@ -307,7 +311,7 @@ export default function SecretaryPage() {
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
                 {GENDERS.map((gender, gi) => (
                   <Box key={gender} sx={{ px: 2, py: 1.5, bgcolor: gender === '乾' ? '#EFF6FF' : '#FDF2F8', borderRight: gi === 0 ? '1px solid' : 'none', borderBottom: '1px solid', borderColor: 'divider' }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: gender === '乾' ? '#2563EB' : '#DB2777' }}>
+                    <Typography sx={{ fontSize: 16, fontWeight: 600, color: gender === '乾' ? '#2563EB' : '#DB2777' }}>
                       {gender}（{byGender(gender).length} 人）
                     </Typography>
                   </Box>
@@ -322,7 +326,7 @@ export default function SecretaryPage() {
                   <Box key={cls.id}>
                     {/* 班別標題 */}
                     <Box sx={{ px: 2, py: 0.75, bgcolor: '#F8FAFC', borderTop: '1px solid', borderBottom: '1px solid', borderColor: 'divider' }}>
-                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', letterSpacing: '0.04em' }}>{cls.name}</Typography>
+                      <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'text.secondary', letterSpacing: '0.04em' }}>{cls.name}</Typography>
                     </Box>
                     {/* 每列乾/坤對齊 */}
                     {Array.from({ length: rows }).map((_, i) => (
@@ -331,12 +335,12 @@ export default function SecretaryPage() {
                           <Box key={gi} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, borderRight: gi === 0 ? '1px solid' : 'none', borderColor: 'divider', minHeight: 44 }}>
                             {r ? (
                               <>
-                                <Typography variant="body2" sx={{ fontWeight: 500 }}>{r.name}</Typography>
+                                <Typography sx={{ fontSize: 16, fontWeight: 500 }}>{r.name}</Typography>
                                 <Box sx={{ display: 'flex' }}>
-                                  <IconButton size="small" sx={{ color: 'text.disabled' }} onClick={e => setClassPopover({ anchorEl: e.currentTarget, regId: r.id })}>
+                                  <IconButton sx={{ color: 'text.disabled' }} onClick={e => setClassPopover({ anchorEl: e.currentTarget, regId: r.id })}>
                                     <SwapHorizIcon fontSize="small" />
                                   </IconButton>
-                                  <IconButton size="small" color="error" onClick={() => setDeleteTarget(r.id)}><DeleteIcon fontSize="small" /></IconButton>
+                                  <IconButton color="error" onClick={() => setDeleteTarget(r.id)}><DeleteIcon fontSize="small" /></IconButton>
                                 </Box>
                               </>
                             ) : (
@@ -358,7 +362,7 @@ export default function SecretaryPage() {
       <Dialog open={importOpen} onClose={() => !importing && closeImport()} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 600 }}>匯入歷史名單</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
-          <FormControl size="small" fullWidth>
+          <FormControl fullWidth>
             <InputLabel>選擇舊班會</InputLabel>
             <Select label="選擇舊班會" value={importSession} onChange={e => onImportSessionChange(e.target.value)}>
               {pastSessions.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
@@ -377,7 +381,7 @@ export default function SecretaryPage() {
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   共 {importCandidates.length} 人，已選 {importSelected.size} 人
                 </Typography>
-                <Button size="small" sx={{ fontSize: 12 }}
+                <Button sx={{ fontSize: 14 }}
                   onClick={() => setImportSelected(
                     importSelected.size === importCandidates.length
                       ? new Set()
@@ -394,7 +398,7 @@ export default function SecretaryPage() {
                       sx={{ display: 'flex', alignItems: 'center', px: 1, py: 0.5, cursor: 'pointer', '&:hover': { bgcolor: '#F8FAFC' } }}
                       onClick={() => toggleSelect(r.id)}
                     >
-                      <Checkbox size="small" checked={importSelected.has(r.id)} disableRipple />
+                      <Checkbox checked={importSelected.has(r.id)} disableRipple />
                       <Typography variant="body2" sx={{ fontWeight: 500, mr: 1 }}>{r.name}</Typography>
                       <Typography variant="caption" sx={{ color: 'text.secondary', mr: 1 }}>{r.gender}</Typography>
                       <Typography variant="caption" sx={{ color: 'text.secondary' }}>{importClassMap[r.class_id]}</Typography>

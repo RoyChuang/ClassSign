@@ -101,7 +101,7 @@ export default function KitchenPage() {
         </IconButton>
       </Box>
 
-      <FormControl fullWidth size="small" sx={{ mb: 4 }}>
+      <FormControl fullWidth sx={{ mb: 4 }}>
         <InputLabel>班會</InputLabel>
         <Select label="班會" value={selectedSession} onChange={e => setSelectedSession(e.target.value)}>
           {sessions.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
@@ -114,7 +114,7 @@ export default function KitchenPage() {
             <ErrorOutlineIcon sx={{ color: '#DC2626', fontSize: 36, mb: 1 }} />
             <Typography sx={{ color: '#DC2626', fontWeight: 600, mb: 0.5 }}>資料載入失敗</Typography>
             <Typography variant="body2" sx={{ color: '#EF4444', mb: 2 }}>請確認網路連線後重試</Typography>
-            <Button variant="outlined" color="error" size="small" startIcon={<RefreshIcon />} onClick={() => { setLoading(true); loadData() }}>
+            <Button variant="outlined" color="error" startIcon={<RefreshIcon />} onClick={() => { setLoading(true); loadData() }}>
               重新載入
             </Button>
           </CardContent>

@@ -41,7 +41,7 @@ export function Navbar() {
               ClassSign
             </Typography>
             <Box sx={{ width: '1px', height: 14, bgcolor: 'divider', flexShrink: 0, display: { xs: 'none', sm: 'block' } }} />
-            <Typography sx={{ fontSize: 12, color: 'text.secondary', letterSpacing: '0.04em', fontWeight: 500, lineHeight: 1, display: { xs: 'none', sm: 'block' } }}>
+            <Typography sx={{ fontSize: 14, color: 'text.secondary', letterSpacing: '0.04em', fontWeight: 500, lineHeight: 1, display: { xs: 'none', sm: 'block' } }}>
               班會掛號系統
             </Typography>
           </Box>
@@ -53,10 +53,10 @@ export function Navbar() {
               sx={{ display: 'flex', alignItems: 'center', gap: 0.75, px: 1.5, py: 0.75, borderRadius: '8px', border: '1px solid', borderColor: 'divider', '&:hover': { bgcolor: '#F8FAFC' } }}>
               <AccountCircleIcon sx={{ fontSize: 28, color: 'text.disabled', flexShrink: 0 }} />
               <Box sx={{ textAlign: 'left' }}>
-                <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#2563EB', lineHeight: 1.2 }}>
+                <Typography sx={{ fontSize: 14, fontWeight: 600, color: '#2563EB', lineHeight: 1.2 }}>
                   {roleLabel[profile.role]}{profile.unit ? ` · ${profile.unit}` : ''}
                 </Typography>
-                <Typography sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1.3 }}>{profile.displayName}</Typography>
+                <Typography sx={{ fontSize: 14, color: 'text.secondary', lineHeight: 1.3 }}>{profile.displayName}</Typography>
               </Box>
               <KeyboardArrowDownIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
             </ButtonBase>
@@ -67,14 +67,14 @@ export function Navbar() {
               sx={{ mt: 0.5 }}>
               <Box sx={{ py: 0.5, minWidth: 140 }}>
                 <Box sx={{ px: 2, py: 1 }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{profile.displayName}</Typography>
-                  <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{roleLabel[profile.role]}</Typography>
+                  <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{profile.displayName}</Typography>
+                  <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>{roleLabel[profile.role]}</Typography>
                 </Box>
                 <Divider />
                 <Box onClick={() => { setAnchor(null); signOut() }}
                   sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1, cursor: 'pointer', color: 'error.main', '&:hover': { bgcolor: '#FEF2F2' } }}>
                   <LogoutIcon sx={{ fontSize: 16 }} />
-                  <Typography sx={{ fontSize: 13 }}>登出</Typography>
+                  <Typography sx={{ fontSize: 14 }}>登出</Typography>
                 </Box>
               </Box>
             </Popover>

@@ -76,14 +76,14 @@ export default function DashboardPage() {
       </Box>
 
       <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap' }}>
-        <FormControl size="small" sx={{ minWidth: 200 }}>
+        <FormControl sx={{ minWidth: 200 }}>
           <InputLabel>班會</InputLabel>
           <Select label="班會" value={selectedSession} onChange={e => setSelectedSession(e.target.value)}>
             {sessions.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
           </Select>
         </FormControl>
         {classes.length > 0 && (
-          <FormControl size="small" sx={{ minWidth: 150 }}>
+          <FormControl sx={{ minWidth: 150 }}>
             <InputLabel>班別</InputLabel>
             <Select label="班別" value={selectedClass} onChange={e => setSelectedClass(e.target.value)}>
               <MenuItem value="all">全部班別</MenuItem>
@@ -106,14 +106,14 @@ export default function DashboardPage() {
               <Card key={label} sx={{ bgcolor: bg, borderColor: 'transparent' }}>
                 <CardContent sx={{ textAlign: 'center', py: 3 }}>
                   <Typography variant="h3" sx={{ fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>{value}</Typography>
-                  <Typography variant="body2" sx={{ color, opacity: 0.65, mt: 0.5, fontSize: 13 }}>{label}</Typography>
+                  <Typography sx={{ color, opacity: 0.65, mt: 0.5, fontSize: 14 }}>{label}</Typography>
                 </CardContent>
               </Card>
             ))}
           </Box>
 
           <Card sx={{ overflow: 'auto' }}>
-            <Table size="small" sx={{ minWidth: 320 }}>
+            <Table sx={{ minWidth: 320 }}>
               <TableHead>
                 <TableRow>
                   <TableCell rowSpan={2} sx={{ whiteSpace: 'nowrap', verticalAlign: 'middle' }}>單位</TableCell>
@@ -123,7 +123,7 @@ export default function DashboardPage() {
                 </TableRow>
                 <TableRow>
                   {(['#2563EB', '#16A34A', '#DB2777', '#16A34A'] as const).map((color, i) => (
-                    <TableCell key={i} align="center" sx={{ whiteSpace: 'nowrap', color, fontSize: 12, pt: 0.5 }}>
+                    <TableCell key={i} align="center" sx={{ whiteSpace: 'nowrap', color, fontSize: 14, pt: 0.5 }}>
                       {['掛號', '報到', '掛號', '報到'][i]}
                     </TableCell>
                   ))}
@@ -136,24 +136,24 @@ export default function DashboardPage() {
                   if (qian + kun === 0) return null
                   return (
                     <TableRow key={unit}>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}><Typography variant="body2" sx={{ fontWeight: 500 }}>{unit}</Typography></TableCell>
-                      <TableCell align="center" sx={{ color: '#2563EB', whiteSpace: 'nowrap' }}>{qian}</TableCell>
-                      <TableCell align="center" sx={{ color: '#16A34A', whiteSpace: 'nowrap' }}>{qianIn}</TableCell>
-                      <TableCell align="center" sx={{ color: '#DB2777', whiteSpace: 'nowrap' }}>{kun}</TableCell>
-                      <TableCell align="center" sx={{ color: '#16A34A', whiteSpace: 'nowrap' }}>{kunIn}</TableCell>
-                      <TableCell align="center" sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{qian + kun}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}><Typography sx={{ fontSize: 15, fontWeight: 500 }}>{unit}</Typography></TableCell>
+                      <TableCell align="center" sx={{ color: '#2563EB', whiteSpace: 'nowrap', fontSize: 15 }}>{qian}</TableCell>
+                      <TableCell align="center" sx={{ color: '#16A34A', whiteSpace: 'nowrap', fontSize: 15 }}>{qianIn}</TableCell>
+                      <TableCell align="center" sx={{ color: '#DB2777', whiteSpace: 'nowrap', fontSize: 15 }}>{kun}</TableCell>
+                      <TableCell align="center" sx={{ color: '#16A34A', whiteSpace: 'nowrap', fontSize: 15 }}>{kunIn}</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 600, whiteSpace: 'nowrap', fontSize: 15 }}>{qian + kun}</TableCell>
                     </TableRow>
                   )
                 })}
               </TableBody>
               <TableFooter>
                 <TableRow sx={{ '& td': { fontWeight: 700, borderTop: '2px solid', borderColor: 'divider', whiteSpace: 'nowrap' } }}>
-                  <TableCell>合計</TableCell>
-                  <TableCell align="center" sx={{ color: '#2563EB' }}>{totalByGender('乾')}</TableCell>
-                  <TableCell align="center" sx={{ color: '#16A34A' }}>{filtered.filter(r => r.gender === '乾' && r.checked_in).length}</TableCell>
-                  <TableCell align="center" sx={{ color: '#DB2777' }}>{totalByGender('坤')}</TableCell>
-                  <TableCell align="center" sx={{ color: '#16A34A' }}>{filtered.filter(r => r.gender === '坤' && r.checked_in).length}</TableCell>
-                  <TableCell align="center">{filtered.length}</TableCell>
+                  <TableCell sx={{ fontSize: 15, fontWeight: 600 }}>合計</TableCell>
+                  <TableCell align="center" sx={{ color: '#2563EB', fontSize: 15, fontWeight: 700 }}>{totalByGender('乾')}</TableCell>
+                  <TableCell align="center" sx={{ color: '#16A34A', fontSize: 15, fontWeight: 700 }}>{filtered.filter(r => r.gender === '乾' && r.checked_in).length}</TableCell>
+                  <TableCell align="center" sx={{ color: '#DB2777', fontSize: 15, fontWeight: 700 }}>{totalByGender('坤')}</TableCell>
+                  <TableCell align="center" sx={{ color: '#16A34A', fontSize: 15, fontWeight: 700 }}>{filtered.filter(r => r.gender === '坤' && r.checked_in).length}</TableCell>
+                  <TableCell align="center" sx={{ fontSize: 15, fontWeight: 700 }}>{filtered.length}</TableCell>
                 </TableRow>
               </TableFooter>
             </Table>

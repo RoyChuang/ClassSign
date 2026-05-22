@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find ~/.claude/plugins/marketplaces/thedotmack -name \"*.db\" -o -name \"*.sqlite\" 2>/dev/null | head -10 && ls ~/.claude/plugins/marketplaces/thedotmack/ 2>/dev/null)",
+      "Read(//Users/roy/.claude/plugins/marketplaces/thedotmack/**)",
+      "Bash(python3 -m json.tool)",
+      "Bash(cat ~/.claude/plugins/cache/thedotmack/claude-mem/12.1.1/.mcp.json | python3 -m json.tool | head -40)",
+      "Read(//Users/roy/.claude/plugins/cache/thedotmack/claude-mem/12.1.1/**)",
+      "Bash(curl -sf \"http://localhost:37777/api/projects\")",
+      "Bash(curl -sf \"http://localhost:37777/api/observations?project=ClassSign&limit=5\")",
+      "Bash(npx tsc *)"
+    ]
+  }
+}

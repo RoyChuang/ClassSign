@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AuthProvider>
             <Navbar />
             {children}
-            <footer style={{ textAlign: 'center', padding: '24px 0 16px', color: '#94A3B8', fontSize: 12 }}>
+            <footer style={{ textAlign: 'center', padding: '24px 0 16px', color: '#94A3B8', fontSize: 14 }}>
               v{pkg.version}
             </footer>
           </AuthProvider>

@@ -102,7 +102,7 @@ export default function UsersPage() {
       </Box>
 
       <TextField
-        size="small" fullWidth placeholder="搜尋姓名或 Email"
+        fullWidth placeholder="搜尋姓名或 Email"
         value={search} onChange={e => setSearch(e.target.value)}
         sx={{ mb: 2 }}
       />
@@ -124,12 +124,12 @@ export default function UsersPage() {
                 <Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.3 }}>
                     <Typography sx={{ fontWeight: 500 }}>{p.display_name || '（未設別名）'}</Typography>
-                    <Chip size="small" label={roleLabel[p.role]} color={roleColor[p.role]} />
-                    {p.unit && <Chip size="small" label={p.unit} variant="outlined" />}
+                    <Chip label={roleLabel[p.role]} color={roleColor[p.role]} />
+                    {p.unit && <Chip label={p.unit} variant="outlined" />}
                   </Box>
                   <Typography variant="caption" sx={{ color: 'text.secondary' }}>{p.email}</Typography>
                 </Box>
-                <IconButton size="small" onClick={() => openEdit(p)}>
+                <IconButton onClick={() => openEdit(p)}>
                   <EditIcon fontSize="small" />
                 </IconButton>
               </CardContent>
@@ -144,12 +144,12 @@ export default function UsersPage() {
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
           <Typography variant="caption" sx={{ color: 'text.secondary', mt: -1 }}>{editTarget?.email}</Typography>
           <TextField
-            label="別名" size="small" fullWidth
+            label="別名" fullWidth
             value={form.display_name}
             onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))}
             helperText="系統內顯示的名稱，不影響 Google 帳號"
           />
-          <FormControl size="small" fullWidth>
+          <FormControl fullWidth>
             <InputLabel>角色</InputLabel>
             <Select label="角色" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
               <MenuItem value="admin">管理員</MenuItem>
@@ -158,7 +158,7 @@ export default function UsersPage() {
             </Select>
           </FormControl>
           {form.role === 'secretary' && (
-            <FormControl size="small" fullWidth>
+            <FormControl fullWidth>
               <InputLabel>單位</InputLabel>
               <Select label="單位" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}>
                 {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
