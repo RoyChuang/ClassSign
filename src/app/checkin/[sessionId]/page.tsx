@@ -302,12 +302,12 @@ export default function CheckinSessionPage() {
     <Container maxWidth="md" sx={{ py: 5 }}>
       {/* 頁面標題 */}
       <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: { xs: 'none', sm: 'flex' }, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <QrCodeScannerIcon sx={{ color: 'primary.main', fontSize: 22 }} />
             </Box>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>完成報到</Typography>
+            <Typography sx={{ fontWeight: 700, fontSize: { xs: 20, sm: 24 } }}>完成報到</Typography>
             <RealtimeStatus status={realtimeStatus} />
           </Box>
           <Button variant="outlined" startIcon={<PersonAddIcon />} onClick={openWalkIn}
@@ -319,15 +319,13 @@ export default function CheckinSessionPage() {
 
       {/* 班會名稱 */}
       <Box sx={{ mb: 3, textAlign: 'center' }}>
-        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
-            {session?.name}
-          </Typography>
-          <Button onClick={shareLink} variant="outlined"
-            sx={{ fontSize: 14, color: copied ? '#16A34A' : 'text.secondary', borderColor: copied ? '#BBF7D0' : 'divider', minWidth: 0, px: 1.5, mt: 0.5 }}>
-            {copied ? '已複製' : '分享連結'}
-          </Button>
-        </Box>
+        <Typography sx={{ fontWeight: 700, fontSize: { xs: 22, sm: 34 }, color: 'text.primary', mb: 1 }}>
+          {session?.name}
+        </Typography>
+        <Button onClick={shareLink} variant="outlined"
+          sx={{ fontSize: 14, color: copied ? '#16A34A' : 'text.secondary', borderColor: copied ? '#BBF7D0' : 'divider', px: 1.5 }}>
+          {copied ? '已複製' : '分享連結'}
+        </Button>
       </Box>
 
       {/* 單位 + 姓名篩選 */}
