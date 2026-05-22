@@ -190,16 +190,18 @@ export default function AdminPage() {
 
   return (
     <Container maxWidth="md" sx={{ py: 5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-        <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <SettingsIcon sx={{ color: 'primary.main', fontSize: 22 }} />
-        </Box>
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>班會管理</Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>建立班會、調整狀態</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 180 }}>
+          <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <SettingsIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+          </Box>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>班會管理</Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>建立班會、調整狀態</Typography>
+          </Box>
         </Box>
         {(profile?.role === 'admin' || profile?.role === 'secretary') && (
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
             {profile?.role === 'admin' && (
               <Button variant="outlined" startIcon={<TuneIcon />} onClick={() => setTemplateOpen(true)}>班別設定</Button>
             )}
