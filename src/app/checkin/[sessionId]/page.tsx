@@ -28,7 +28,6 @@ import CloseIcon from '@mui/icons-material/Close'
 import UndoIcon from '@mui/icons-material/Undo'
 import CheckIcon from '@mui/icons-material/Check'
 import Chip from '@mui/material/Chip'
-import Badge from '@mui/material/Badge'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import { Loading } from '@/components/Loading'
@@ -193,11 +192,16 @@ export default function CheckinSessionPage() {
   const classCounts = new Map(classes.map(c => [c.id, nameFiltered.filter(r => r.class_id === c.id).length]))
   const qian = filtered.filter(r => r.gender === '乾')
   const kun = filtered.filter(r => r.gender === '坤')
+  const totalCheckedCount = allResults.filter(r => checkedIn.has(r.id)).length
+  const totalPct = allResults.length > 0 ? Math.round(totalCheckedCount / allResults.length * 100) : 0
+  const qianChecked = qian.filter(r => checkedIn.has(r.id)).length
+  const kunChecked = kun.filter(r => checkedIn.has(r.id)).length
 
   async function checkIn(reg: Reg) {
     if (checkedIn.has(reg.id)) return
+    const checkedInAt = new Date().toISOString()
     const { data, error } = await supabase.from('registrations')
-      .update({ checked_in: true, checked_in_at: new Date().toISOString() })
+      .update({ checked_in: true, checked_in_at: checkedInAt })
       .eq('id', reg.id)
       .select('id')
     if (error || !data || data.length === 0) {
@@ -206,6 +210,11 @@ export default function CheckinSessionPage() {
       return
     }
     setCheckedIn(prev => new Set([...prev, reg.id]))
+    setAllResults(prev => {
+      const updated = prev.map(r => r.id === reg.id ? { ...r, checked_in: true, checked_in_at: checkedInAt } : r)
+      unitCacheRef.current.set(reg.unit as Unit, updated)
+      return updated
+    })
   }
 
   async function cancelCheckIn() {
@@ -299,37 +308,79 @@ export default function CheckinSessionPage() {
   )
 
   return (
-    <Container maxWidth="md" sx={{ py: 5 }}>
-      {/* 頁面標題 */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: { xs: 'none', sm: 'flex' }, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <QrCodeScannerIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Page header */}
+      <Box sx={{ mb: 3, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 3, flexWrap: 'wrap' }}>
+        <Box>
+          {/* Tag row */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <Box sx={{ width: 22, height: 22, borderRadius: '6px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <QrCodeScannerIcon sx={{ fontSize: 13 }} />
             </Box>
-            <Typography sx={{ fontWeight: 700, fontSize: { xs: 20, sm: 24 } }}>完成報到</Typography>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 500 }}>完成報到</Typography>
             <RealtimeStatus status={realtimeStatus} />
           </Box>
-          <Button variant="outlined" startIcon={<PersonAddIcon />} onClick={openWalkIn}
-            disabled={!selectedUnit} sx={{ flexShrink: 0 }}>
-            現場報名
+          {/* Big title */}
+          <Typography sx={{ fontWeight: 700, fontSize: { xs: 26, sm: 34 }, color: 'text.primary', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+            {session?.name}
+          </Typography>
+          {/* Share link */}
+          <Button onClick={shareLink} size="small" startIcon={<PersonAddIcon sx={{ fontSize: '14px !important' }} />}
+            sx={{ mt: 0.75, fontSize: 13, color: copied ? '#16A34A' : '#2549E5', px: 0, minWidth: 0, fontWeight: 500,
+              '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}>
+            {copied ? '已複製' : '分享連結'}
           </Button>
         </Box>
-      </Box>
-
-      {/* 班會名稱 */}
-      <Box sx={{ mb: 3, textAlign: 'center' }}>
-        <Typography sx={{ fontWeight: 700, fontSize: { xs: 22, sm: 34 }, color: 'text.primary', mb: 1 }}>
-          {session?.name}
-        </Typography>
-        <Button onClick={shareLink} variant="outlined"
-          sx={{ fontSize: 14, color: copied ? '#16A34A' : 'text.secondary', borderColor: copied ? '#BBF7D0' : 'divider', px: 1.5 }}>
-          {copied ? '已複製' : '分享連結'}
+        {/* 現場報名 */}
+        <Button variant="contained" startIcon={<PersonAddIcon />} onClick={openWalkIn} disabled={!selectedUnit}
+          sx={{ flexShrink: 0, borderRadius: '12px', px: 2.5, py: 1.25, fontSize: 15,
+            boxShadow: '0 8px 20px -10px rgba(37,73,229,0.55)',
+            transition: 'transform 160ms ease, box-shadow 160ms ease',
+            '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 12px 26px -10px rgba(37,73,229,0.65)' } }}>
+          現場報名
         </Button>
       </Box>
 
+      {/* 統計列 */}
+      {selectedUnit && !unitLoading && !loadError && allResults.length > 0 && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 }, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {/* 進度條 */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ flex: 1, height: 8, bgcolor: '#ECF0F7', borderRadius: '999px', overflow: 'hidden' }}>
+                <Box sx={{ height: '100%', width: `${totalPct}%`, background: 'linear-gradient(90deg, #3B66F5, #1E3AC4)', borderRadius: 'inherit', transition: 'width 1.4s cubic-bezier(.2,.7,.2,1) 0.2s' }} />
+              </Box>
+              <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'primary.main', minWidth: 36, textAlign: 'right' }}>{totalPct}%</Typography>
+            </Box>
+            {/* 數字統計 */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+                <Typography sx={{ fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'text.primary' }}>
+                  {totalCheckedCount}<Typography component="span" sx={{ fontSize: 13, fontWeight: 500, color: 'text.disabled', ml: 0.25 }}>位</Typography>
+                </Typography>
+                <Typography sx={{ fontSize: 12.5, color: 'text.secondary', fontWeight: 500 }}>已報到</Typography>
+              </Box>
+              <Box sx={{ width: '1px', height: 22, bgcolor: 'divider', flexShrink: 0 }} />
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+                <Typography sx={{ fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'text.primary' }}>
+                  {allResults.length - totalCheckedCount}<Typography component="span" sx={{ fontSize: 13, fontWeight: 500, color: 'text.disabled', ml: 0.25 }}>位</Typography>
+                </Typography>
+                <Typography sx={{ fontSize: 12.5, color: 'text.secondary', fontWeight: 500 }}>未報到</Typography>
+              </Box>
+              <Box sx={{ width: '1px', height: 22, bgcolor: 'divider', flexShrink: 0 }} />
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+                <Typography sx={{ fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'text.primary' }}>
+                  {allResults.length}<Typography component="span" sx={{ fontSize: 13, fontWeight: 500, color: 'text.disabled', ml: 0.25 }}>位</Typography>
+                </Typography>
+                <Typography sx={{ fontSize: 12.5, color: 'text.secondary', fontWeight: 500 }}>總人數</Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
       {/* 單位 + 姓名篩選 */}
-      <Card sx={{ mb: 3 }}>
+      <Card sx={{ mb: 2 }}>
         <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
             <FormControl fullWidth>
@@ -357,18 +408,26 @@ export default function CheckinSessionPage() {
       {/* 班別篩選 */}
       {selectedUnit && classes.length > 0 && (
         <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-          <Badge badgeContent={nameFiltered.length} sx={{ '& .MuiBadge-badge': { fontSize: 11, fontWeight: 700, bgcolor: !classFilter ? 'primary.main' : 'rgba(0,0,0,0.2)', color: 'white', top: 4, right: 4 } }}>
-            <Chip label="全部" color={!classFilter ? 'primary' : 'default'} onClick={() => setClassFilter('')} sx={{ flexShrink: 0, fontSize: 16, height: 40, px: 0.5 }} />
-          </Badge>
-          {classes.map(c => {
-            const count = classCounts.get(c.id) ?? 0
-            const selected = classFilter === c.id
+          {[{ id: '', name: '全部', count: nameFiltered.length }, ...classes.map(c => ({ id: c.id, name: c.name, count: classCounts.get(c.id) ?? 0 }))].map(item => {
+            const selected = classFilter === item.id
             return (
-              <Badge key={c.id} badgeContent={count} sx={{ '& .MuiBadge-badge': { fontSize: 11, fontWeight: 700, bgcolor: selected ? 'primary.main' : 'rgba(0,0,0,0.2)', color: 'white', top: 4, right: 4 } }}>
-                <Chip label={c.name} color={selected ? 'primary' : 'default'}
-                  onClick={() => setClassFilter(prev => prev === c.id ? '' : c.id)}
-                  sx={{ flexShrink: 0, fontSize: 16, height: 40, px: 0.5 }} />
-              </Badge>
+              <Chip key={item.id}
+                onClick={() => setClassFilter(item.id)}
+                color={selected ? 'primary' : 'default'}
+                sx={{ flexShrink: 0, fontSize: 14, height: 36, px: 0.5,
+                  ...(selected ? {} : { bgcolor: 'white', border: '1px solid', borderColor: 'divider' }) }}
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.875 }}>
+                    {item.name}
+                    <Box component="span" sx={{
+                      fontSize: 11.5, fontWeight: 700, px: 0.875, lineHeight: '20px',
+                      borderRadius: '999px',
+                      bgcolor: selected ? 'rgba(255,255,255,0.22)' : '#ECF0F7',
+                      color: selected ? 'white' : 'text.secondary',
+                    }}>{item.count}</Box>
+                  </Box>
+                }
+              />
             )
           })}
         </Box>
@@ -394,9 +453,15 @@ export default function CheckinSessionPage() {
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
           {/* 乾 */}
           <Box>
-            <Typography sx={{ fontWeight: 700, color: '#2563EB', mb: 1, textAlign: 'center', fontSize: 17 }}>
-              乾 {qian.length} 人
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, pb: 1.5, pt: 0.5 }}>
+              <Typography sx={{ fontWeight: 700, color: '#2563EB', fontSize: 16, display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+                乾 <Box component="span" sx={{ fontFamily: 'monospace', fontSize: 20, letterSpacing: '-0.01em' }}>{qianChecked}</Box>
+                <Box component="span" sx={{ fontSize: 13, color: 'text.disabled', fontWeight: 500 }}>/ {qian.length} 人</Box>
+              </Typography>
+              <Box sx={{ flex: 1, maxWidth: 80, height: 4, bgcolor: '#ECF0F7', borderRadius: '999px', overflow: 'hidden' }}>
+                <Box sx={{ height: '100%', width: qian.length > 0 ? `${Math.round(qianChecked/qian.length*100)}%` : '0%', bgcolor: '#2563EB', borderRadius: 'inherit', transition: 'width 1.2s cubic-bezier(.2,.7,.2,1) 0.3s' }} />
+              </Box>
+            </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {qian.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} onCheckin={() => setConfirmTarget(r)} onCancel={() => setCancelTarget(r)} />)}
               {qian.length === 0 && <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>無資料</Typography>}
@@ -404,9 +469,15 @@ export default function CheckinSessionPage() {
           </Box>
           {/* 坤 */}
           <Box>
-            <Typography sx={{ fontWeight: 700, color: '#DB2777', mb: 1, textAlign: 'center', fontSize: 17 }}>
-              坤 {kun.length} 人
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, pb: 1.5, pt: 0.5 }}>
+              <Typography sx={{ fontWeight: 700, color: '#DB2777', fontSize: 16, display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+                坤 <Box component="span" sx={{ fontFamily: 'monospace', fontSize: 20, letterSpacing: '-0.01em' }}>{kunChecked}</Box>
+                <Box component="span" sx={{ fontSize: 13, color: 'text.disabled', fontWeight: 500 }}>/ {kun.length} 人</Box>
+              </Typography>
+              <Box sx={{ flex: 1, maxWidth: 80, height: 4, bgcolor: '#FCE7F3', borderRadius: '999px', overflow: 'hidden' }}>
+                <Box sx={{ height: '100%', width: kun.length > 0 ? `${Math.round(kunChecked/kun.length*100)}%` : '0%', bgcolor: '#DB2777', borderRadius: 'inherit', transition: 'width 1.2s cubic-bezier(.2,.7,.2,1) 0.3s' }} />
+              </Box>
+            </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {kun.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} onCheckin={() => setConfirmTarget(r)} onCancel={() => setCancelTarget(r)} />)}
               {kun.length === 0 && <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>無資料</Typography>}
@@ -496,19 +567,25 @@ export default function CheckinSessionPage() {
 }
 
 function PersonCard({ r, done, onCheckin, onCancel }: { r: Reg; done: boolean; onCheckin: () => void; onCancel: () => void }) {
+  const timeStr = done && r.checked_in_at
+    ? new Date(r.checked_in_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })
+    : null
   return (
-    <Card sx={{ borderColor: done ? '#BBF7D0' : 'divider', bgcolor: done ? '#F0FDF4' : 'background.paper' }}>
-      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-        <Typography sx={{ fontSize: 14, color: 'text.secondary', lineHeight: 1.2 }}>{r.classes?.name}</Typography>
-        <Typography sx={{ fontWeight: 600, fontSize: 20, lineHeight: 1.3, textAlign: 'center' }}>{r.name}</Typography>
+    <Card sx={{ borderColor: done ? 'rgba(20,184,106,0.25)' : 'divider', bgcolor: done ? '#F0FDF4' : 'background.paper', transition: 'border-color 180ms ease, background 180ms ease' }}>
+      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography sx={{ fontSize: 12, color: done ? '#16A34A' : 'text.secondary', lineHeight: 1.2, opacity: done ? 0.85 : 1 }}>{r.classes?.name}</Typography>
+          <Typography sx={{ fontWeight: 700, fontSize: 18, lineHeight: 1.3, color: done ? '#15803D' : 'text.primary' }}>{r.name}</Typography>
+          {timeStr && <Typography sx={{ fontSize: 11.5, color: '#16A34A', fontWeight: 600, mt: 0.25, opacity: 0.85 }}>已報到 {timeStr}</Typography>}
+        </Box>
         {done ? (
-          <Button variant="outlined" fullWidth onClick={onCancel}
-            sx={{ color: '#16A34A', borderColor: '#BBF7D0', fontSize: 16, py: 0.75 }}>
-            <CheckCircleIcon sx={{ fontSize: 16, mr: 0.5 }} />已報到
+          <Button onClick={onCancel} size="small"
+            sx={{ color: '#16A34A', borderColor: 'transparent', fontSize: 13, py: 0.75, px: 1.25, flexShrink: 0, whiteSpace: 'nowrap', border: '1px solid transparent', '&:hover': { borderColor: 'rgba(20,184,106,0.3)', bgcolor: 'rgba(20,184,106,0.08)' } }}>
+            <CheckCircleIcon sx={{ fontSize: 14, mr: 0.5 }} />已報到
           </Button>
         ) : (
-          <Button variant="contained" fullWidth startIcon={<CheckIcon />} onClick={onCheckin}
-            sx={{ fontSize: 16, py: 0.75 }}>
+          <Button variant="contained" size="small" startIcon={<CheckIcon />} onClick={onCheckin}
+            sx={{ fontSize: 13, py: 0.75, flexShrink: 0, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(37,73,229,0.4)', '&:hover': { boxShadow: '0 6px 16px rgba(37,73,229,0.5)' } }}>
             報到
           </Button>
         )}

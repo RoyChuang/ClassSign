@@ -84,16 +84,15 @@ export default function KitchenPage() {
 
   return (
     <Container maxWidth="sm" sx={{ py: 5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-        <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <KitchenIcon sx={{ color: 'primary.main', fontSize: 22 }} />
-        </Box>
-        <Box sx={{ flex: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>廚房看板</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 3, mb: 4, flexWrap: 'wrap' }}>
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <Box sx={{ width: 22, height: 22, borderRadius: '6px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <KitchenIcon sx={{ fontSize: 13 }} />
+            </Box>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 500 }}>廚房看板</Typography>
             <RealtimeStatus status={realtimeStatus} />
           </Box>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>掛號及報到人數</Typography>
         </Box>
         <IconButton onClick={() => selectedSession && loadData()} disabled={!selectedSession || loading}
           sx={{ color: 'text.secondary' }} title="手動更新">

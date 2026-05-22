@@ -13,7 +13,6 @@ import Popover from '@mui/material/Popover'
 import Divider from '@mui/material/Divider'
 import LogoutIcon from '@mui/icons-material/Logout'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
-import AccountCircleIcon from '@mui/icons-material/AccountCircle'
 
 const roleLabel: Record<string, string> = {
   admin: '管理員',
@@ -51,7 +50,16 @@ export function Navbar() {
           <>
             <ButtonBase onClick={e => setAnchor(e.currentTarget)}
               sx={{ display: 'flex', alignItems: 'center', gap: 0.75, px: 1.5, py: 0.75, borderRadius: '8px', border: '1px solid', borderColor: 'divider', '&:hover': { bgcolor: '#F8FAFC' } }}>
-              <AccountCircleIcon sx={{ fontSize: 28, color: 'text.disabled', flexShrink: 0 }} />
+              <Box sx={{
+                width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(37,99,235,0.35)',
+              }}>
+                <Typography sx={{ fontSize: 15, fontWeight: 700, color: 'white', lineHeight: 1, userSelect: 'none' }}>
+                  {profile.displayName?.[0]?.toUpperCase() ?? '?'}
+                </Typography>
+              </Box>
               <Box sx={{ textAlign: 'left' }}>
                 <Typography sx={{ fontSize: 14, fontWeight: 600, color: '#2563EB', lineHeight: 1.2 }}>
                   {roleLabel[profile.role]}{profile.unit ? ` · ${profile.unit}` : ''}

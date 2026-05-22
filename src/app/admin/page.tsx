@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/AuthProvider'
-import { Session, ClassTemplate, UNITS } from '@/lib/types'
+import { Session, Class, ClassTemplate, UNITS } from '@/lib/types'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs, { Dayjs } from 'dayjs'
 import Container from '@mui/material/Container'
@@ -59,6 +59,8 @@ export default function AdminPage() {
   const [deleting, setDeleting] = useState(false)
   const [editTarget, setEditTarget] = useState<Session | null>(null)
   const [editForm, setEditForm] = useState<{ name: string; date: Dayjs | null; reg_deadline: Dayjs | null; unit: string }>({ name: '', date: null, reg_deadline: null, unit: '' })
+  const [editExistingClasses, setEditExistingClasses] = useState<Class[]>([])
+  const [editSelectedClassIds, setEditSelectedClassIds] = useState<Set<string>>(new Set())
   const [saving, setSaving] = useState(false)
   const [unitTab, setUnitTab] = useState<string>('none')
   const [createOpen, setCreateOpen] = useState(false)
@@ -131,9 +133,14 @@ export default function AdminPage() {
     if (!authLoading && profile) loadSessions()
   }, [authLoading, profile?.role, profile?.unit])
 
-  function openEdit(s: Session) {
+  async function openEdit(s: Session) {
     setEditTarget(s)
     setEditForm({ name: s.name, date: dayjs(s.date), reg_deadline: dayjs(s.reg_deadline), unit: s.unit ?? '' })
+    const { data: existing } = await supabase.from('classes').select('*').eq('session_id', s.id).order('sort_order')
+    const existingList = existing ?? []
+    setEditExistingClasses(existingList)
+    const existingNames = new Set(existingList.map(c => c.name))
+    setEditSelectedClassIds(new Set(classTemplates.filter(t => existingNames.has(t.name)).map(t => t.id)))
   }
 
   async function saveEdit() {
@@ -145,6 +152,20 @@ export default function AdminPage() {
       reg_deadline: editForm.reg_deadline.format('YYYY-MM-DD'),
       unit: editForm.unit || null,
     }).eq('id', editTarget.id)
+
+    const existingByName = new Map(editExistingClasses.map(c => [c.name, c]))
+    const toAdd = classTemplates.filter(t => editSelectedClassIds.has(t.id) && !existingByName.has(t.name))
+    if (toAdd.length > 0) {
+      const maxOrder = editExistingClasses.length > 0 ? Math.max(...editExistingClasses.map(c => c.sort_order)) + 1 : 0
+      await supabase.from('classes').insert(toAdd.map((t, i) => ({ session_id: editTarget.id, name: t.name, sort_order: maxOrder + i })))
+    }
+    const toRemove = classTemplates.filter(t => !editSelectedClassIds.has(t.id) && existingByName.has(t.name))
+    for (const t of toRemove) {
+      const cls = existingByName.get(t.name)!
+      const { count } = await supabase.from('registrations').select('id', { count: 'exact', head: true }).eq('class_id', cls.id)
+      if ((count ?? 0) === 0) await supabase.from('classes').delete().eq('id', cls.id)
+    }
+
     setEditTarget(null)
     setSaving(false)
     await loadSessions()
@@ -190,14 +211,13 @@ export default function AdminPage() {
 
   return (
     <Container maxWidth="md" sx={{ py: 5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4, flexWrap: 'wrap' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 180 }}>
-          <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <SettingsIcon sx={{ color: 'primary.main', fontSize: 22 }} />
-          </Box>
-          <Box sx={{ minWidth: 0 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>班會管理</Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>建立班會、調整狀態</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 3, mb: 4, flexWrap: 'wrap' }}>
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <Box sx={{ width: 22, height: 22, borderRadius: '6px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <SettingsIcon sx={{ fontSize: 13 }} />
+            </Box>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 500 }}>班會管理</Typography>
           </Box>
         </Box>
         {(profile?.role === 'admin' || profile?.role === 'secretary') && (
@@ -413,6 +433,28 @@ export default function AdminPage() {
               </Select>
             )}
           </FormControl>
+          {classTemplates.length > 0 && (
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>套用班別</Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                {classTemplates.map(t => {
+                  const selected = editSelectedClassIds.has(t.id)
+                  const hasRegs = !selected && editExistingClasses.some(c => c.name === t.name)
+                  return (
+                    <Chip key={t.id} label={t.name}
+                      onClick={() => setEditSelectedClassIds(prev => { const n = new Set(prev); selected ? n.delete(t.id) : n.add(t.id); return n })}
+                      color={selected ? 'primary' : 'default'}
+                      variant={selected ? 'filled' : 'outlined'}
+                      sx={{ cursor: 'pointer', opacity: hasRegs ? 0.5 : 1 }}
+                    />
+                  )
+                })}
+              </Box>
+              <Typography variant="caption" sx={{ color: 'text.disabled', mt: 0.75, display: 'block' }}>
+                有報名記錄的班別取消勾選後不會被刪除
+              </Typography>
+            </Box>
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
           <Button startIcon={<CloseIcon />} onClick={() => setEditTarget(null)} disabled={saving}>取消</Button>
