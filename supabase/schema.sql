@@ -1,5 +1,21 @@
 -- ClassSign Database Schema
 
+-- class_templates: 班別範本，可由 admin 管理
+-- create table class_templates (
+--   id uuid primary key default gen_random_uuid(),
+--   name text not null,
+--   sort_order int not null default 0
+-- );
+-- alter table class_templates enable row level security;
+-- create policy "anyone can read templates" on class_templates for select using (true);
+-- create policy "admin can manage templates" on class_templates for all using (
+--   exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+-- );
+-- insert into class_templates (name, sort_order) values
+--   ('前人', 0), ('點傳師', 1), ('壇主人才班', 2),
+--   ('長青班', 3), ('青少年班', 4), ('兒童班', 5),
+--   ('廚務', 6), ('服務', 7), ('輔導員', 8);
+
 -- 班會
 create table sessions (
   id uuid primary key default gen_random_uuid(),

@@ -4,8 +4,6 @@ export type SessionStatus = 'open' | 'finished'
 
 export const UNITS: Unit[] = ['北市', '北縣', '興一', '道一', '彰化', '華山', '基隆', '三合', '府城', '嘉義']
 export const GENDERS: Gender[] = ['乾', '坤']
-export const DEFAULT_CLASSES = ['前人', '點傳師', '壇主人才班', '長青班', '青少年班', '兒童班', '廚務', '服務', '輔導員']
-
 export interface Session {
   id: string
   name: string
@@ -19,6 +17,12 @@ export interface Session {
 export interface Class {
   id: string
   session_id: string
+  name: string
+  sort_order: number
+}
+
+export interface ClassTemplate {
+  id: string
   name: string
   sort_order: number
 }

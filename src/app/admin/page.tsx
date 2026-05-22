@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/AuthProvider'
-import { Session, DEFAULT_CLASSES, UNITS } from '@/lib/types'
+import { Session, ClassTemplate, UNITS } from '@/lib/types'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs, { Dayjs } from 'dayjs'
 import Container from '@mui/material/Container'
@@ -28,6 +28,10 @@ import LoginIcon from '@mui/icons-material/Login'
 import AddIcon from '@mui/icons-material/Add'
 import SaveIcon from '@mui/icons-material/Save'
 import CloseIcon from '@mui/icons-material/Close'
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
+import TuneIcon from '@mui/icons-material/Tune'
+import Divider from '@mui/material/Divider'
 import { Loading } from '@/components/Loading'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -58,6 +62,50 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false)
   const [unitTab, setUnitTab] = useState<string>('none')
   const [createOpen, setCreateOpen] = useState(false)
+  const [classTemplates, setClassTemplates] = useState<ClassTemplate[]>([])
+  const [selectedClassIds, setSelectedClassIds] = useState<Set<string>>(new Set())
+  const [newTemplateName, setNewTemplateName] = useState('')
+  const [templateSaving, setTemplateSaving] = useState(false)
+  const [templateOpen, setTemplateOpen] = useState(false)
+
+  async function loadTemplates() {
+    const { data } = await supabase.from('class_templates').select('*').order('sort_order')
+    const list = data ?? []
+    setClassTemplates(list)
+    setSelectedClassIds(new Set(list.map((t: ClassTemplate) => t.id)))
+  }
+
+  async function addTemplate() {
+    if (!newTemplateName.trim()) return
+    setTemplateSaving(true)
+    const maxOrder = classTemplates.length > 0 ? Math.max(...classTemplates.map(t => t.sort_order)) + 1 : 0
+    await supabase.from('class_templates').insert({ name: newTemplateName.trim(), sort_order: maxOrder })
+    setNewTemplateName('')
+    setTemplateSaving(false)
+    await loadTemplates()
+  }
+
+  async function deleteTemplate(id: string) {
+    await supabase.from('class_templates').delete().eq('id', id)
+    await loadTemplates()
+  }
+
+  async function moveTemplate(id: string, direction: 'up' | 'down') {
+    const idx = classTemplates.findIndex(t => t.id === id)
+    if (direction === 'up' && idx === 0) return
+    if (direction === 'down' && idx === classTemplates.length - 1) return
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+    const a = classTemplates[idx], b = classTemplates[swapIdx]
+    // Optimistic update
+    const newList = [...classTemplates]
+    newList[idx] = b
+    newList[swapIdx] = a
+    setClassTemplates(newList)
+    // Persist sequentially to avoid conflicts
+    await supabase.from('class_templates').update({ sort_order: b.sort_order }).eq('id', a.id)
+    await supabase.from('class_templates').update({ sort_order: a.sort_order }).eq('id', b.id)
+    await loadTemplates()
+  }
 
   async function loadSessions() {
     let query = supabase.from('sessions').select('*').order('date', { ascending: false })
@@ -74,6 +122,10 @@ export default function AdminPage() {
       setUnitTab(t => validTabs.includes(t) ? t : 'none')
     }
   }
+
+  useEffect(() => {
+    loadTemplates()
+  }, [])
 
   useEffect(() => {
     if (!authLoading && profile) loadSessions()
@@ -110,8 +162,9 @@ export default function AdminPage() {
 
     if (error || !session) { alert('建立失敗：' + error?.message); setSubmitting(false); return }
 
+    const selectedTemplates = classTemplates.filter(t => selectedClassIds.has(t.id))
     await supabase.from('classes').insert(
-      DEFAULT_CLASSES.map((name, i) => ({ session_id: session.id, name, sort_order: i }))
+      selectedTemplates.map((t, i) => ({ session_id: session.id, name: t.name, sort_order: i }))
     )
     setForm({ name: '', date: null, reg_deadline: null, unit: '' })
     setCreateOpen(false)
@@ -146,7 +199,12 @@ export default function AdminPage() {
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>建立班會、調整狀態</Typography>
         </Box>
         {(profile?.role === 'admin' || profile?.role === 'secretary') && (
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}>建立班會</Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {profile?.role === 'admin' && (
+              <Button variant="outlined" startIcon={<TuneIcon />} onClick={() => setTemplateOpen(true)}>班別設定</Button>
+            )}
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setSelectedClassIds(new Set(classTemplates.map(t => t.id))); setCreateOpen(true) }}>建立班會</Button>
+          </Box>
         )}
       </Box>
 
@@ -188,6 +246,24 @@ export default function AdminPage() {
               </Select>
             )}
           </FormControl>
+          {classTemplates.length > 0 && (
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>套用班別</Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                {classTemplates.map(t => {
+                  const selected = selectedClassIds.has(t.id)
+                  return (
+                    <Chip key={t.id} label={t.name}
+                      onClick={() => setSelectedClassIds(prev => { const n = new Set(prev); selected ? n.delete(t.id) : n.add(t.id); return n })}
+                      color={selected ? 'primary' : 'default'}
+                      variant={selected ? 'filled' : 'outlined'}
+                      sx={{ cursor: 'pointer' }}
+                    />
+                  )
+                })}
+              </Box>
+            </Box>
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
           <Button startIcon={<CloseIcon />} onClick={() => setCreateOpen(false)} disabled={submitting}>取消</Button>
@@ -277,6 +353,38 @@ export default function AdminPage() {
       )}
 
       </>}
+
+      {/* 班別設定 Dialog */}
+      <Dialog open={templateOpen} onClose={() => { setTemplateOpen(false); setNewTemplateName('') }} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <TuneIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+          班別設定
+        </DialogTitle>
+        <DialogContent sx={{ pt: '8px !important', pb: 1 }}>
+          {classTemplates.map((t, idx) => (
+            <Box key={t.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, py: 0.5 }}>
+              <Typography sx={{ flex: 1, fontSize: 15 }}>{t.name}</Typography>
+              <IconButton size="small" onClick={() => moveTemplate(t.id, 'up')} disabled={idx === 0}><ArrowUpwardIcon fontSize="small" /></IconButton>
+              <IconButton size="small" onClick={() => moveTemplate(t.id, 'down')} disabled={idx === classTemplates.length - 1}><ArrowDownwardIcon fontSize="small" /></IconButton>
+              <IconButton size="small" color="error" onClick={() => deleteTemplate(t.id)}><DeleteIcon fontSize="small" /></IconButton>
+            </Box>
+          ))}
+          <Divider sx={{ my: 1.5 }} />
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <TextField size="small" label="新班別名稱" value={newTemplateName}
+              onChange={e => setNewTemplateName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addTemplate()}
+              sx={{ flex: 1 }} />
+            <Button variant="contained" size="small" startIcon={<AddIcon />}
+              onClick={addTemplate} disabled={templateSaving || !newTemplateName.trim()}>
+              新增
+            </Button>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button startIcon={<CloseIcon />} onClick={() => { setTemplateOpen(false); setNewTemplateName('') }}>關閉</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Edit Session Dialog */}
       <Dialog open={!!editTarget} onClose={() => !saving && setEditTarget(null)} maxWidth="xs" fullWidth>
