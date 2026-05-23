@@ -450,7 +450,7 @@ export default function CheckinSessionPage() {
 
       {/* 乾坤雙欄 */}
       {selectedUnit && !unitLoading && !loadError && allResults.length > 0 && filtered.length > 0 && (
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 1.5 }}>
           {/* 乾 */}
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, pb: 1.5, pt: 0.5 }}>
@@ -572,24 +572,32 @@ function PersonCard({ r, done, onCheckin, onCancel }: { r: Reg; done: boolean; o
     : null
   return (
     <Card sx={{ borderColor: done ? 'rgba(20,184,106,0.25)' : 'divider', bgcolor: done ? '#F0FDF4' : 'background.paper', transition: 'border-color 180ms ease, background 180ms ease' }}>
-      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', alignItems: 'center', gap: 1.5, minHeight: 84 }}>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography noWrap sx={{ fontSize: 12, color: done ? '#16A34A' : 'text.secondary', lineHeight: 1.2, opacity: done ? 0.85 : 1 }}>{r.classes?.name}</Typography>
-          <Typography noWrap sx={{ fontWeight: 700, fontSize: 16, lineHeight: 1.3, color: done ? '#15803D' : 'text.primary' }}>{r.name}</Typography>
-          <Typography noWrap sx={{ fontSize: 11.5, color: '#16A34A', fontWeight: 600, mt: 0.25, opacity: timeStr ? 0.85 : 0 }}>
-            {timeStr ? `已報到 ${timeStr}` : '—'}
-          </Typography>
-        </Box>
+      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', alignItems: 'stretch', gap: 1.5 }}>
         {done ? (
-          <Button onClick={onCancel} size="small"
-            sx={{ color: '#16A34A', borderColor: 'transparent', fontSize: 13, py: 0.75, px: 1.25, flexShrink: 0, whiteSpace: 'nowrap', border: '1px solid transparent', '&:hover': { borderColor: 'rgba(20,184,106,0.3)', bgcolor: 'rgba(20,184,106,0.08)' } }}>
-            <CheckCircleIcon sx={{ fontSize: 14, mr: 0.5 }} />已報到
-          </Button>
+          <>
+            <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <Typography noWrap sx={{ fontSize: 12, color: '#16A34A', lineHeight: 1.2, opacity: 0.8 }}>{r.classes?.name}</Typography>
+              <Typography noWrap sx={{ fontWeight: 700, fontSize: 18, lineHeight: 1.35, color: '#15803D' }}>{r.name}</Typography>
+            </Box>
+            <Box onClick={onCancel} sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', cursor: 'pointer', gap: 0.25, px: 0.5, borderRadius: 1, '&:hover': { bgcolor: 'rgba(20,184,106,0.06)' } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <CheckCircleIcon sx={{ fontSize: 15, color: '#16A34A' }} />
+                <Typography sx={{ fontSize: 13, color: '#16A34A', fontWeight: 600, whiteSpace: 'nowrap' }}>已報到</Typography>
+              </Box>
+              <Typography sx={{ fontSize: 12, color: '#16A34A', fontWeight: 600, opacity: 0.75, whiteSpace: 'nowrap' }}>{timeStr ?? ''}</Typography>
+            </Box>
+          </>
         ) : (
-          <Button variant="contained" size="small" startIcon={<CheckIcon />} onClick={onCheckin}
-            sx={{ fontSize: 13, py: 0.75, flexShrink: 0, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(37,73,229,0.4)', '&:hover': { boxShadow: '0 6px 16px rgba(37,73,229,0.5)' } }}>
-            報到
-          </Button>
+          <>
+            <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <Typography noWrap sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1.2 }}>{r.classes?.name}</Typography>
+              <Typography noWrap sx={{ fontWeight: 700, fontSize: 18, lineHeight: 1.35, color: 'text.primary' }}>{r.name}</Typography>
+            </Box>
+            <Button variant="contained" size="small" startIcon={<CheckIcon />} onClick={onCheckin}
+              sx={{ fontSize: 13, flexShrink: 0, whiteSpace: 'nowrap', alignSelf: 'stretch', height: 'auto', boxShadow: '0 4px 12px rgba(37,73,229,0.4)', '&:hover': { boxShadow: '0 6px 16px rgba(37,73,229,0.5)' } }}>
+              報到
+            </Button>
+          </>
         )}
       </CardContent>
     </Card>
