@@ -572,11 +572,13 @@ function PersonCard({ r, done, onCheckin, onCancel }: { r: Reg; done: boolean; o
     : null
   return (
     <Card sx={{ borderColor: done ? 'rgba(20,184,106,0.25)' : 'divider', bgcolor: done ? '#F0FDF4' : 'background.paper', transition: 'border-color 180ms ease, background 180ms ease' }}>
-      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', alignItems: 'center', gap: 1.5, minHeight: 84 }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography sx={{ fontSize: 12, color: done ? '#16A34A' : 'text.secondary', lineHeight: 1.2, opacity: done ? 0.85 : 1 }}>{r.classes?.name}</Typography>
-          <Typography sx={{ fontWeight: 700, fontSize: 18, lineHeight: 1.3, color: done ? '#15803D' : 'text.primary' }}>{r.name}</Typography>
-          {timeStr && <Typography sx={{ fontSize: 11.5, color: '#16A34A', fontWeight: 600, mt: 0.25, opacity: 0.85 }}>已報到 {timeStr}</Typography>}
+          <Typography noWrap sx={{ fontSize: 12, color: done ? '#16A34A' : 'text.secondary', lineHeight: 1.2, opacity: done ? 0.85 : 1 }}>{r.classes?.name}</Typography>
+          <Typography noWrap sx={{ fontWeight: 700, fontSize: 16, lineHeight: 1.3, color: done ? '#15803D' : 'text.primary' }}>{r.name}</Typography>
+          <Typography noWrap sx={{ fontSize: 11.5, color: '#16A34A', fontWeight: 600, mt: 0.25, opacity: timeStr ? 0.85 : 0 }}>
+            {timeStr ? `已報到 ${timeStr}` : '—'}
+          </Typography>
         </Box>
         {done ? (
           <Button onClick={onCancel} size="small"
