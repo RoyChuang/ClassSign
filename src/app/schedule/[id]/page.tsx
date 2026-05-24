@@ -87,6 +87,8 @@ export default function ScheduleViewPage() {
   )
 
   const weeks = getCalendarWeeks(schedule!.start_date, schedule!.end_date)
+  const activeDates = weeks.flat().filter((d): d is string => !!d)
+  const useListLayout = activeDates.length <= 4
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
@@ -118,13 +120,13 @@ export default function ScheduleViewPage() {
       </Box>
 
       {/* 手機：逐日列表 */}
-      <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1 }}>
+      <Box sx={{ display: useListLayout ? 'flex' : { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1 }}>
         {weeks.flat().filter((date): date is string => !!date).map(date => {
           const names = entries.get(date) ?? []
           const dow = dayjs(date).day()
           const isToday = date === dayjs().format('YYYY-MM-DD')
           return (
-            <Card key={date} sx={{ borderColor: isToday ? '#BFDBFE' : 'divider', bgcolor: isToday ? '#EFF6FF' : 'white' }}>
+            <Card key={date} sx={{ borderColor: isToday ? '#BFDBFE' : 'divider', bgcolor: isToday ? '#EFF6FF' : 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
               <CardContent sx={{ p: 2, '&:last-child': { pb: 2 }, display: 'flex', gap: 2, alignItems: 'center' }}>
                 <Box sx={{ minWidth: 64, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <Typography sx={{ fontWeight: 800, fontSize: 22, lineHeight: 1.15,
@@ -154,7 +156,7 @@ export default function ScheduleViewPage() {
       </Box>
 
       {/* 桌機：週曆格 */}
-      <Card sx={{ display: { xs: 'none', sm: 'block' } }}>
+      <Card sx={{ display: useListLayout ? 'none' : { xs: 'none', sm: 'block' } }}>
         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
           {/* 星期標題 */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 0.5 }}>
@@ -176,6 +178,7 @@ export default function ScheduleViewPage() {
                     minHeight: 90, p: 1, borderRadius: '8px',
                     bgcolor: date ? (isToday ? '#EFF6FF' : 'white') : 'transparent',
                     border: '1px solid', borderColor: date ? (isToday ? '#BFDBFE' : 'divider') : 'transparent',
+                    boxShadow: date ? '0 1px 4px rgba(0,0,0,0.07)' : 'none',
                   }}>
                     {date && (
                       <>

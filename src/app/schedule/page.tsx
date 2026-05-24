@@ -22,6 +22,7 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import AddIcon from '@mui/icons-material/Add'
+import PersonAddIcon from '@mui/icons-material/PersonAdd'
 import ShareIcon from '@mui/icons-material/Share'
 import EditIcon from '@mui/icons-material/Edit'
 import CloseIcon from '@mui/icons-material/Close'
@@ -129,6 +130,8 @@ function EditDialog({ schedule, onClose, onSaved }: {
   }
 
   const weeks = schedule ? getCalendarWeeks(schedule.start_date, schedule.end_date) : []
+  const activeDates = weeks.flat().filter((d): d is string => !!d)
+  const useListLayout = activeDates.length <= 4
 
   return (
     <Dialog open={!!schedule} onClose={() => !saving && onClose()} maxWidth="md" fullWidth
@@ -150,13 +153,13 @@ function EditDialog({ schedule, onClose, onSaved }: {
       </DialogTitle>
 
       <DialogContent sx={{ p: 2 }}>
-        {/* 手機：逐日列表 */}
-        <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1 }}>
+        {/* 手機/平板：逐日列表 */}
+        <Box sx={{ display: useListLayout ? 'flex' : { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 1 }}>
           {weeks.flat().filter((date): date is string => !!date).map(date => {
             const names = entries.get(date) ?? []
             const dow = dayjs(date).day()
             return (
-              <Card key={date} variant="outlined">
+              <Card key={date} variant="outlined" sx={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', gap: 2, alignItems: 'center' }}>
                   <Box sx={{ minWidth: 56, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <Typography sx={{ fontWeight: 800, fontSize: 18, lineHeight: 1.15,
@@ -178,8 +181,8 @@ function EditDialog({ schedule, onClose, onSaved }: {
                           onChange={e => updateName(date, ni, e.target.value)}
                           sx={{ '& input': { fontSize: 16, py: 0.75 } }}
                         />
-                        <IconButton size="small" onClick={() => removeName(date, ni)}>
-                          <CloseIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
+                        <IconButton size="small" onClick={() => removeName(date, ni)} sx={{ color: 'error.main' }}>
+                          <DeleteIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                       </Box>
                     ))}
@@ -195,7 +198,7 @@ function EditDialog({ schedule, onClose, onSaved }: {
         </Box>
 
         {/* 桌機：週格 */}
-        <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+        <Box sx={{ display: useListLayout ? 'none' : { xs: 'none', md: 'block' } }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 0.5 }}>
             {DAY_LABELS.map((label, i) => (
               <Typography key={i} sx={{ textAlign: 'center', fontSize: 12, fontWeight: 600, py: 0.5,
@@ -213,17 +216,18 @@ function EditDialog({ schedule, onClose, onSaved }: {
                     minHeight: 88, p: 0.75, borderRadius: '8px',
                     bgcolor: date ? '#FAFAFA' : 'transparent',
                     border: '1px solid', borderColor: date ? 'divider' : 'transparent',
+                    boxShadow: date ? '0 1px 4px rgba(0,0,0,0.07)' : 'none',
                   }}>
                     {date && (
                       <>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.25 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
                           <Typography sx={{ fontSize: 13, fontWeight: 700,
                             color: di === 0 ? '#EF4444' : di === 6 ? '#3B82F6' : 'text.secondary' }}>
                             {dayjs(date).format('M/D')}
                           </Typography>
                           <IconButton size="small" onClick={() => addEmptyInput(date)}
                             sx={{ p: 0, width: 20, height: 20, bgcolor: '#EFF4FF', color: '#2549E5', borderRadius: '4px', flexShrink: 0, '&:hover': { bgcolor: '#DBEAFE' } }}>
-                            <AddIcon sx={{ fontSize: 14 }} />
+                            <PersonAddIcon sx={{ fontSize: 14 }} />
                           </IconButton>
                         </Box>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
@@ -233,8 +237,8 @@ function EditDialog({ schedule, onClose, onSaved }: {
                                 onChange={e => updateName(date, ni, e.target.value)}
                                 sx={{ flex: 1, '& input': { py: 0.5, px: 0.75, fontSize: 14 }, '& .MuiOutlinedInput-root': { borderRadius: '4px' } }}
                               />
-                              <IconButton size="small" sx={{ p: 0, width: 14, height: 14, flexShrink: 0 }} onClick={() => removeName(date, ni)}>
-                                <CloseIcon sx={{ fontSize: 10, color: 'text.disabled' }} />
+                              <IconButton size="small" sx={{ p: 0, width: 20, height: 20, flexShrink: 0, color: 'error.main' }} onClick={() => removeName(date, ni)}>
+                                <DeleteIcon sx={{ fontSize: 16 }} />
                               </IconButton>
                             </Box>
                           ))}
@@ -393,24 +397,28 @@ export default function SchedulePage() {
             <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 4 }}>尚無班表，點右上角新增</Typography>
           ) : displaySchedules.map(s => (
             <Card key={s.id}>
-              <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, '&:last-child': { pb: 2 } }}>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontWeight: 600, fontSize: 16 }}>{s.title}</Typography>
-                  <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.25 }}>
-                    {s.start_date} ～ {s.end_date}
-                  </Typography>
-                  {s.note && (
-                    <Typography sx={{ fontSize: 12, color: 'text.disabled', mt: 0.25 }}>{s.note}</Typography>
-                  )}
+              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { sm: 'center' }, gap: { xs: 1.5, sm: 2 } }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: { xs: 17, sm: 16 } }}>{s.title}</Typography>
+                    <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.25 }}>
+                      {s.start_date} ～ {s.end_date}
+                    </Typography>
+                    {s.note && (
+                      <Typography sx={{ fontSize: 12, color: 'text.disabled', mt: 0.5, whiteSpace: 'pre-wrap' }}>{s.note}</Typography>
+                    )}
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+                    <Button variant="outlined" size="small" startIcon={<ShareIcon />} onClick={() => share(s.id)}
+                      sx={copied === s.id ? { color: '#16A34A', borderColor: '#16A34A', '&:hover': { borderColor: '#16A34A', bgcolor: 'rgba(22,163,74,0.06)' } } : {}}>
+                      {copied === s.id ? '已複製' : '分享'}
+                    </Button>
+                    <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={() => setEditTarget(s)}>編輯</Button>
+                    <IconButton size="small" onClick={() => setDeleteTarget(s)} sx={{ color: 'error.main' }}>
+                      <DeleteIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Box>
                 </Box>
-                <Button variant="outlined" size="small" startIcon={<ShareIcon />} onClick={() => share(s.id)}
-                  sx={copied === s.id ? { color: '#16A34A', borderColor: '#16A34A', '&:hover': { borderColor: '#16A34A', bgcolor: 'rgba(22,163,74,0.06)' } } : {}}>
-                  {copied === s.id ? '已複製' : '分享'}
-                </Button>
-                <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={() => setEditTarget(s)}>編輯</Button>
-                <IconButton size="small" onClick={() => setDeleteTarget(s)} sx={{ color: 'error.main' }}>
-                  <DeleteIcon sx={{ fontSize: 18 }} />
-                </IconButton>
               </CardContent>
             </Card>
           ))}
