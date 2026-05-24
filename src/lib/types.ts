@@ -36,6 +36,22 @@ export interface Profile {
   created_at: string
 }
 
+export interface Schedule {
+  id: string
+  title: string
+  start_date: string
+  end_date: string
+  created_at: string
+}
+
+export interface ScheduleEntry {
+  id: string
+  schedule_id: string
+  date: string
+  name: string
+  sort_order: number
+}
+
 export interface Registration {
   id: string
   session_id: string

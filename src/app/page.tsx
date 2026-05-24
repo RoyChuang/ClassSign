@@ -14,6 +14,7 @@ import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
 import KitchenIcon from '@mui/icons-material/Kitchen'
 import PeopleIcon from '@mui/icons-material/People'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import type { SvgIconComponent } from '@mui/icons-material'
 
 const publicNav = [
@@ -25,12 +26,14 @@ const publicNav = [
 const adminNav = [
   { href: '/admin', label: '班會管理', desc: '建立班會、調整狀態', Icon: SettingsIcon },
   { href: '/secretary', label: '秘書掛號', desc: '填寫各單位報名名單', Icon: ListAltIcon },
+  { href: '/schedule', label: '班表管理', desc: '建立日期排班班表', Icon: CalendarMonthIcon },
   { href: '/admin/users', label: '使用者管理', desc: '設定角色、單位與別名', Icon: PeopleIcon },
 ]
 
 const secretaryNav = [
   { href: '/admin', label: '班會管理', desc: '建立本單位班會、調整狀態', Icon: SettingsIcon },
   { href: '/secretary', label: '秘書掛號', desc: '填寫本單位報名名單', Icon: ListAltIcon },
+  { href: '/schedule', label: '班表管理', desc: '建立日期排班班表', Icon: CalendarMonthIcon },
 ]
 
 
