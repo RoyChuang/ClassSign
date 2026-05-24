@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/AuthProvider'
-import { Schedule } from '@/lib/types'
+import { Schedule, Unit, UNITS } from '@/lib/types'
 import dayjs, { Dayjs } from 'dayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import Container from '@mui/material/Container'
@@ -14,6 +14,8 @@ import CardContent from '@mui/material/CardContent'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import TextField from '@mui/material/TextField'
+import Select from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -58,10 +60,12 @@ export default function SchedulePage() {
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState<string | null>(null)
+  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null)
 
   // Create
   const [createOpen, setCreateOpen] = useState(false)
   const [createTitle, setCreateTitle] = useState('')
+  const [createNote, setCreateNote] = useState('')
   const [createStart, setCreateStart] = useState<Dayjs | null>(null)
   const [createEnd, setCreateEnd] = useState<Dayjs | null>(null)
   const [creating, setCreating] = useState(false)
@@ -69,6 +73,7 @@ export default function SchedulePage() {
   // Edit
   const [editTarget, setEditTarget] = useState<Schedule | null>(null)
   const [editTitle, setEditTitle] = useState('')
+  const [editNote, setEditNote] = useState('')
   const [editEntries, setEditEntries] = useState<Map<string, string[]>>(new Map())
   const [saving, setSaving] = useState(false)
 
@@ -87,14 +92,18 @@ export default function SchedulePage() {
   async function createSchedule() {
     if (!createTitle.trim() || !createStart || !createEnd) return
     setCreating(true)
+    const unit = profile?.role === 'admin' ? selectedUnit : profile?.unit
     const { error } = await supabase.from('schedules').insert({
       title: createTitle.trim(),
       start_date: createStart.format('YYYY-MM-DD'),
       end_date: createEnd.format('YYYY-MM-DD'),
+      unit: unit ?? null,
+      note: createNote.trim() || null,
     })
     if (!error) {
       setCreateOpen(false)
       setCreateTitle('')
+      setCreateNote('')
       setCreateStart(null)
       setCreateEnd(null)
       await loadSchedules()
@@ -113,6 +122,7 @@ export default function SchedulePage() {
     }
     setEditEntries(map)
     setEditTitle(s.title)
+    setEditNote(s.note ?? '')
     setEditTarget(s)
   }
 
@@ -147,7 +157,7 @@ export default function SchedulePage() {
   async function saveEdit() {
     if (!editTarget) return
     setSaving(true)
-    await supabase.from('schedules').update({ title: editTitle.trim() || editTarget.title }).eq('id', editTarget.id)
+    await supabase.from('schedules').update({ title: editTitle.trim() || editTarget.title, note: editNote.trim() || null }).eq('id', editTarget.id)
     await supabase.from('schedule_entries').delete().eq('schedule_id', editTarget.id)
     const toInsert: { schedule_id: string; date: string; name: string; sort_order: number }[] = []
     editEntries.forEach((names, date) => {
@@ -191,10 +201,12 @@ export default function SchedulePage() {
   )
 
   const weeks = editTarget ? getCalendarWeeks(editTarget.start_date, editTarget.end_date) : []
+  const effectiveUnit = profile?.role === 'admin' ? selectedUnit : (profile?.unit ?? null)
+  const displaySchedules = effectiveUnit ? schedules.filter(s => s.unit === effectiveUnit) : []
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 3, mb: 4, flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 2, mb: 4, flexWrap: 'wrap' }}>
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <Box sx={{ width: 22, height: 22, borderRadius: '6px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -202,13 +214,32 @@ export default function SchedulePage() {
             </Box>
             <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 500 }}>班表管理</Typography>
           </Box>
+          {profile?.role === 'secretary' && profile.unit && (
+            <Box sx={{ display: 'inline-flex', px: 1.25, py: 0.375, bgcolor: '#EFF4FF', borderRadius: '999px' }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#2549E5' }}>{profile.unit}</Typography>
+            </Box>
+          )}
+          {profile?.role === 'admin' && (
+            <Select value={selectedUnit ?? ''} onChange={e => setSelectedUnit((e.target.value as Unit) || null)}
+              displayEmpty size="small" sx={{ minWidth: 130 }}>
+              <MenuItem value=""><em>選擇單位</em></MenuItem>
+              {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
+            </Select>
+          )}
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}>新增班表</Button>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}
+          disabled={profile?.role === 'admin' && !selectedUnit}>
+          新增班表
+        </Button>
       </Box>
 
       {loading ? <Loading /> : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {schedules.map(s => (
+          {!effectiveUnit && profile?.role === 'admin' ? (
+            <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 4 }}>請先選擇單位</Typography>
+          ) : displaySchedules.length === 0 ? (
+            <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 4 }}>尚無班表，點右上角新增</Typography>
+          ) : displaySchedules.map(s => (
             <Card key={s.id}>
               <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, '&:last-child': { pb: 2 } }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -216,6 +247,9 @@ export default function SchedulePage() {
                   <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.25 }}>
                     {s.start_date} ～ {s.end_date}
                   </Typography>
+                  {s.note && (
+                    <Typography sx={{ fontSize: 12, color: 'text.disabled', mt: 0.25 }}>{s.note}</Typography>
+                  )}
                 </Box>
                 <Button variant="outlined" size="small" startIcon={<ShareIcon />} onClick={() => share(s.id)}
                   sx={copied === s.id ? { color: '#16A34A', borderColor: '#16A34A', '&:hover': { borderColor: '#16A34A', bgcolor: 'rgba(22,163,74,0.06)' } } : {}}>
@@ -228,9 +262,6 @@ export default function SchedulePage() {
               </CardContent>
             </Card>
           ))}
-          {schedules.length === 0 && (
-            <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 4 }}>尚無班表，點右上角新增</Typography>
-          )}
         </Box>
       )}
 
@@ -241,9 +272,10 @@ export default function SchedulePage() {
           <TextField label="班表名稱" fullWidth required value={createTitle} onChange={e => setCreateTitle(e.target.value)} />
           <DatePicker label="開始日期" value={createStart} onChange={setCreateStart} slotProps={{ textField: { fullWidth: true } }} />
           <DatePicker label="結束日期" value={createEnd} onChange={setCreateEnd} minDate={createStart ?? undefined} slotProps={{ textField: { fullWidth: true } }} />
+          <TextField label="備註" fullWidth multiline minRows={2} value={createNote} onChange={e => setCreateNote(e.target.value)} />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button startIcon={<CloseIcon />} onClick={() => { setCreateOpen(false); setCreateStart(null); setCreateEnd(null); setCreateTitle('') }} disabled={creating}>取消</Button>
+          <Button startIcon={<CloseIcon />} onClick={() => { setCreateOpen(false); setCreateStart(null); setCreateEnd(null); setCreateTitle(''); setCreateNote('') }} disabled={creating}>取消</Button>
           <Button variant="contained" startIcon={<AddIcon />} onClick={createSchedule}
             disabled={creating || !createTitle.trim() || !createStart || !createEnd}>
             {creating ? '建立中...' : '建立'}
@@ -259,7 +291,8 @@ export default function SchedulePage() {
             <TextField value={editTitle} onChange={e => setEditTitle(e.target.value)}
               size="small" fullWidth placeholder="班表名稱"
               sx={{ mb: 0.5, '& input': { fontWeight: 700, fontSize: 16 } }} />
-            <Typography sx={{ fontSize: 15, fontWeight: 500, color: 'text.secondary', textAlign: 'center' }}>{editTarget?.start_date} ～ {editTarget?.end_date}</Typography>
+            <Typography sx={{ fontSize: 15, fontWeight: 500, color: 'text.secondary', textAlign: 'center', mb: 0.5 }}>{editTarget?.start_date} ～ {editTarget?.end_date}</Typography>
+            <TextField label="備註" size="small" fullWidth multiline minRows={1} value={editNote} onChange={e => setEditNote(e.target.value)} />
           </Box>
           <IconButton onClick={() => setEditTarget(null)} size="small" sx={{ flexShrink: 0 }}><CloseIcon /></IconButton>
         </DialogTitle>

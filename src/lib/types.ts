@@ -41,6 +41,8 @@ export interface Schedule {
   title: string
   start_date: string
   end_date: string
+  unit: Unit | null
+  note: string | null
   created_at: string
 }
 
