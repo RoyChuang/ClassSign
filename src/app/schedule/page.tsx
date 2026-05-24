@@ -51,7 +51,7 @@ function getCalendarWeeks(startDate: string, endDate: string): (string | null)[]
   return weeks
 }
 
-type RangeDayProps = PickerDayProps<Dayjs> & { rangeStart: Dayjs | null; rangeEnd: Dayjs | null }
+type RangeDayProps = PickerDayProps & { rangeStart: Dayjs | null; rangeEnd: Dayjs | null }
 
 function RangeDay({ rangeStart, rangeEnd, day, outsideCurrentMonth, ...pickerDayProps }: RangeDayProps) {
   const isStart = !outsideCurrentMonth && rangeStart != null && day.isSame(rangeStart, 'day')
