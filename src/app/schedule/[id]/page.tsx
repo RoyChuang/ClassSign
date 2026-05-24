@@ -105,6 +105,11 @@ export default function ScheduleViewPage() {
           <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5 }}>
             {schedule!.start_date} ～ {schedule!.end_date}
           </Typography>
+          {schedule!.note && (
+            <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5, whiteSpace: 'pre-wrap' }}>
+              {schedule!.note}
+            </Typography>
+          )}
         </Box>
         <Button size="small" startIcon={<ShareIcon sx={{ fontSize: '14px !important' }} />} onClick={share}
           sx={{ fontSize: 13, color: copied ? '#16A34A' : '#2549E5', px: 0, minWidth: 0, fontWeight: 500, '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}>
