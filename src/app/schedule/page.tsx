@@ -51,9 +51,9 @@ function getCalendarWeeks(startDate: string, endDate: string): (string | null)[]
   return weeks
 }
 
-type RangeDayProps = PickerDayProps & { rangeStart: Dayjs | null; rangeEnd: Dayjs | null }
-
-function RangeDay({ rangeStart, rangeEnd, day, outsideCurrentMonth, ...pickerDayProps }: RangeDayProps) {
+function RangeDay(props: PickerDayProps) {
+  const { rangeStart = null, rangeEnd = null, day, outsideCurrentMonth, ...pickerDayProps } =
+    props as PickerDayProps & { rangeStart: Dayjs | null; rangeEnd: Dayjs | null }
   const isStart = !outsideCurrentMonth && rangeStart != null && day.isSame(rangeStart, 'day')
   const isEnd = !outsideCurrentMonth && rangeEnd != null && day.isSame(rangeEnd, 'day')
   const isBetween = !outsideCurrentMonth && rangeStart != null && rangeEnd != null
