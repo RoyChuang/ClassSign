@@ -5,8 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/AuthProvider'
 import { Schedule } from '@/lib/types'
 import dayjs, { Dayjs } from 'dayjs'
-import { DateCalendar } from '@mui/x-date-pickers/DateCalendar'
-import { PickerDay, PickerDayProps } from '@mui/x-date-pickers/PickerDay'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
@@ -51,23 +50,6 @@ function getCalendarWeeks(startDate: string, endDate: string): (string | null)[]
   return weeks
 }
 
-function RangeDay(props: PickerDayProps) {
-  const { rangeStart = null, rangeEnd = null, day, outsideCurrentMonth, ...pickerDayProps } =
-    props as PickerDayProps & { rangeStart: Dayjs | null; rangeEnd: Dayjs | null }
-  const isStart = !outsideCurrentMonth && rangeStart != null && day.isSame(rangeStart, 'day')
-  const isEnd = !outsideCurrentMonth && rangeEnd != null && day.isSame(rangeEnd, 'day')
-  const isBetween = !outsideCurrentMonth && rangeStart != null && rangeEnd != null
-    && day.isAfter(rangeStart, 'day') && day.isBefore(rangeEnd, 'day')
-  return (
-    <PickerDay
-      {...pickerDayProps}
-      day={day}
-      outsideCurrentMonth={outsideCurrentMonth}
-      selected={isStart || isEnd}
-      sx={isBetween ? { bgcolor: 'rgba(37,73,229,0.10) !important', borderRadius: '4px', color: 'primary.main', fontWeight: 600 } : undefined}
-    />
-  )
-}
 
 export default function SchedulePage() {
   const { profile, loading: authLoading, signIn } = useAuth()
@@ -83,7 +65,6 @@ export default function SchedulePage() {
   const [createStart, setCreateStart] = useState<Dayjs | null>(null)
   const [createEnd, setCreateEnd] = useState<Dayjs | null>(null)
   const [creating, setCreating] = useState(false)
-  const [rangeStep, setRangeStep] = useState<'start' | 'end'>('start')
 
   // Edit
   const [editTarget, setEditTarget] = useState<Schedule | null>(null)
@@ -102,23 +83,6 @@ export default function SchedulePage() {
   }
 
   useEffect(() => { loadSchedules() }, [])
-
-  function handleRangeSelect(day: Dayjs | null) {
-    if (!day) return
-    if (rangeStep === 'start') {
-      setCreateStart(day)
-      setCreateEnd(null)
-      setRangeStep('end')
-    } else {
-      if (day.isBefore(createStart!, 'day')) {
-        setCreateStart(day)
-        setCreateEnd(null)
-      } else {
-        setCreateEnd(day)
-        setRangeStep('start')
-      }
-    }
-  }
 
   async function createSchedule() {
     if (!createTitle.trim() || !createStart || !createEnd) return
@@ -271,25 +235,15 @@ export default function SchedulePage() {
       )}
 
       {/* 新增 Modal */}
-      <Dialog open={createOpen} onClose={() => { if (!creating) { setCreateOpen(false); setCreateStart(null); setCreateEnd(null); setCreateTitle(''); setRangeStep('start') } }} maxWidth="xs" fullWidth>
+      <Dialog open={createOpen} onClose={() => { if (!creating) { setCreateOpen(false); setCreateStart(null); setCreateEnd(null); setCreateTitle('') } }} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 600 }}>新增班表</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 1, pt: '16px !important' }}>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
           <TextField label="班表名稱" fullWidth required value={createTitle} onChange={e => setCreateTitle(e.target.value)} />
-          <Typography sx={{ fontSize: 15, fontWeight: 600, mt: 0.5, textAlign: 'center',
-            color: !createStart ? 'text.disabled' : !createEnd ? 'primary.main' : 'text.secondary' }}>
-            {!createStart ? '請選擇開始日期' : !createEnd
-              ? `${createStart.format('YYYY/M/D')} ～ 選擇結束日期`
-              : `${createStart.format('YYYY/M/D')} ～ ${createEnd.format('YYYY/M/D')}`}
-          </Typography>
-          <DateCalendar
-            value={createStart}
-            onChange={handleRangeSelect}
-            slots={{ day: RangeDay }}
-            slotProps={{ day: { rangeStart: createStart, rangeEnd: createEnd } as any }}
-          />
+          <DatePicker label="開始日期" value={createStart} onChange={setCreateStart} slotProps={{ textField: { fullWidth: true } }} />
+          <DatePicker label="結束日期" value={createEnd} onChange={setCreateEnd} minDate={createStart ?? undefined} slotProps={{ textField: { fullWidth: true } }} />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button startIcon={<CloseIcon />} onClick={() => { setCreateOpen(false); setCreateStart(null); setCreateEnd(null); setCreateTitle(''); setRangeStep('start') }} disabled={creating}>取消</Button>
+          <Button startIcon={<CloseIcon />} onClick={() => { setCreateOpen(false); setCreateStart(null); setCreateEnd(null); setCreateTitle('') }} disabled={creating}>取消</Button>
           <Button variant="contained" startIcon={<AddIcon />} onClick={createSchedule}
             disabled={creating || !createTitle.trim() || !createStart || !createEnd}>
             {creating ? '建立中...' : '建立'}
