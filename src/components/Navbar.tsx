@@ -49,7 +49,7 @@ export function Navbar() {
         {profile && (
           <>
             <ButtonBase onClick={e => setAnchor(e.currentTarget)}
-              sx={{ display: 'flex', alignItems: 'center', gap: 0.75, px: 1.5, py: 0.75, borderRadius: '8px', border: '1px solid', borderColor: 'divider', '&:hover': { bgcolor: '#F8FAFC' } }}>
+              sx={{ display: 'flex', alignItems: 'center', gap: 0.75, px: { xs: 0.75, sm: 1.5 }, py: 0.75, borderRadius: '8px', border: '1px solid', borderColor: 'divider', '&:hover': { bgcolor: '#F8FAFC' } }}>
               <Box sx={{
                 width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
                 background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
@@ -60,13 +60,13 @@ export function Navbar() {
                   {profile.displayName?.[0]?.toUpperCase() ?? '?'}
                 </Typography>
               </Box>
-              <Box sx={{ textAlign: 'left' }}>
+              <Box sx={{ textAlign: 'left', display: { xs: 'none', sm: 'block' } }}>
                 <Typography sx={{ fontSize: 14, fontWeight: 600, color: '#2563EB', lineHeight: 1.2 }}>
                   {roleLabel[profile.role]}{profile.unit ? ` · ${profile.unit}` : ''}
                 </Typography>
                 <Typography sx={{ fontSize: 14, color: 'text.secondary', lineHeight: 1.3 }}>{profile.displayName}</Typography>
               </Box>
-              <KeyboardArrowDownIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
+              <KeyboardArrowDownIcon sx={{ fontSize: 16, color: 'text.disabled', display: { xs: 'none', sm: 'block' } }} />
             </ButtonBase>
 
             <Popover open={!!anchor} anchorEl={anchor} onClose={() => setAnchor(null)}

@@ -61,6 +61,7 @@ export default function CheckinSessionPage() {
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatusType>('idle')
   const [realtimeKey, setRealtimeKey] = useState(0)
   const unitCacheRef = useRef<Map<string, Reg[]>>(new Map())
+  const [activeGender, setActiveGender] = useState<'乾' | '坤'>('乾')
 
   // 現場報名
   const [classFilter, setClassFilter] = useState<string>('')
@@ -448,9 +449,47 @@ export default function CheckinSessionPage() {
         <Typography sx={{ color: 'error.main', textAlign: 'center', py: 3 }}>載入失敗，請重新選擇單位</Typography>
       )}
 
-      {/* 乾坤雙欄 */}
-      {selectedUnit && !unitLoading && !loadError && allResults.length > 0 && filtered.length > 0 && (
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 1.5 }}>
+      {/* 乾坤 — xs: tab 切換單欄 / sm+: 雙欄並排 */}
+      {selectedUnit && !unitLoading && !loadError && allResults.length > 0 && filtered.length > 0 && (<>
+        {/* xs: 乾/坤 tab 切換 */}
+        <Box sx={{ display: { xs: 'flex', sm: 'none' }, gap: 1, mb: 1.5 }}>
+          {(['乾', '坤'] as const).map(g => {
+            const isActive = activeGender === g
+            const count = g === '乾' ? qianChecked : kunChecked
+            const total = g === '乾' ? qian.length : kun.length
+            const color = g === '乾' ? '#2563EB' : '#DB2777'
+            const bgActive = g === '乾' ? '#EFF4FF' : '#FDF2F8'
+            const barBg = g === '乾' ? '#ECF0F7' : '#FCE7F3'
+            return (
+              <Box key={g} onClick={() => setActiveGender(g)} sx={{
+                flex: 1, p: 1.25, borderRadius: '12px', cursor: 'pointer',
+                border: '2px solid', borderColor: isActive ? color : 'divider',
+                bgcolor: isActive ? bgActive : 'background.paper',
+                transition: 'all 150ms ease',
+              }}>
+                <Typography sx={{ fontWeight: 700, color, fontSize: 15, display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                  {g} <Box component="span" sx={{ fontFamily: 'monospace', fontSize: 18 }}>{count}</Box>
+                  <Box component="span" sx={{ fontSize: 12, color: 'text.disabled', fontWeight: 500 }}>/ {total}</Box>
+                </Typography>
+                <Box sx={{ mt: 0.75, height: 3, bgcolor: barBg, borderRadius: '999px', overflow: 'hidden' }}>
+                  <Box sx={{ height: '100%', width: total > 0 ? `${Math.round(count/total*100)}%` : '0%', bgcolor: color, borderRadius: 'inherit', transition: 'width 1.2s cubic-bezier(.2,.7,.2,1) 0.3s' }} />
+                </Box>
+              </Box>
+            )
+          })}
+        </Box>
+        {/* xs: 單欄列表 */}
+        <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1 }}>
+          {(activeGender === '乾' ? qian : kun).map(r =>
+            <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} onCheckin={() => setConfirmTarget(r)} onCancel={() => setCancelTarget(r)} />
+          )}
+          {(activeGender === '乾' ? qian : kun).length === 0 && (
+            <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>無資料</Typography>
+          )}
+        </Box>
+
+        {/* sm+: 雙欄並排 */}
+        <Box sx={{ display: { xs: 'none', sm: 'grid' }, gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 1.5 }}>
           {/* 乾 */}
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, pb: 1.5, pt: 0.5 }}>
@@ -484,7 +523,7 @@ export default function CheckinSessionPage() {
             </Box>
           </Box>
         </Box>
-      )}
+      </>)}
 
       {selectedUnit && !unitLoading && !loadError && allResults.length > 0 && filtered.length === 0 && (
         <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>
