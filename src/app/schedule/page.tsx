@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/AuthProvider'
 import { Schedule } from '@/lib/types'
 import dayjs, { Dayjs } from 'dayjs'
-import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { DateCalendar } from '@mui/x-date-pickers/DateCalendar'
+import { PickerDay, PickerDayProps } from '@mui/x-date-pickers/PickerDay'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
@@ -50,6 +51,24 @@ function getCalendarWeeks(startDate: string, endDate: string): (string | null)[]
   return weeks
 }
 
+type RangeDayProps = PickerDayProps<Dayjs> & { rangeStart: Dayjs | null; rangeEnd: Dayjs | null }
+
+function RangeDay({ rangeStart, rangeEnd, day, outsideCurrentMonth, ...pickerDayProps }: RangeDayProps) {
+  const isStart = !outsideCurrentMonth && rangeStart != null && day.isSame(rangeStart, 'day')
+  const isEnd = !outsideCurrentMonth && rangeEnd != null && day.isSame(rangeEnd, 'day')
+  const isBetween = !outsideCurrentMonth && rangeStart != null && rangeEnd != null
+    && day.isAfter(rangeStart, 'day') && day.isBefore(rangeEnd, 'day')
+  return (
+    <PickerDay
+      {...pickerDayProps}
+      day={day}
+      outsideCurrentMonth={outsideCurrentMonth}
+      selected={isStart || isEnd}
+      sx={isBetween ? { bgcolor: 'rgba(37,73,229,0.10) !important', borderRadius: '4px', color: 'primary.main', fontWeight: 600 } : undefined}
+    />
+  )
+}
+
 export default function SchedulePage() {
   const { profile, loading: authLoading, signIn } = useAuth()
   const canEdit = profile?.role === 'secretary' || profile?.role === 'admin'
@@ -64,12 +83,12 @@ export default function SchedulePage() {
   const [createStart, setCreateStart] = useState<Dayjs | null>(null)
   const [createEnd, setCreateEnd] = useState<Dayjs | null>(null)
   const [creating, setCreating] = useState(false)
+  const [rangeStep, setRangeStep] = useState<'start' | 'end'>('start')
 
   // Edit
   const [editTarget, setEditTarget] = useState<Schedule | null>(null)
+  const [editTitle, setEditTitle] = useState('')
   const [editEntries, setEditEntries] = useState<Map<string, string[]>>(new Map())
-  const [addingDate, setAddingDate] = useState<string | null>(null)
-  const [newName, setNewName] = useState('')
   const [saving, setSaving] = useState(false)
 
   // Delete
@@ -83,6 +102,23 @@ export default function SchedulePage() {
   }
 
   useEffect(() => { loadSchedules() }, [])
+
+  function handleRangeSelect(day: Dayjs | null) {
+    if (!day) return
+    if (rangeStep === 'start') {
+      setCreateStart(day)
+      setCreateEnd(null)
+      setRangeStep('end')
+    } else {
+      if (day.isBefore(createStart!, 'day')) {
+        setCreateStart(day)
+        setCreateEnd(null)
+      } else {
+        setCreateEnd(day)
+        setRangeStep('start')
+      }
+    }
+  }
 
   async function createSchedule() {
     if (!createTitle.trim() || !createStart || !createEnd) return
@@ -112,21 +148,26 @@ export default function SchedulePage() {
       map.set(entry.date, names)
     }
     setEditEntries(map)
+    setEditTitle(s.title)
     setEditTarget(s)
-    setAddingDate(null)
-    setNewName('')
   }
 
-  function addName(date: string) {
-    const trimmed = newName.trim()
-    if (!trimmed) return
+  function addEmptyInput(date: string) {
     setEditEntries(prev => {
       const next = new Map(prev)
-      next.set(date, [...(next.get(date) ?? []), trimmed])
+      next.set(date, [...(next.get(date) ?? []), ''])
       return next
     })
-    setNewName('')
-    setAddingDate(null)
+  }
+
+  function updateName(date: string, index: number, value: string) {
+    setEditEntries(prev => {
+      const next = new Map(prev)
+      const names = [...(next.get(date) ?? [])]
+      names[index] = value
+      next.set(date, names)
+      return next
+    })
   }
 
   function removeName(date: string, index: number) {
@@ -142,12 +183,16 @@ export default function SchedulePage() {
   async function saveEdit() {
     if (!editTarget) return
     setSaving(true)
+    await supabase.from('schedules').update({ title: editTitle.trim() || editTarget.title }).eq('id', editTarget.id)
     await supabase.from('schedule_entries').delete().eq('schedule_id', editTarget.id)
     const toInsert: { schedule_id: string; date: string; name: string; sort_order: number }[] = []
     editEntries.forEach((names, date) => {
-      names.forEach((name, i) => toInsert.push({ schedule_id: editTarget.id, date, name, sort_order: i }))
+      names.filter(n => n.trim()).forEach((name, i) =>
+        toInsert.push({ schedule_id: editTarget.id, date, name: name.trim(), sort_order: i })
+      )
     })
     if (toInsert.length > 0) await supabase.from('schedule_entries').insert(toInsert)
+    await loadSchedules()
     setSaving(false)
     setEditTarget(null)
   }
@@ -208,9 +253,10 @@ export default function SchedulePage() {
                     {s.start_date} ～ {s.end_date}
                   </Typography>
                 </Box>
-                <IconButton size="small" onClick={() => share(s.id)} title="複製公開連結">
-                  <ShareIcon sx={{ fontSize: 18, color: copied === s.id ? '#16A34A' : 'text.secondary' }} />
-                </IconButton>
+                <Button variant="outlined" size="small" startIcon={<ShareIcon />} onClick={() => share(s.id)}
+                  sx={copied === s.id ? { color: '#16A34A', borderColor: '#16A34A', '&:hover': { borderColor: '#16A34A', bgcolor: 'rgba(22,163,74,0.06)' } } : {}}>
+                  {copied === s.id ? '已複製' : '分享'}
+                </Button>
                 <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={() => openEdit(s)}>編輯</Button>
                 <IconButton size="small" onClick={() => setDeleteTarget(s)} sx={{ color: 'error.main' }}>
                   <DeleteIcon sx={{ fontSize: 18 }} />
@@ -225,15 +271,25 @@ export default function SchedulePage() {
       )}
 
       {/* 新增 Modal */}
-      <Dialog open={createOpen} onClose={() => !creating && setCreateOpen(false)} maxWidth="xs" fullWidth>
+      <Dialog open={createOpen} onClose={() => { if (!creating) { setCreateOpen(false); setCreateStart(null); setCreateEnd(null); setCreateTitle(''); setRangeStep('start') } }} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 600 }}>新增班表</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 1, pt: '16px !important' }}>
           <TextField label="班表名稱" fullWidth required value={createTitle} onChange={e => setCreateTitle(e.target.value)} />
-          <DatePicker label="開始日期" value={createStart} onChange={setCreateStart} slotProps={{ textField: { fullWidth: true } }} />
-          <DatePicker label="結束日期" value={createEnd} onChange={setCreateEnd} minDate={createStart ?? undefined} slotProps={{ textField: { fullWidth: true } }} />
+          <Typography sx={{ fontSize: 15, fontWeight: 600, mt: 0.5, textAlign: 'center',
+            color: !createStart ? 'text.disabled' : !createEnd ? 'primary.main' : 'text.secondary' }}>
+            {!createStart ? '請選擇開始日期' : !createEnd
+              ? `${createStart.format('YYYY/M/D')} ～ 選擇結束日期`
+              : `${createStart.format('YYYY/M/D')} ～ ${createEnd.format('YYYY/M/D')}`}
+          </Typography>
+          <DateCalendar
+            value={createStart}
+            onChange={handleRangeSelect}
+            slots={{ day: RangeDay }}
+            slotProps={{ day: { rangeStart: createStart, rangeEnd: createEnd } as any }}
+          />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button startIcon={<CloseIcon />} onClick={() => setCreateOpen(false)} disabled={creating}>取消</Button>
+          <Button startIcon={<CloseIcon />} onClick={() => { setCreateOpen(false); setCreateStart(null); setCreateEnd(null); setCreateTitle(''); setRangeStep('start') }} disabled={creating}>取消</Button>
           <Button variant="contained" startIcon={<AddIcon />} onClick={createSchedule}
             disabled={creating || !createTitle.trim() || !createStart || !createEnd}>
             {creating ? '建立中...' : '建立'}
@@ -243,15 +299,63 @@ export default function SchedulePage() {
 
       {/* 編輯 Modal */}
       <Dialog open={!!editTarget} onClose={() => !saving && setEditTarget(null)} maxWidth="md" fullWidth
-        PaperProps={{ sx: { maxHeight: '90vh' } }}>
-        <DialogTitle sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-          <Box>
-            <Typography sx={{ fontWeight: 700, fontSize: 17 }}>{editTarget?.title}</Typography>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 400 }}>{editTarget?.start_date} ～ {editTarget?.end_date}</Typography>
+        slotProps={{ paper: { sx: { maxHeight: '90vh' } } }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, pb: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <TextField value={editTitle} onChange={e => setEditTitle(e.target.value)}
+              size="small" fullWidth placeholder="班表名稱"
+              sx={{ mb: 0.5, '& input': { fontWeight: 700, fontSize: 16 } }} />
+            <Typography sx={{ fontSize: 15, fontWeight: 500, color: 'text.secondary', textAlign: 'center' }}>{editTarget?.start_date} ～ {editTarget?.end_date}</Typography>
           </Box>
-          <IconButton onClick={() => setEditTarget(null)} size="small"><CloseIcon /></IconButton>
+          <IconButton onClick={() => setEditTarget(null)} size="small" sx={{ flexShrink: 0 }}><CloseIcon /></IconButton>
         </DialogTitle>
         <DialogContent sx={{ p: 2 }}>
+          {/* 手機：逐日列表 */}
+          <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1 }}>
+            {weeks.flat().filter((date): date is string => !!date).map(date => {
+              const names = editEntries.get(date) ?? []
+              const dow = dayjs(date).day()
+              return (
+                <Card key={date} variant="outlined">
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <Box sx={{ minWidth: 56, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <Typography sx={{ fontWeight: 800, fontSize: 18, lineHeight: 1.15,
+                        color: dow === 0 ? '#EF4444' : dow === 6 ? '#3B82F6' : 'text.primary' }}>
+                        {dayjs(date).format('M/D')}
+                      </Typography>
+                      <Box sx={{ display: 'inline-flex', px: 0.75, py: 0.125, borderRadius: '999px', mt: 0.375,
+                        bgcolor: dow === 0 ? '#FEE2E2' : dow === 6 ? '#DBEAFE' : '#F1F5F9' }}>
+                        <Typography sx={{ fontSize: 11, fontWeight: 700, lineHeight: 1.6,
+                          color: dow === 0 ? '#EF4444' : dow === 6 ? '#3B82F6' : '#64748B' }}>
+                          {DAY_LABELS[dow]}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                      {names.map((name, ni) => (
+                        <Box key={ni} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <TextField size="small" value={name} placeholder="人名" fullWidth
+                            onChange={e => updateName(date, ni, e.target.value)}
+                            sx={{ '& input': { fontSize: 16, py: 0.75 } }}
+                          />
+                          <IconButton size="small" onClick={() => removeName(date, ni)}>
+                            <CloseIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
+                          </IconButton>
+                        </Box>
+                      ))}
+                      <Button size="small" startIcon={<AddIcon />} onClick={() => addEmptyInput(date)}
+                        sx={{ alignSelf: 'flex-start', color: 'text.secondary', fontSize: 13, px: 0.5 }}>
+                        新增
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </Box>
+
+          {/* 桌機：週格 */}
+          <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
           {/* 日標題 */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 0.5 }}>
             {DAY_LABELS.map((label, i) => (
@@ -266,7 +370,6 @@ export default function SchedulePage() {
             <Box key={wi} sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.5, mb: 0.5 }}>
               {week.map((date, di) => {
                 const names = date ? (editEntries.get(date) ?? []) : []
-                const isAdding = addingDate === date
                 return (
                   <Box key={di} sx={{
                     minHeight: 88, p: 0.75, borderRadius: '8px',
@@ -275,35 +378,29 @@ export default function SchedulePage() {
                   }}>
                     {date && (
                       <>
-                        <Typography sx={{ fontSize: 11, fontWeight: 700, lineHeight: 1.6,
-                          color: di === 0 ? '#EF4444' : di === 6 ? '#3B82F6' : 'text.secondary' }}>
-                          {dayjs(date).format('M/D')}
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.25 }}>
+                          <Typography sx={{ fontSize: 13, fontWeight: 700,
+                            color: di === 0 ? '#EF4444' : di === 6 ? '#3B82F6' : 'text.secondary' }}>
+                            {dayjs(date).format('M/D')}
+                          </Typography>
+                          <IconButton size="small" onClick={() => addEmptyInput(date)}
+                            sx={{ p: 0, width: 20, height: 20, bgcolor: '#EFF4FF', color: '#2549E5', borderRadius: '4px', flexShrink: 0, '&:hover': { bgcolor: '#DBEAFE' } }}>
+                            <AddIcon sx={{ fontSize: 14 }} />
+                          </IconButton>
+                        </Box>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
                           {names.map((name, ni) => (
                             <Box key={ni} sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                              <Typography sx={{ fontSize: 11, flex: 1, lineHeight: 1.5, color: 'text.primary' }}>{name}</Typography>
-                              <IconButton size="small" sx={{ p: 0, width: 14, height: 14 }} onClick={() => removeName(date, ni)}>
+                              <TextField size="small" value={name} placeholder="人名"
+                                onChange={e => updateName(date, ni, e.target.value)}
+                                sx={{ flex: 1, '& input': { py: 0.5, px: 0.75, fontSize: 14 }, '& .MuiOutlinedInput-root': { borderRadius: '4px' } }}
+                              />
+                              <IconButton size="small" sx={{ p: 0, width: 14, height: 14, flexShrink: 0 }} onClick={() => removeName(date, ni)}>
                                 <CloseIcon sx={{ fontSize: 10, color: 'text.disabled' }} />
                               </IconButton>
                             </Box>
                           ))}
                         </Box>
-                        {isAdding ? (
-                          <TextField size="small" value={newName} onChange={e => setNewName(e.target.value)} autoFocus
-                            placeholder="人名" sx={{ mt: 0.5, width: '100%', '& input': { py: 0.4, px: 0.75, fontSize: 11 } }}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') addName(date)
-                              if (e.key === 'Escape') { setAddingDate(null); setNewName('') }
-                            }}
-                          />
-                        ) : (
-                          <Box onClick={() => { setAddingDate(date); setNewName('') }}
-                            sx={{ mt: 0.5, cursor: 'pointer', opacity: 0.35, '&:hover': { opacity: 0.8 }, display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                            <AddIcon sx={{ fontSize: 11, color: 'text.disabled' }} />
-                            <Typography sx={{ fontSize: 10, color: 'text.disabled' }}>新增</Typography>
-                          </Box>
-                        )}
                       </>
                     )}
                   </Box>
@@ -311,6 +408,7 @@ export default function SchedulePage() {
               })}
             </Box>
           ))}
+          </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
           <Button startIcon={<CloseIcon />} onClick={() => setEditTarget(null)} disabled={saving}>取消</Button>

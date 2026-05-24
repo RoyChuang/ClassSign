@@ -112,13 +112,49 @@ export default function ScheduleViewPage() {
         </Button>
       </Box>
 
-      {/* 日曆 */}
-      <Card>
-        <CardContent sx={{ p: { xs: 1, sm: 2 }, '&:last-child': { pb: { xs: 1, sm: 2 } } }}>
+      {/* 手機：逐日列表 */}
+      <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1 }}>
+        {weeks.flat().filter((date): date is string => !!date).map(date => {
+          const names = entries.get(date) ?? []
+          const dow = dayjs(date).day()
+          const isToday = date === dayjs().format('YYYY-MM-DD')
+          return (
+            <Card key={date} sx={{ borderColor: isToday ? '#BFDBFE' : 'divider', bgcolor: isToday ? '#EFF6FF' : 'white' }}>
+              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 }, display: 'flex', gap: 2, alignItems: 'center' }}>
+                <Box sx={{ minWidth: 64, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <Typography sx={{ fontWeight: 800, fontSize: 22, lineHeight: 1.15,
+                    color: dow === 0 ? '#EF4444' : dow === 6 ? '#3B82F6' : isToday ? 'primary.main' : 'text.primary' }}>
+                    {dayjs(date).format('M/D')}
+                  </Typography>
+                  <Box sx={{ display: 'inline-flex', px: 0.75, py: 0.125, borderRadius: '999px', mt: 0.375,
+                    bgcolor: dow === 0 ? '#FEE2E2' : dow === 6 ? '#DBEAFE' : isToday ? '#DBEAFE' : '#F1F5F9' }}>
+                    <Typography sx={{ fontSize: 11, fontWeight: 700, lineHeight: 1.6,
+                      color: dow === 0 ? '#EF4444' : dow === 6 ? '#3B82F6' : isToday ? 'primary.main' : '#64748B' }}>
+                      {DAY_LABELS[dow]}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.5, pt: 0.25 }}>
+                  {names.length > 0
+                    ? names.map((name, ni) => (
+                        <Typography key={ni} sx={{ fontSize: 22, fontWeight: 500, color: 'text.primary', lineHeight: 1.5 }}>{name}</Typography>
+                      ))
+                    : <Typography sx={{ fontSize: 18, color: 'text.disabled' }}>—</Typography>
+                  }
+                </Box>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </Box>
+
+      {/* 桌機：週曆格 */}
+      <Card sx={{ display: { xs: 'none', sm: 'block' } }}>
+        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
           {/* 星期標題 */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 0.5 }}>
             {DAY_LABELS.map((label, i) => (
-              <Typography key={i} sx={{ textAlign: 'center', fontSize: 12, fontWeight: 600, py: 0.5,
+              <Typography key={i} sx={{ textAlign: 'center', fontSize: 13, fontWeight: 600, py: 0.5,
                 color: i === 0 ? '#EF4444' : i === 6 ? '#3B82F6' : 'text.secondary' }}>
                 {label}
               </Typography>
@@ -132,19 +168,19 @@ export default function ScheduleViewPage() {
                 const isToday = date === dayjs().format('YYYY-MM-DD')
                 return (
                   <Box key={di} sx={{
-                    minHeight: { xs: 56, sm: 80 }, p: { xs: 0.5, sm: 0.75 }, borderRadius: '8px',
+                    minHeight: 90, p: 1, borderRadius: '8px',
                     bgcolor: date ? (isToday ? '#EFF6FF' : 'white') : 'transparent',
                     border: '1px solid', borderColor: date ? (isToday ? '#BFDBFE' : 'divider') : 'transparent',
                   }}>
                     {date && (
                       <>
-                        <Typography sx={{ fontSize: { xs: 10, sm: 11 }, fontWeight: isToday ? 800 : 700, lineHeight: 1.6,
+                        <Typography sx={{ fontSize: 13, fontWeight: isToday ? 800 : 700, lineHeight: 1.6,
                           color: di === 0 ? '#EF4444' : di === 6 ? '#3B82F6' : isToday ? 'primary.main' : 'text.secondary' }}>
                           {dayjs(date).format('D')}
                         </Typography>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
                           {names.map((name, ni) => (
-                            <Typography key={ni} sx={{ fontSize: { xs: 10, sm: 12 }, fontWeight: 500, lineHeight: 1.4, color: 'text.primary' }}>
+                            <Typography key={ni} sx={{ fontSize: 14, fontWeight: 500, lineHeight: 1.4, color: 'text.primary' }}>
                               {name}
                             </Typography>
                           ))}
