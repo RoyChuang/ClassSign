@@ -30,6 +30,7 @@ import SaveIcon from '@mui/icons-material/Save'
 import LoginIcon from '@mui/icons-material/Login'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { Loading } from '@/components/Loading'
+import NameList from '@/components/NameList'
 
 const supabase = createClient()
 const DAY_LABELS = ['日', '一', '二', '三', '四', '五', '六']
@@ -134,7 +135,7 @@ function EditDialog({ schedule, onClose, onSaved }: {
   const useListLayout = activeDates.length <= 4
 
   return (
-    <Dialog open={!!schedule} onClose={() => !saving && onClose()} maxWidth="md" fullWidth
+    <Dialog open={!!schedule} onClose={() => !saving && onClose()} maxWidth="xl" fullWidth
       slotProps={{ paper: { sx: { maxHeight: '90vh' } } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, pb: 1 }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -174,22 +175,12 @@ function EditDialog({ schedule, onClose, onSaved }: {
                       </Typography>
                     </Box>
                   </Box>
-                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                    {names.map((name, ni) => (
-                      <Box key={ni} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <TextField size="small" value={name} placeholder="人名" fullWidth
-                          onChange={e => updateName(date, ni, e.target.value)}
-                          sx={{ '& input': { fontSize: 16, py: 0.75 } }}
-                        />
-                        <IconButton size="small" onClick={() => removeName(date, ni)} sx={{ color: 'error.main' }}>
-                          <DeleteIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                      </Box>
-                    ))}
-                    <Button size="small" startIcon={<AddIcon />} onClick={() => addEmptyInput(date)}
-                      sx={{ alignSelf: 'flex-start', color: 'text.secondary', fontSize: 13, px: 0.5 }}>
-                      新增
-                    </Button>
+                  <Box sx={{ flex: 1 }}>
+                    <NameList names={names}
+                      onUpdate={(ni, v) => updateName(date, ni, v)}
+                      onRemove={ni => removeName(date, ni)}
+                      onAdd={() => addEmptyInput(date)}
+                    />
                   </Box>
                 </CardContent>
               </Card>
@@ -230,19 +221,10 @@ function EditDialog({ schedule, onClose, onSaved }: {
                             <PersonAddIcon sx={{ fontSize: 14 }} />
                           </IconButton>
                         </Box>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-                          {names.map((name, ni) => (
-                            <Box key={ni} sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                              <TextField size="small" value={name} placeholder="人名"
-                                onChange={e => updateName(date, ni, e.target.value)}
-                                sx={{ flex: 1, '& input': { py: 0.5, px: 0.75, fontSize: 14 }, '& .MuiOutlinedInput-root': { borderRadius: '4px' } }}
-                              />
-                              <IconButton size="small" sx={{ p: 0, width: 20, height: 20, flexShrink: 0, color: 'error.main' }} onClick={() => removeName(date, ni)}>
-                                <DeleteIcon sx={{ fontSize: 16 }} />
-                              </IconButton>
-                            </Box>
-                          ))}
-                        </Box>
+                        <NameList names={names}
+                          onUpdate={(ni, v) => updateName(date, ni, v)}
+                          onRemove={ni => removeName(date, ni)}
+                        />
                       </>
                     )}
                   </Box>

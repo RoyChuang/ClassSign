@@ -11,8 +11,10 @@ import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Button from '@mui/material/Button'
+import Chip from '@mui/material/Chip'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import ShareIcon from '@mui/icons-material/Share'
+import RefreshIcon from '@mui/icons-material/Refresh'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined'
 import { Loading } from '@/components/Loading'
 
@@ -101,9 +103,15 @@ export default function ScheduleViewPage() {
             </Box>
             <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 500 }}>班表</Typography>
           </Box>
-          <Typography sx={{ fontWeight: 700, fontSize: { xs: 26, sm: 34 }, color: 'text.primary', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
-            {schedule!.title}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+            <Typography sx={{ fontWeight: 700, fontSize: { xs: 26, sm: 34 }, color: 'text.primary', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+              {schedule!.title}
+            </Typography>
+            {schedule!.unit && (
+              <Chip label={schedule!.unit} size="small" variant="outlined"
+                sx={{ fontSize: 13, height: 26, borderColor: '#BFDBFE', color: '#2549E5', bgcolor: '#EFF4FF', fontWeight: 600 }} />
+            )}
+          </Box>
           <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5 }}>
             {schedule!.start_date} ～ {schedule!.end_date}
           </Typography>
@@ -113,10 +121,17 @@ export default function ScheduleViewPage() {
             </Typography>
           )}
         </Box>
-        <Button size="small" startIcon={<ShareIcon sx={{ fontSize: '14px !important' }} />} onClick={share}
-          sx={{ fontSize: 13, color: copied ? '#16A34A' : '#2549E5', px: 0, minWidth: 0, fontWeight: 500, '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}>
-          {copied ? '已複製' : '分享連結'}
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+          <Button size="small" startIcon={<RefreshIcon sx={{ fontSize: '14px !important' }} />}
+            onClick={() => window.location.reload()}
+            sx={{ fontSize: 13, color: 'text.secondary', px: 0, minWidth: 0, fontWeight: 500, '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}>
+            更新
+          </Button>
+          <Button size="small" startIcon={<ShareIcon sx={{ fontSize: '14px !important' }} />} onClick={share}
+            sx={{ fontSize: 13, color: copied ? '#16A34A' : '#2549E5', px: 0, minWidth: 0, fontWeight: 500, '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}>
+            {copied ? '已複製' : '分享連結'}
+          </Button>
+        </Box>
       </Box>
 
       {/* 手機：逐日列表 */}
@@ -141,12 +156,13 @@ export default function ScheduleViewPage() {
                     </Typography>
                   </Box>
                 </Box>
-                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.5, pt: 0.25 }}>
+                <Box sx={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 0.75, alignItems: 'center', pt: 0.25 }}>
                   {names.length > 0
                     ? names.map((name, ni) => (
-                        <Typography key={ni} sx={{ fontSize: 22, fontWeight: 500, color: 'text.primary', lineHeight: 1.5 }}>{name}</Typography>
+                        <Chip key={ni} label={name} size="small"
+                          sx={{ fontSize: 15, height: 30, bgcolor: '#F1F5F9', color: 'text.primary', fontWeight: 500, borderRadius: '8px' }} />
                       ))
-                    : <Typography sx={{ fontSize: 18, color: 'text.disabled' }}>—</Typography>
+                    : <Typography sx={{ fontSize: 15, color: 'text.disabled' }}>—</Typography>
                   }
                 </Box>
               </CardContent>
@@ -186,11 +202,10 @@ export default function ScheduleViewPage() {
                           color: di === 0 ? '#EF4444' : di === 6 ? '#3B82F6' : isToday ? 'primary.main' : 'text.secondary' }}>
                           {dayjs(date).format('D')}
                         </Typography>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
                           {names.map((name, ni) => (
-                            <Typography key={ni} sx={{ fontSize: 14, fontWeight: 500, lineHeight: 1.4, color: 'text.primary' }}>
-                              {name}
-                            </Typography>
+                            <Chip key={ni} label={name} size="small"
+                              sx={{ fontSize: 13, height: 26, bgcolor: '#F1F5F9', color: 'text.primary', fontWeight: 500, borderRadius: '6px' }} />
                           ))}
                         </Box>
                       </>
