@@ -30,7 +30,7 @@ export function Navbar() {
       <Toolbar variant="dense" sx={{ gap: 2, minHeight: 64 }}>
         <Box component={Link} href="/" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, textDecoration: 'none', flexGrow: 1 }}>
           <Box sx={{ position: 'relative', flexShrink: 0 }}>
-            <Image src="/logo.jpg" alt="logo" width={36} height={36} style={{ borderRadius: 8, display: 'block', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }} />
+            <Image src="/daologo.png" alt="logo" width={36} height={36} style={{ borderRadius: 8, display: 'block', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }} />
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
             <Typography sx={{ fontWeight: 800, fontSize: 20, letterSpacing: '-0.03em', lineHeight: 1,

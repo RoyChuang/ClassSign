@@ -7,7 +7,7 @@ import pkg from '../../package.json'
 export const metadata: Metadata = {
   title: 'ClassSign 班會掛號系統',
   description: '班會掛號系統',
-  icons: { icon: '/logo.jpg' },
+  icons: { icon: '/daologo.png' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
