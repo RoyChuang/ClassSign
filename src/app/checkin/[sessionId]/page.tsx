@@ -56,7 +56,6 @@ export default function CheckinSessionPage() {
   const [confirmTarget, setConfirmTarget] = useState<Reg | null>(null)
   const [cancelTarget, setCancelTarget] = useState<Reg | null>(null)
   const [copied, setCopied] = useState(false)
-  const sharingRef = useRef(false)
   const [walkInSuccess, setWalkInSuccess] = useState<string>('')
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatusType>('idle')
   const [realtimeKey, setRealtimeKey] = useState(0)
@@ -228,22 +227,9 @@ export default function CheckinSessionPage() {
   }
 
   async function shareLink() {
-    if (sharingRef.current) return
-    const url = window.location.href
-    if (navigator.share) {
-      sharingRef.current = true
-      try {
-        await navigator.share({ title: session?.name, url })
-      } catch {
-        // user cancelled
-      } finally {
-        sharingRef.current = false
-      }
-    } else {
-      await navigator.clipboard.writeText(url)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
+    await navigator.clipboard.writeText(window.location.href)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   function openWalkIn() {
@@ -329,7 +315,7 @@ export default function CheckinSessionPage() {
           <Button onClick={shareLink} size="small" startIcon={<PersonAddIcon sx={{ fontSize: '14px !important' }} />}
             sx={{ mt: 0.75, fontSize: 13, color: copied ? '#16A34A' : '#2549E5', px: 0, minWidth: 0, fontWeight: 500,
               '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}>
-            {copied ? '已複製' : '分享連結'}
+            {copied ? '已複製' : '複製連結'}
           </Button>
         </Box>
         {/* 現場報名 */}
