@@ -24,6 +24,7 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import AddIcon from '@mui/icons-material/Add'
 import PersonAddIcon from '@mui/icons-material/PersonAdd'
 import ShareIcon from '@mui/icons-material/Share'
+import VisibilityIcon from '@mui/icons-material/Visibility'
 import EditIcon from '@mui/icons-material/Edit'
 import CloseIcon from '@mui/icons-material/Close'
 import SaveIcon from '@mui/icons-material/Save'
@@ -255,7 +256,8 @@ export default function SchedulePage() {
 
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [loading, setLoading] = useState(true)
-  const [copied, setCopied] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [previewTarget, setPreviewTarget] = useState<Schedule | null>(null)
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null)
 
   // Create
@@ -312,11 +314,15 @@ export default function SchedulePage() {
     await loadSchedules()
   }
 
-  async function share(id: string) {
+  async function shareLink(id: string) {
     const url = `${window.location.origin}/schedule/${id}`
-    await navigator.clipboard.writeText(url)
-    setCopied(id)
-    setTimeout(() => setCopied(null), 2000)
+    if (navigator.share) {
+      try { await navigator.share({ url }) } catch { /* cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
   }
 
   function closeCreate() {
@@ -394,9 +400,8 @@ export default function SchedulePage() {
                     )}
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-                    <Button variant="outlined" size="small" startIcon={<ShareIcon />} onClick={() => share(s.id)}
-                      sx={copied === s.id ? { color: '#16A34A', borderColor: '#16A34A', '&:hover': { borderColor: '#16A34A', bgcolor: 'rgba(22,163,74,0.06)' } } : {}}>
-                      {copied === s.id ? '已複製' : '分享'}
+                    <Button variant="outlined" size="small" startIcon={<VisibilityIcon />} onClick={() => setPreviewTarget(s)}>
+                      預覽
                     </Button>
                     <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={() => setEditTarget(s)}>編輯</Button>
                     <IconButton size="small" onClick={() => setDeleteTarget(s)} sx={{ color: 'error.main' }}>
@@ -447,6 +452,30 @@ export default function SchedulePage() {
             {deleting ? '刪除中...' : '確定刪除'}
           </Button>
         </DialogActions>
+      </Dialog>
+
+      {/* 預覽 Dialog */}
+      <Dialog open={!!previewTarget} onClose={() => setPreviewTarget(null)} maxWidth="lg" fullWidth
+        slotProps={{ paper: { sx: { height: '90vh' } } }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 16 }}>預覽</Typography>
+          <IconButton size="small" onClick={() => setPreviewTarget(null)}><CloseIcon /></IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          {previewTarget && (
+            <iframe
+              src={`/schedule/${previewTarget.id}`}
+              style={{ width: '100%', height: '100%', border: 'none' }}
+              onLoad={e => {
+                const doc = (e.target as HTMLIFrameElement).contentDocument
+                if (!doc) return
+                const s = doc.createElement('style')
+                s.textContent = 'header, nav { display: none !important; } body { padding-top: 16px !important; }'
+                doc.head.appendChild(s)
+              }}
+            />
+          )}
+        </DialogContent>
       </Dialog>
     </Container>
   )

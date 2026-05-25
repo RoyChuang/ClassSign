@@ -69,14 +69,9 @@ export default function ScheduleViewPage() {
   }, [id])
 
   async function share() {
-    const url = window.location.href
-    if (navigator.share) {
-      try { await navigator.share({ title: schedule?.title, url }) } catch { /* cancelled */ }
-    } else {
-      await navigator.clipboard.writeText(url)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
+    await navigator.clipboard.writeText(window.location.href)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   if (loading) return <Loading fullPage />
@@ -129,7 +124,7 @@ export default function ScheduleViewPage() {
           </Button>
           <Button size="small" startIcon={<ShareIcon sx={{ fontSize: '14px !important' }} />} onClick={share}
             sx={{ fontSize: 13, color: copied ? '#16A34A' : '#2549E5', px: 0, minWidth: 0, fontWeight: 500, '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}>
-            {copied ? '已複製' : '分享連結'}
+            {copied ? '已複製' : '複製連結'}
           </Button>
         </Box>
       </Box>
