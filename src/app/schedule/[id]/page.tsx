@@ -159,7 +159,7 @@ export default function ScheduleViewPage() {
                 <Box sx={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 0.75, alignItems: 'center', pt: 0.25 }}>
                   {names.length > 0
                     ? names.map((name, ni) => (
-                        <Chip key={ni} label={name} size="small"
+                        <Chip key={ni} label={`${ni + 1}. ${name}`} size="small"
                           sx={{ fontSize: 15, height: 30, bgcolor: '#F1F5F9', color: 'text.primary', fontWeight: 500, borderRadius: '8px' }} />
                       ))
                     : <Typography sx={{ fontSize: 15, color: 'text.disabled' }}>—</Typography>
@@ -204,7 +204,7 @@ export default function ScheduleViewPage() {
                         </Typography>
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
                           {names.map((name, ni) => (
-                            <Chip key={ni} label={name} size="small"
+                            <Chip key={ni} label={`${ni + 1}. ${name}`} size="small"
                               sx={{ fontSize: 13, height: 26, bgcolor: '#F1F5F9', color: 'text.primary', fontWeight: 500, borderRadius: '6px' }} />
                           ))}
                         </Box>

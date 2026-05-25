@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/AuthProvider'
 import { Schedule, Unit, UNITS } from '@/lib/types'
@@ -30,7 +30,9 @@ import SaveIcon from '@mui/icons-material/Save'
 import LoginIcon from '@mui/icons-material/Login'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { Loading } from '@/components/Loading'
-import NameList from '@/components/NameList'
+import NameList, { NameEntry } from '@/components/NameList'
+
+const EMPTY_ITEMS: NameEntry[] = []
 
 const supabase = createClient()
 const DAY_LABELS = ['日', '一', '二', '三', '四', '五', '六']
@@ -63,7 +65,7 @@ function EditDialog({ schedule, onClose, onSaved }: {
 }) {
   const titleRef = React.useRef<HTMLInputElement>(null)
   const noteRef = React.useRef<HTMLTextAreaElement>(null)
-  const [entries, setEntries] = useState<Map<string, string[]>>(new Map())
+  const [entries, setEntries] = useState<Map<string, NameEntry[]>>(new Map())
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -71,43 +73,43 @@ function EditDialog({ schedule, onClose, onSaved }: {
     supabase.from('schedule_entries')
       .select('*').eq('schedule_id', schedule.id).order('sort_order')
       .then(({ data }) => {
-        const map = new Map<string, string[]>()
+        const map = new Map<string, NameEntry[]>()
         for (const entry of data ?? []) {
-          const names = map.get(entry.date) ?? []
-          names.push(entry.name)
-          map.set(entry.date, names)
+          const items = map.get(entry.date) ?? []
+          items.push({ id: entry.id, name: entry.name })
+          map.set(entry.date, items)
         }
         setEntries(map)
       })
   }, [schedule?.id])
 
-  function addEmptyInput(date: string) {
+  const addEmptyInput = useCallback((date: string) => {
     setEntries(prev => {
       const next = new Map(prev)
-      next.set(date, [...(next.get(date) ?? []), ''])
+      next.set(date, [...(next.get(date) ?? []), { id: crypto.randomUUID(), name: '' }])
       return next
     })
-  }
+  }, [])
 
-  function updateName(date: string, index: number, value: string) {
+  const updateName = useCallback((date: string, index: number, value: string) => {
     setEntries(prev => {
       const next = new Map(prev)
-      const names = [...(next.get(date) ?? [])]
-      names[index] = value
-      next.set(date, names)
+      const items = [...(next.get(date) ?? [])]
+      items[index] = { ...items[index], name: value }
+      next.set(date, items)
       return next
     })
-  }
+  }, [])
 
-  function removeName(date: string, index: number) {
+  const removeName = useCallback((date: string, index: number) => {
     setEntries(prev => {
       const next = new Map(prev)
-      const names = [...(next.get(date) ?? [])]
-      names.splice(index, 1)
-      next.set(date, names)
+      const items = [...(next.get(date) ?? [])]
+      items.splice(index, 1)
+      next.set(date, items)
       return next
     })
-  }
+  }, [])
 
   async function save() {
     if (!schedule) return
@@ -119,9 +121,9 @@ function EditDialog({ schedule, onClose, onSaved }: {
       .eq('id', schedule.id)
     await supabase.from('schedule_entries').delete().eq('schedule_id', schedule.id)
     const toInsert: { schedule_id: string; date: string; name: string; sort_order: number }[] = []
-    entries.forEach((names, date) => {
-      names.filter(n => n.trim()).forEach((name, i) =>
-        toInsert.push({ schedule_id: schedule.id, date, name: name.trim(), sort_order: i })
+    entries.forEach((items, date) => {
+      items.filter(item => item.name.trim()).forEach((item, i) =>
+        toInsert.push({ schedule_id: schedule.id, date, name: item.name.trim(), sort_order: i })
       )
     })
     if (toInsert.length > 0) await supabase.from('schedule_entries').insert(toInsert)
@@ -157,7 +159,7 @@ function EditDialog({ schedule, onClose, onSaved }: {
         {/* 手機/平板：逐日列表 */}
         <Box sx={{ display: useListLayout ? 'flex' : { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 1 }}>
           {weeks.flat().filter((date): date is string => !!date).map(date => {
-            const names = entries.get(date) ?? []
+            const items = entries.get(date) ?? EMPTY_ITEMS
             const dow = dayjs(date).day()
             return (
               <Card key={date} variant="outlined" sx={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
@@ -176,10 +178,10 @@ function EditDialog({ schedule, onClose, onSaved }: {
                     </Box>
                   </Box>
                   <Box sx={{ flex: 1 }}>
-                    <NameList names={names}
-                      onUpdate={(ni, v) => updateName(date, ni, v)}
-                      onRemove={ni => removeName(date, ni)}
-                      onAdd={() => addEmptyInput(date)}
+                    <NameList date={date} items={items}
+                      onUpdate={updateName}
+                      onRemove={removeName}
+                      onAdd={addEmptyInput}
                     />
                   </Box>
                 </CardContent>
@@ -201,7 +203,7 @@ function EditDialog({ schedule, onClose, onSaved }: {
           {weeks.map((week, wi) => (
             <Box key={wi} sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.5, mb: 0.5 }}>
               {week.map((date, di) => {
-                const names = date ? (entries.get(date) ?? []) : []
+                const items = date ? (entries.get(date) ?? EMPTY_ITEMS) : EMPTY_ITEMS
                 return (
                   <Box key={di} sx={{
                     minHeight: 88, p: 0.75, borderRadius: '8px',
@@ -221,9 +223,9 @@ function EditDialog({ schedule, onClose, onSaved }: {
                             <PersonAddIcon sx={{ fontSize: 14 }} />
                           </IconButton>
                         </Box>
-                        <NameList names={names}
-                          onUpdate={(ni, v) => updateName(date, ni, v)}
-                          onRemove={ni => removeName(date, ni)}
+                        <NameList date={date} items={items}
+                          onUpdate={updateName}
+                          onRemove={removeName}
                         />
                       </>
                     )}
