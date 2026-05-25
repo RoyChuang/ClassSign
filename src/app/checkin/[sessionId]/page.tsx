@@ -149,8 +149,10 @@ export default function CheckinSessionPage() {
         })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations', filter: `session_id=eq.${sessionId}` },
         (payload) => {
-          const inserted = payload.new as Reg
-          if (inserted.unit !== selectedUnit) return
+          const raw = payload.new as Registration
+          if (raw.unit !== selectedUnit) return
+          const classObj = classes.find(c => c.id === raw.class_id)
+          const inserted: Reg = { ...raw, classes: { name: classObj?.name ?? '' } } as Reg
           setAllResults(prev => {
             if (prev.some(r => r.id === inserted.id)) return prev
             const newList = [...prev, inserted].sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'))
@@ -269,7 +271,7 @@ export default function CheckinSessionPage() {
       setWalkInSuccess(trimmedName)
       setWalkInOpen(false)
       if (unit !== selectedUnit) setSelectedUnit(unit as Unit)
-      else await loadUnit(unit as Unit)
+      else { unitCacheRef.current.delete(unit as Unit); await loadUnit(unit as Unit) }
     }
     setWalkInSubmitting(false)
   }

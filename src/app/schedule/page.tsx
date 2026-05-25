@@ -461,11 +461,11 @@ export default function SchedulePage() {
           <Typography sx={{ fontWeight: 700, fontSize: 16 }}>預覽</Typography>
           <IconButton size="small" onClick={() => setPreviewTarget(null)}><CloseIcon /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ p: 0 }}>
+        <DialogContent sx={{ p: 0, overflow: 'hidden' }}>
           {previewTarget && (
             <iframe
               src={`/schedule/${previewTarget.id}`}
-              style={{ width: '100%', height: '100%', border: 'none' }}
+              style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
               onLoad={e => {
                 const doc = (e.target as HTMLIFrameElement).contentDocument
                 if (!doc) return
