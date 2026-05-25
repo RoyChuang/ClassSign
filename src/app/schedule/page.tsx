@@ -144,11 +144,9 @@ function EditDialog({ schedule, onClose, onSaved }: {
           <TextField key={schedule?.id + '-t'} inputRef={titleRef} defaultValue={schedule?.title ?? ''}
             size="small" fullWidth placeholder="班表名稱"
             sx={{ mb: 0.5, '& input': { fontWeight: 700, fontSize: 16 } }} />
-          <Typography sx={{ fontSize: 15, fontWeight: 500, color: 'text.secondary', textAlign: 'center', mb: 0.5 }}>
+          <Typography sx={{ fontSize: 15, fontWeight: 500, color: 'text.secondary', textAlign: 'center' }}>
             {schedule?.start_date} ～ {schedule?.end_date}
           </Typography>
-          <TextField key={schedule?.id + '-n'} label="備註" inputRef={noteRef} defaultValue={schedule?.note ?? ''}
-            size="small" fullWidth multiline minRows={1} />
         </Box>
         <IconButton onClick={onClose} size="small" sx={{ flexShrink: 0, alignSelf: 'flex-start' }}>
           <CloseIcon />
@@ -156,8 +154,10 @@ function EditDialog({ schedule, onClose, onSaved }: {
       </DialogTitle>
 
       <DialogContent sx={{ p: 2 }}>
+        <TextField key={schedule?.id + '-n'} label="備註" inputRef={noteRef} defaultValue={schedule?.note ?? ''}
+          size="small" fullWidth multiline minRows={1} sx={{ mt: 1, mb: 2 }} />
         {/* 手機/平板：逐日列表 */}
-        <Box sx={{ display: useListLayout ? 'flex' : { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 1 }}>
+        <Box sx={{ display: useListLayout ? 'flex' : { xs: 'flex', lg: 'none' }, flexDirection: 'column', gap: 1 }}>
           {weeks.flat().filter((date): date is string => !!date).map(date => {
             const items = entries.get(date) ?? EMPTY_ITEMS
             const dow = dayjs(date).day()
@@ -191,7 +191,7 @@ function EditDialog({ schedule, onClose, onSaved }: {
         </Box>
 
         {/* 桌機：週格 */}
-        <Box sx={{ display: useListLayout ? 'none' : { xs: 'none', md: 'block' } }}>
+        <Box sx={{ display: useListLayout ? 'none' : { xs: 'none', lg: 'block' } }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 0.5 }}>
             {DAY_LABELS.map((label, i) => (
               <Typography key={i} sx={{ textAlign: 'center', fontSize: 12, fontWeight: 600, py: 0.5,
@@ -218,10 +218,11 @@ function EditDialog({ schedule, onClose, onSaved }: {
                             color: di === 0 ? '#EF4444' : di === 6 ? '#3B82F6' : 'text.secondary' }}>
                             {dayjs(date).format('M/D')}
                           </Typography>
-                          <IconButton size="small" onClick={() => addEmptyInput(date)}
-                            sx={{ p: 0, width: 20, height: 20, bgcolor: '#EFF4FF', color: '#2549E5', borderRadius: '4px', flexShrink: 0, '&:hover': { bgcolor: '#DBEAFE' } }}>
-                            <PersonAddIcon sx={{ fontSize: 14 }} />
-                          </IconButton>
+                          <Button size="small" startIcon={<PersonAddIcon sx={{ fontSize: 13 }} />}
+                            onClick={() => addEmptyInput(date)}
+                            sx={{ fontSize: 12, px: 0.75, py: 0.25, minWidth: 0, bgcolor: '#EFF4FF', color: '#2549E5', borderRadius: '6px', flexShrink: 0, fontWeight: 600, '&:hover': { bgcolor: '#DBEAFE' } }}>
+                            新增
+                          </Button>
                         </Box>
                         <NameList date={date} items={items}
                           onUpdate={updateName}
@@ -361,7 +362,7 @@ export default function SchedulePage() {
           {profile?.role === 'admin' && (
             <Select value={selectedUnit ?? ''} onChange={e => setSelectedUnit((e.target.value as Unit) || null)}
               displayEmpty size="small" sx={{ minWidth: 130 }}>
-              <MenuItem value=""><em>選擇單位</em></MenuItem>
+              <MenuItem value="">選擇單位</MenuItem>
               {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
             </Select>
           )}

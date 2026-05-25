@@ -458,21 +458,27 @@ export default function CheckinSessionPage() {
             const count = g === '乾' ? qianChecked : kunChecked
             const total = g === '乾' ? qian.length : kun.length
             const color = g === '乾' ? '#2563EB' : '#DB2777'
-            const bgActive = g === '乾' ? '#EFF4FF' : '#FDF2F8'
-            const barBg = g === '乾' ? '#ECF0F7' : '#FCE7F3'
+            const fillColor = g === '乾' ? '#DBEAFE' : '#FCE7F3'
+            const pct = total > 0 ? Math.round(count / total * 100) : 0
             return (
               <Box key={g} onClick={() => setActiveGender(g)} sx={{
                 flex: 1, p: 1.25, borderRadius: '12px', cursor: 'pointer',
                 border: '2px solid', borderColor: isActive ? color : 'divider',
-                bgcolor: isActive ? bgActive : 'background.paper',
-                transition: 'all 150ms ease',
+                bgcolor: 'background.paper',
+                transition: 'border-color 150ms ease',
+                position: 'relative', overflow: 'hidden',
               }}>
-                <Typography sx={{ fontWeight: 700, color, fontSize: 15, display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-                  {g} <Box component="span" sx={{ fontFamily: 'monospace', fontSize: 18 }}>{count}</Box>
-                  <Box component="span" sx={{ fontSize: 12, color: 'text.disabled', fontWeight: 500 }}>/ {total}</Box>
-                </Typography>
-                <Box sx={{ mt: 0.75, height: 3, bgcolor: barBg, borderRadius: '999px', overflow: 'hidden' }}>
-                  <Box sx={{ height: '100%', width: total > 0 ? `${Math.round(count/total*100)}%` : '0%', bgcolor: color, borderRadius: 'inherit', transition: 'width 1.2s cubic-bezier(.2,.7,.2,1) 0.3s' }} />
+                <Box sx={{
+                  position: 'absolute', top: 0, left: 0, bottom: 0,
+                  width: `${pct}%`,
+                  bgcolor: fillColor,
+                  transition: 'width 1.2s cubic-bezier(.2,.7,.2,1) 0.3s',
+                }} />
+                <Box sx={{ position: 'relative' }}>
+                  <Typography sx={{ fontWeight: 700, color, fontSize: 15, display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                    {g} <Box component="span" sx={{ fontFamily: 'monospace', fontSize: 18 }}>{count}</Box>
+                    <Box component="span" sx={{ fontSize: 12, color: 'text.disabled', fontWeight: 500 }}>/ {total}</Box>
+                  </Typography>
                 </Box>
               </Box>
             )

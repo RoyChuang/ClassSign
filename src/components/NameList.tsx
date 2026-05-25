@@ -4,7 +4,7 @@ import TextField from '@mui/material/TextField'
 import IconButton from '@mui/material/IconButton'
 import Button from '@mui/material/Button'
 import DeleteIcon from '@mui/icons-material/Delete'
-import AddIcon from '@mui/icons-material/Add'
+import PersonAddIcon from '@mui/icons-material/PersonAdd'
 
 export interface NameEntry {
   id: string
@@ -45,8 +45,8 @@ const NameList = memo(function NameList({ date, items, onUpdate, onRemove, onAdd
         </Box>
       ))}
       {onAdd && (
-        <Button size="small" startIcon={<AddIcon />} onClick={() => onAdd(date)}
-          sx={{ color: 'text.secondary', fontSize: 13, px: 0.5 }}>
+        <Button size="small" startIcon={<PersonAddIcon sx={{ fontSize: 13 }} />} onClick={() => onAdd(date)}
+          sx={{ fontSize: 12, px: 0.75, py: 0.25, minWidth: 0, bgcolor: '#EFF4FF', color: '#2549E5', borderRadius: '6px', fontWeight: 600, '&:hover': { bgcolor: '#DBEAFE' } }}>
           新增
         </Button>
       )}
