@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/AuthProvider'
+import { useSnack } from '@/components/SnackProvider'
 import { Session, Class, Registration, MemberGroup, Member, Unit, Gender, UNITS, GENDERS } from '@/lib/types'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
@@ -39,6 +40,7 @@ const supabase = createClient()
 
 export default function SecretaryPage() {
   const { profile, loading: authLoading, signIn } = useAuth()
+  const { showSnack } = useSnack()
   const [sessions, setSessions] = useState<Session[]>([])
   const [selectedSession, setSelectedSession] = useState<string>('')
   const [classes, setClasses] = useState<Class[]>([])
@@ -108,6 +110,7 @@ export default function SecretaryPage() {
     setImportSession('')
     setImportCandidates([])
     setImportSelected(new Set())
+    setMemberGroups([])
   }, [selectedUnit])
 
   async function loadRegistrations() {
@@ -124,7 +127,7 @@ export default function SecretaryPage() {
     const trimmedName = form.name.trim()
     const isDuplicate = registrations.some(r => r.name === trimmedName && r.gender === form.gender)
     if (isDuplicate) {
-      alert(`「${trimmedName}」（${form.gender}）已在名單中`)
+      showSnack(`「${trimmedName}」（${form.gender}）已在名單中`, 'warning')
       return
     }
     setSubmitting(true)
@@ -132,7 +135,7 @@ export default function SecretaryPage() {
       session_id: selectedSession, class_id: form.class_id,
       unit: selectedUnit, name: trimmedName, gender: form.gender,
     }).select().single()
-    if (error) alert('新增失敗：' + error.message)
+    if (error) showSnack('新增失敗：' + error.message, 'error')
     else { setForm(f => ({ ...f, name: '' })); setRegistrations(prev => [...prev, data]) }
     setSubmitting(false)
   }
@@ -140,7 +143,7 @@ export default function SecretaryPage() {
   async function changeClass(regId: string, classId: string) {
     const { error } = await supabase.from('registrations').update({ class_id: classId }).eq('id', regId)
     setClassPopover(null)
-    if (error) { alert('更新失敗：' + error.message); return }
+    if (error) { showSnack('更新失敗：' + error.message, 'error'); return }
     setRegistrations(prev => prev.map(r => r.id === regId ? { ...r, class_id: classId } : r))
   }
 
@@ -148,7 +151,7 @@ export default function SecretaryPage() {
     if (!deleteTarget) return
     setDeleting(true)
     const { error } = await supabase.from('registrations').delete().eq('id', deleteTarget)
-    if (error) { alert('刪除失敗：' + error.message); setDeleting(false); return }
+    if (error) { showSnack('刪除失敗：' + error.message, 'error'); setDeleting(false); return }
     setRegistrations(prev => prev.filter(r => r.id !== deleteTarget))
     setDeleteTarget(null)
     setDeleting(false)
@@ -182,7 +185,7 @@ export default function SecretaryPage() {
     const existingKeys = new Set(registrations.map(r => `${r.name}__${r.gender}`))
     const toInsert = groupMembers.filter(m => !existingKeys.has(`${m.name}__${m.gender}`))
     if (toInsert.length === 0) {
-      alert('群組所有成員已在名單中，無需重複匯入。')
+      showSnack('群組所有成員已在名單中，無需重複匯入。', 'warning')
       setGroupImporting(false)
       return
     }
@@ -194,14 +197,14 @@ export default function SecretaryPage() {
       gender: m.gender,
     }))
     const { data: inserted, error } = await supabase.from('registrations').insert(rows).select()
-    if (error) alert('匯入失敗：' + error.message)
+    if (error) showSnack('匯入失敗：' + error.message, 'error')
     else {
       setRegistrations(prev => [...prev, ...(inserted ?? [])])
       setGroupImportOpen(false)
       setSelectedGroupId('')
       setGroupMembers([])
       const skipped = groupMembers.length - toInsert.length
-      if (skipped > 0) alert(`已匯入 ${toInsert.length} 人，跳過 ${skipped} 位重複者。`)
+      if (skipped > 0) showSnack(`已匯入 ${toInsert.length} 人，跳過 ${skipped} 位重複者。`, 'warning')
     }
     setGroupImporting(false)
   }
@@ -256,7 +259,7 @@ export default function SecretaryPage() {
     const deduped = toImport.filter(r => !existingKeys.has(`${r.name}__${r.gender}`))
 
     if (deduped.length === 0) {
-      alert('選取的人員已全數存在於目前名單中，無需重複匯入。')
+      showSnack('選取的人員已全數存在於目前名單中，無需重複匯入。', 'warning')
       setImporting(false)
       return
     }
@@ -276,11 +279,11 @@ export default function SecretaryPage() {
     const skipped = toImport.length - deduped.length
 
     const { data: inserted, error } = await supabase.from('registrations').insert(rows).select()
-    if (error) alert('匯入失敗：' + error.message)
+    if (error) showSnack('匯入失敗：' + error.message, 'error')
     else {
       setRegistrations(prev => [...prev, ...(inserted ?? [])])
       closeImport()
-      if (skipped > 0) alert(`已匯入 ${deduped.length} 人，跳過 ${skipped} 位重複者。`)
+      if (skipped > 0) showSnack(`已匯入 ${deduped.length} 人，跳過 ${skipped} 位重複者。`, 'warning')
     }
     setImporting(false)
   }
