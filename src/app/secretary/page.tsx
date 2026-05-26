@@ -246,7 +246,7 @@ export default function SecretaryPage() {
         </Box>
       </Box>
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
+      <Card sx={{ borderRadius: 2, mb: 1, p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <FormControl fullWidth>
           <InputLabel>選擇班會</InputLabel>
           <Select label="選擇班會" value={selectedSession} onChange={e => setSelectedSession(e.target.value)}>
@@ -269,7 +269,7 @@ export default function SecretaryPage() {
             )
           })()}
         </FormControl>
-      </Box>
+      </Card>
 
       {selectedSession && selectedUnit && (
         <>

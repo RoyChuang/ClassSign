@@ -121,41 +121,40 @@ export default function KitchenPage() {
       ) : (
         <>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
-            <Card sx={{ bgcolor: '#EFF6FF', borderColor: '#BFDBFE' }}>
-              <CardContent sx={{ textAlign: 'center', py: 4 }}>
-                <Typography variant="h2" sx={{ fontWeight: 700, color: '#2563EB', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>{total}</Typography>
-                <Typography variant="body2" sx={{ color: '#3B82F6', mt: 1, fontWeight: 500 }}>掛號人數</Typography>
-              </CardContent>
-            </Card>
-            <Card sx={{ bgcolor: '#F0FDF4', borderColor: '#BBF7D0' }}>
-              <CardContent sx={{ textAlign: 'center', py: 4 }}>
-                <Typography variant="h2" sx={{ fontWeight: 700, color: '#16A34A', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>{checkedIn}</Typography>
-                <Typography variant="body2" sx={{ color: '#22C55E', mt: 1, fontWeight: 500 }}>已報到</Typography>
-              </CardContent>
-            </Card>
+            {[
+              { label: '掛號人數', value: total, color: '#2563EB', bg: '#EFF6FF' },
+              { label: '已報到', value: checkedIn, color: '#16A34A', bg: '#F0FDF4' },
+            ].map(({ label, value, color, bg }) => (
+              <Box key={label} sx={{
+                borderRadius: 4, background: `linear-gradient(145deg, ${bg} 0%, #ffffff 100%)`,
+                boxShadow: `0 4px 24px ${color}28`, p: 3,
+              }}>
+                <Typography sx={{ fontSize: { xs: 52, sm: 64 }, fontWeight: 800, color, lineHeight: 1, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', mb: 1 }}>{value}</Typography>
+                <Typography sx={{ fontSize: 12, fontWeight: 700, color, opacity: 0.65, letterSpacing: '0.1em' }}>{label}</Typography>
+              </Box>
+            ))}
           </Box>
 
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
             {[
-              { label: '乾', value: qian, color: '#2563EB' },
-              { label: '坤', value: kun, color: '#DB2777' },
-            ].map(({ label, value, color }) => (
-              <Card key={label}>
-                <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                  <Typography variant="h4" sx={{ fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>{value}</Typography>
-                  <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>{label}</Typography>
-                </CardContent>
-              </Card>
+              { label: '乾', value: qian, color: '#2563EB', bg: '#EFF6FF' },
+              { label: '坤', value: kun, color: '#DB2777', bg: '#FDF2F8' },
+            ].map(({ label, value, color, bg }) => (
+              <Box key={label} sx={{
+                borderRadius: 4, background: `linear-gradient(145deg, ${bg} 0%, #ffffff 100%)`,
+                boxShadow: `0 4px 24px ${color}28`, p: 3,
+              }}>
+                <Typography sx={{ fontSize: { xs: 40, sm: 48 }, fontWeight: 800, color, lineHeight: 1, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', mb: 1 }}>{value}</Typography>
+                <Typography sx={{ fontSize: 12, fontWeight: 700, color, opacity: 0.65, letterSpacing: '0.1em' }}>{label}</Typography>
+              </Box>
             ))}
           </Box>
 
-          <Card sx={{ bgcolor: '#F8FAFC' }}>
-            <CardContent sx={{ textAlign: 'center', py: 2 }}>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                未到 <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{total - checkedIn}</Box> 人
-              </Typography>
-            </CardContent>
-          </Card>
+          <Box sx={{ borderRadius: 4, bgcolor: '#F8FAFC', textAlign: 'center', py: 2 }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              未到 <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{total - checkedIn}</Box> 人
+            </Typography>
+          </Box>
         </>
       )}
     </Container>

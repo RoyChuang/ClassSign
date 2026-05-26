@@ -51,38 +51,46 @@ function UnitRows({ filtered, expandedUnit, setExpandedUnit }: UnitRowsProps) {
           <React.Fragment key={unit}>
             <TableRow hover onClick={() => setExpandedUnit(isOpen ? null : unit)}
               sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}>
-              <TableCell sx={{ p: 0, pl: 0.5, width: 32 }}>
+              <TableCell sx={{ p: 0, pl: 1.5, width: 32 }}>
                 {isOpen
                   ? <KeyboardArrowDownIcon sx={{ fontSize: 18, color: 'text.secondary', verticalAlign: 'middle' }} />
                   : <KeyboardArrowRightIcon sx={{ fontSize: 18, color: 'text.secondary', verticalAlign: 'middle' }} />}
               </TableCell>
               <TableCell sx={{ whiteSpace: 'nowrap' }}><Typography sx={{ fontSize: 15, fontWeight: 500 }}>{unit}</Typography></TableCell>
-              <TableCell align="center" sx={{ color: '#2563EB', whiteSpace: 'nowrap', fontSize: 15 }}>{qian}</TableCell>
-              <TableCell align="center" sx={{ color: '#16A34A', whiteSpace: 'nowrap', fontSize: 15 }}>{qianIn}</TableCell>
-              <TableCell align="center" sx={{ color: '#DB2777', whiteSpace: 'nowrap', fontSize: 15 }}>{kun}</TableCell>
-              <TableCell align="center" sx={{ color: '#16A34A', whiteSpace: 'nowrap', fontSize: 15 }}>{kunIn}</TableCell>
+              <TableCell align="center" sx={{ color: '#2563EB', whiteSpace: 'nowrap', fontSize: 15 }}>
+                <Box sx={{ display: { xs: 'none', sm: 'block' } }}>{qian}</Box>
+                <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{qian}/{qianIn}</Box>
+              </TableCell>
+              <TableCell align="center" sx={{ color: '#16A34A', whiteSpace: 'nowrap', fontSize: 15, display: { xs: 'none', sm: 'table-cell' } }}>{qianIn}</TableCell>
+              <TableCell align="center" sx={{ color: '#DB2777', whiteSpace: 'nowrap', fontSize: 15 }}>
+                <Box sx={{ display: { xs: 'none', sm: 'block' } }}>{kun}</Box>
+                <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{kun}/{kunIn}</Box>
+              </TableCell>
+              <TableCell align="center" sx={{ color: '#16A34A', whiteSpace: 'nowrap', fontSize: 15, display: { xs: 'none', sm: 'table-cell' } }}>{kunIn}</TableCell>
               <TableCell align="center" sx={{ fontWeight: 600, whiteSpace: 'nowrap', fontSize: 15 }}>{qian + kun}</TableCell>
             </TableRow>
             <TableRow>
               <TableCell colSpan={7} sx={{ p: 0, border: isOpen ? undefined : 'none' }}>
                 <Collapse in={isOpen} unmountOnExit>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', bgcolor: '#F8FAFF' }}>
+                  <Box sx={{ bgcolor: '#F8FAFF', p: { xs: 1.5, sm: 2 }, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                     {(['乾', '坤'] as const).map(g => {
                       const names = g === '乾' ? qianNames : kunNames
                       const color = g === '乾' ? '#2563EB' : '#DB2777'
                       return (
-                        <Box key={g} sx={{ p: { xs: 1.5, sm: 2 }, borderRight: g === '乾' ? '1px solid' : 'none', borderColor: 'divider' }}>
-                          <Typography sx={{ fontSize: { xs: 13, sm: 14 }, fontWeight: 600, color, mb: 1 }}>{g}（{names.length} 人）</Typography>
-                          {names.map(r => (
-                            <Box key={r.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
-                              <FiberManualRecordIcon sx={{ fontSize: { xs: 9, sm: 10 }, color: r.checked_in ? color : '#CBD5E1', flexShrink: 0 }} />
-                              <Typography sx={{
-                                fontSize: { xs: 15, sm: 16 }, lineHeight: 1.4,
-                                fontWeight: r.checked_in ? 700 : 400,
-                                color: r.checked_in ? color : '#94A3B8',
-                              }}>{r.name}</Typography>
-                            </Box>
-                          ))}
+                        <Box key={g}>
+                          <Typography sx={{ fontSize: { xs: 13, sm: 14 }, fontWeight: 600, color, mb: 0.75 }}>{g}（{names.length} 人）</Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            {names.map(r => (
+                              <Box key={r.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <FiberManualRecordIcon sx={{ fontSize: { xs: 9, sm: 10 }, color: r.checked_in ? color : '#CBD5E1', flexShrink: 0 }} />
+                                <Typography sx={{
+                                  fontSize: { xs: 15, sm: 16 }, lineHeight: 1.4,
+                                  fontWeight: r.checked_in ? 700 : 400,
+                                  color: r.checked_in ? color : '#94A3B8',
+                                }}>{r.name}</Typography>
+                              </Box>
+                            ))}
+                          </Box>
                         </Box>
                       )
                     })}
@@ -189,23 +197,25 @@ export default function DashboardPage() {
         ))}
       </Box>
 
-      <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap' }}>
-        <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel>班會</InputLabel>
-          <Select label="班會" value={selectedSession} onChange={e => { setSelectedSession(e.target.value); setExpandedUnit(null) }}>
-            {sessions.map(s => <MenuItem key={s.id} value={s.id}>{s.unit ? `[${s.unit}] ${s.name}` : `[聯合] ${s.name}`}</MenuItem>)}
-          </Select>
-        </FormControl>
-        {classes.length > 0 && (
-          <FormControl sx={{ minWidth: 150 }}>
-            <InputLabel>班別</InputLabel>
-            <Select label="班別" value={selectedClass} onChange={e => setSelectedClass(e.target.value)}>
-              <MenuItem value="all">全部班別</MenuItem>
-              {classes.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+      <Card sx={{ borderRadius: 2, mb: 1, px: 2, py: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel>班會</InputLabel>
+            <Select label="班會" value={selectedSession} onChange={e => { setSelectedSession(e.target.value); setExpandedUnit(null) }}>
+              {sessions.map(s => <MenuItem key={s.id} value={s.id}>{s.unit ? `[${s.unit}] ${s.name}` : `[聯合] ${s.name}`}</MenuItem>)}
             </Select>
           </FormControl>
-        )}
-      </Box>
+          {classes.length > 0 && (
+            <FormControl sx={{ minWidth: 150 }}>
+              <InputLabel>班別</InputLabel>
+              <Select label="班別" value={selectedClass} onChange={e => setSelectedClass(e.target.value)}>
+                <MenuItem value="all">全部班別</MenuItem>
+                {classes.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+              </Select>
+            </FormControl>
+          )}
+        </Box>
+      </Card>
 
       {loading && <Loading />}
 
@@ -214,19 +224,19 @@ export default function DashboardPage() {
           <Table sx={{ minWidth: 320 }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ width: 32, p: 0 }} />
-                <TableCell rowSpan={2} sx={{ whiteSpace: 'nowrap', verticalAlign: 'middle' }}>單位</TableCell>
-                <TableCell align="center" colSpan={2} sx={{ color: '#2563EB', fontWeight: 600, borderBottom: 'none', pb: 0.5 }}>乾</TableCell>
-                <TableCell align="center" colSpan={2} sx={{ color: '#DB2777', fontWeight: 600, borderBottom: 'none', pb: 0.5 }}>坤</TableCell>
-                <TableCell rowSpan={2} align="center" sx={{ whiteSpace: 'nowrap', verticalAlign: 'middle' }}>合計</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell sx={{ p: 0 }} />
-                {(['#2563EB', '#16A34A', '#DB2777', '#16A34A'] as const).map((color, i) => (
-                  <TableCell key={i} align="center" sx={{ whiteSpace: 'nowrap', color, fontSize: 14, pt: 0.5 }}>
-                    {['掛號', '報到', '掛號', '報到'][i]}
-                  </TableCell>
-                ))}
+                <TableCell sx={{ width: 32, p: 0, pl: 1 }} />
+                <TableCell sx={{ whiteSpace: 'nowrap' }}>單位</TableCell>
+                <TableCell align="center" sx={{ color: '#2563EB', fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap' }}>
+                  <Box sx={{ display: { xs: 'none', sm: 'block' } }}>乾 掛號</Box>
+                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>乾</Box>
+                </TableCell>
+                <TableCell align="center" sx={{ color: '#16A34A', fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap', display: { xs: 'none', sm: 'table-cell' } }}>乾 報到</TableCell>
+                <TableCell align="center" sx={{ color: '#DB2777', fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap' }}>
+                  <Box sx={{ display: { xs: 'none', sm: 'block' } }}>坤 掛號</Box>
+                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>坤</Box>
+                </TableCell>
+                <TableCell align="center" sx={{ color: '#16A34A', fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap', display: { xs: 'none', sm: 'table-cell' } }}>坤 報到</TableCell>
+                <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}>合計</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -236,10 +246,16 @@ export default function DashboardPage() {
               <TableRow sx={{ '& td': { fontWeight: 700, borderTop: '2px solid', borderColor: 'divider', whiteSpace: 'nowrap' } }}>
                 <TableCell sx={{ p: 0 }} />
                 <TableCell sx={{ fontSize: 15, fontWeight: 600 }}>合計</TableCell>
-                <TableCell align="center" sx={{ color: '#2563EB', fontSize: 15, fontWeight: 700 }}>{totalByGender('乾')}</TableCell>
-                <TableCell align="center" sx={{ color: '#16A34A', fontSize: 15, fontWeight: 700 }}>{filtered.filter(r => r.gender === '乾' && r.checked_in).length}</TableCell>
-                <TableCell align="center" sx={{ color: '#DB2777', fontSize: 15, fontWeight: 700 }}>{totalByGender('坤')}</TableCell>
-                <TableCell align="center" sx={{ color: '#16A34A', fontSize: 15, fontWeight: 700 }}>{filtered.filter(r => r.gender === '坤' && r.checked_in).length}</TableCell>
+                <TableCell align="center" sx={{ color: '#2563EB', fontSize: 15, fontWeight: 700 }}>
+                  <Box sx={{ display: { xs: 'none', sm: 'block' } }}>{totalByGender('乾')}</Box>
+                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{totalByGender('乾')}/{filtered.filter(r => r.gender === '乾' && r.checked_in).length}</Box>
+                </TableCell>
+                <TableCell align="center" sx={{ color: '#16A34A', fontSize: 15, fontWeight: 700, display: { xs: 'none', sm: 'table-cell' } }}>{filtered.filter(r => r.gender === '乾' && r.checked_in).length}</TableCell>
+                <TableCell align="center" sx={{ color: '#DB2777', fontSize: 15, fontWeight: 700 }}>
+                  <Box sx={{ display: { xs: 'none', sm: 'block' } }}>{totalByGender('坤')}</Box>
+                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{totalByGender('坤')}/{filtered.filter(r => r.gender === '坤' && r.checked_in).length}</Box>
+                </TableCell>
+                <TableCell align="center" sx={{ color: '#16A34A', fontSize: 15, fontWeight: 700, display: { xs: 'none', sm: 'table-cell' } }}>{filtered.filter(r => r.gender === '坤' && r.checked_in).length}</TableCell>
                 <TableCell align="center" sx={{ fontSize: 15, fontWeight: 700 }}>{filtered.length}</TableCell>
               </TableRow>
             </TableFooter>
