@@ -7,7 +7,6 @@ import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
-import CardContent from '@mui/material/CardContent'
 import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
 import FormControl from '@mui/material/FormControl'
@@ -171,12 +170,22 @@ export default function DashboardPage() {
 
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 2, mb: 4 }}>
         {summaryCards.map(({ value, label, color, bg }) => (
-          <Card key={label} sx={{ bgcolor: bg, border: 'none', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <Typography variant="h3" sx={{ fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>{value}</Typography>
-              <Typography sx={{ color, opacity: 0.65, mt: 0.5, fontSize: 14 }}>{label}</Typography>
-            </CardContent>
-          </Card>
+          <Box key={label} sx={{
+            borderRadius: 4,
+            background: `linear-gradient(145deg, ${bg} 0%, #ffffff 100%)`,
+            boxShadow: `0 4px 24px ${color}28`,
+            p: { xs: 2, sm: 3 }, pt: { xs: 2.5, sm: 3 },
+          }}>
+            <Typography sx={{
+              fontSize: { xs: 52, sm: 64 }, fontWeight: 800, color,
+              lineHeight: 1, letterSpacing: '-0.03em',
+              fontVariantNumeric: 'tabular-nums', mb: 1,
+            }}>{value}</Typography>
+            <Typography sx={{
+              fontSize: { xs: 11, sm: 12 }, fontWeight: 700,
+              color, opacity: 0.65, letterSpacing: '0.1em',
+            }}>{label}</Typography>
+          </Box>
         ))}
       </Box>
 
@@ -201,7 +210,7 @@ export default function DashboardPage() {
       {loading && <Loading />}
 
       {selectedSession && !loading && (
-        <Card sx={{ overflow: 'auto' }}>
+        <Card sx={{ overflow: 'auto', borderRadius: 4 }}>
           <Table sx={{ minWidth: 320 }}>
             <TableHead>
               <TableRow>
