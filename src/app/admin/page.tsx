@@ -225,7 +225,7 @@ export default function AdminPage() {
             {profile?.role === 'admin' && (
               <Button variant="outlined" startIcon={<TuneIcon />} onClick={() => setTemplateOpen(true)}>班別設定</Button>
             )}
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setSelectedClassIds(new Set(classTemplates.map(t => t.id))); setCreateOpen(true) }}>建立班會</Button>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setSelectedClassIds(new Set()); setCreateOpen(true) }}>建立班會</Button>
           </Box>
         )}
       </Box>
@@ -290,7 +290,7 @@ export default function AdminPage() {
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
           <Button startIcon={<CloseIcon />} onClick={() => setCreateOpen(false)} disabled={submitting}>取消</Button>
           <Button variant="contained" startIcon={<AddIcon />} onClick={e => createSession(e as unknown as React.FormEvent)}
-            disabled={submitting || !form.name || !form.date || !form.reg_deadline}>
+            disabled={submitting || !form.name || !form.date || !form.reg_deadline || selectedClassIds.size === 0}>
             {submitting ? '建立中...' : '建立班會'}
           </Button>
         </DialogActions>
