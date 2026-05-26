@@ -198,23 +198,35 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
           {members.length === 0 ? (
             <Typography sx={{ color: 'text.disabled', fontSize: 14, py: 2 }}>尚無成員</Typography>
           ) : (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, pt: 2, pb: 1.5 }}>
-              {members.map(m => (
-                <Box key={m.id} sx={{
-                  display: 'flex', alignItems: 'center', gap: 0.5,
-                  bgcolor: m.gender === '乾' ? '#EFF6FF' : '#FDF2F8',
-                  borderRadius: 2, px: 1.25, py: 0.5,
-                }}>
-                  <Typography sx={{
-                    fontSize: 14, fontWeight: 500,
-                    color: m.gender === '乾' ? '#2563EB' : '#DB2777',
-                  }}>{m.name}</Typography>
-                  <IconButton size="small" onClick={() => deleteMember(m.id)}
-                    sx={{ p: 0.25, color: 'text.disabled', '&:hover': { color: 'error.main' } }}>
-                    <DeleteIcon sx={{ fontSize: 14 }} />
-                  </IconButton>
-                </Box>
-              ))}
+            <Box sx={{ display: 'flex', gap: 2, pt: 2, pb: 1.5 }}>
+              {(['乾', '坤'] as Gender[]).map(gender => {
+                const list = members.filter(m => m.gender === gender)
+                if (list.length === 0) return null
+                return (
+                  <Box key={gender} sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontSize: 12, fontWeight: 600, mb: 1, color: gender === '乾' ? '#2563EB' : '#DB2777' }}>
+                      {gender}（{list.length}）
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {list.map(m => (
+                        <Box key={m.id} sx={{
+                          display: 'flex', alignItems: 'center', gap: 0.5,
+                          bgcolor: gender === '乾' ? '#EFF6FF' : '#FDF2F8',
+                          borderRadius: 2, px: 1.25, py: 0.5,
+                        }}>
+                          <Typography sx={{ fontSize: 14, fontWeight: 500, color: gender === '乾' ? '#2563EB' : '#DB2777' }}>
+                            {m.name}
+                          </Typography>
+                          <IconButton size="small" onClick={() => deleteMember(m.id)}
+                            sx={{ p: 0.25, color: 'text.disabled', '&:hover': { color: 'error.main' } }}>
+                            <DeleteIcon sx={{ fontSize: 14 }} />
+                          </IconButton>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                )
+              })}
             </Box>
           )}
 
