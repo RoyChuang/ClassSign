@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/AuthProvider'
-import { MemberGroup, Member, Gender } from '@/lib/types'
+import { useSnack } from '@/components/SnackProvider'
+import { MemberGroup, Member, Gender, Unit, UNITS } from '@/lib/types'
+import Select from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
@@ -37,6 +40,7 @@ interface GroupCardProps {
 }
 
 function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
+  const { showSnack } = useSnack()
   const [members, setMembers] = useState<Member[]>([])
   const [open, setOpen] = useState(false)
   const [loaded, setLoaded] = useState(false)
@@ -59,11 +63,13 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
     setLoaded(true)
   }
 
+  useEffect(() => { loadMembers() }, [group.id])
+
   async function saveRename() {
     const name = editNameValue.trim()
     if (!name || name === group.name) { setEditingName(false); return }
     const { error } = await supabase.from('member_groups').update({ name }).eq('id', group.id)
-    if (error) alert('更新失敗：' + error.message)
+    if (error) showSnack('更新失敗：' + error.message, 'error')
     else { onRename(group.id, name); setEditingName(false) }
   }
 
@@ -76,8 +82,8 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
     e.preventDefault()
     const name = form.name.trim()
     if (!name) return
-    if (members.some(m => m.name === name && m.gender === form.gender)) {
-      alert(`「${name}」（${form.gender}）已在群組中`)
+    if (members.some(m => m.name === name)) {
+      showSnack(`「${name}」已在群組中`, 'warning')
       return
     }
     setAdding(true)
@@ -87,14 +93,14 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
       .insert({ group_id: group.id, name, gender: form.gender, sort_order })
       .select()
       .single()
-    if (error) alert('新增失敗：' + error.message)
+    if (error) showSnack('新增失敗：' + error.message, 'error')
     else { setMembers(prev => [...prev, data]); setForm(f => ({ ...f, name: '' })) }
     setAdding(false)
   }
 
   async function deleteMember(id: string) {
     const { error } = await supabase.from('members').delete().eq('id', id)
-    if (error) alert('刪除失敗：' + error.message)
+    if (error) showSnack('刪除失敗：' + error.message, 'error')
     else setMembers(prev => prev.filter(m => m.id !== id))
   }
 
@@ -117,11 +123,11 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
 
     if (parsed.length === 0) { setPasting(false); return }
 
-    const existingKeys = new Set(members.map(m => `${m.name}__${m.gender}`))
-    const deduped = parsed.filter(p => !existingKeys.has(`${p.name}__${p.gender}`))
+    const existingNames = new Set(members.map(m => m.name))
+    const deduped = parsed.filter(p => !existingNames.has(p.name))
 
     if (deduped.length === 0) {
-      alert('所有人員已在群組中，無需重複新增。')
+      showSnack('所有人員已在群組中，無需重複新增。', 'warning')
       return
     }
 
@@ -129,13 +135,14 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
     const baseOrder = members.length
     const rows = deduped.map((p, i) => ({ group_id: group.id, name: p.name, gender: p.gender, sort_order: baseOrder + i }))
     const { data, error } = await supabase.from('members').insert(rows).select()
-    if (error) alert('批次新增失敗：' + error.message)
+    if (error) showSnack('批次新增失敗：' + error.message, 'error')
     else {
       setMembers(prev => [...prev, ...(data ?? [])])
       setPasteText('')
       setPasteOpen(false)
       const skipped = parsed.length - deduped.length
-      if (skipped > 0) alert(`已新增 ${deduped.length} 人，跳過 ${skipped} 位重複者。`)
+      if (skipped > 0) showSnack(`已新增 ${deduped.length} 人，跳過 ${skipped} 位重複者。`, 'info')
+      else showSnack(`已新增 ${deduped.length} 人`, 'success')
     }
     setPasting(false)
   }
@@ -173,10 +180,9 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
             <EditIcon fontSize="small" />
           </IconButton>
         )}
-        {loaded && !editingName && (
-          <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
-            {members.length} 人
-            {members.length > 0 && `（乾 ${qian} / 坤 ${kun}）`}
+        {!editingName && (
+          <Typography sx={{ fontSize: 13, color: 'text.secondary', whiteSpace: 'nowrap' }}>
+            {loaded ? `${members.length} 人${members.length > 0 ? `（乾 ${qian} / 坤 ${kun}）` : ''}` : '…'}
           </Typography>
         )}
         <IconButton
@@ -273,28 +279,30 @@ export default function MembersPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null)
+  const { showSnack } = useSnack()
+
+  const effectiveUnit = profile?.role === 'admin' ? selectedUnit : (profile?.unit as Unit ?? null)
 
   useEffect(() => {
-    if (!profile) return
+    if (!profile || !effectiveUnit) { setGroups([]); return }
     setLoading(true)
-    const unitFilter = profile.role === 'admin' ? {} : { unit: profile.unit }
-    let q = supabase.from('member_groups').select('*').order('created_at')
-    if (profile.role !== 'admin' && profile.unit) q = q.eq('unit', profile.unit)
-    q.then(({ data }) => { setGroups(data ?? []); setLoading(false) })
-  }, [profile])
+    supabase.from('member_groups').select('*').eq('unit', effectiveUnit).order('created_at')
+      .then(({ data }) => { setGroups(data ?? []); setLoading(false) })
+  }, [profile?.id, effectiveUnit])
 
   async function createGroup(e: React.FormEvent) {
     e.preventDefault()
     const name = newGroupName.trim()
-    if (!name || !profile?.unit) return
+    if (!name || !effectiveUnit) return
     setCreating(true)
-    const unit = profile.role === 'admin' ? (profile.unit ?? '') : profile.unit
+    const unit = effectiveUnit
     const { data, error } = await supabase
       .from('member_groups')
       .insert({ unit, name })
       .select()
       .single()
-    if (error) alert('新增失敗：' + error.message)
+    if (error) showSnack('新增失敗：' + error.message, 'error')
     else { setGroups(prev => [...prev, data]); setNewGroupName(''); setCreateDialogOpen(false) }
     setCreating(false)
   }
@@ -303,7 +311,7 @@ export default function MembersPage() {
     if (!deleteTarget) return
     setDeleting(true)
     const { error } = await supabase.from('member_groups').delete().eq('id', deleteTarget)
-    if (error) alert('刪除失敗：' + error.message)
+    if (error) showSnack('刪除失敗：' + error.message, 'error')
     else setGroups(prev => prev.filter(g => g.id !== deleteTarget))
     setDeleteTarget(null)
     setDeleting(false)
@@ -329,13 +337,27 @@ export default function MembersPage() {
           </Box>
           <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 500 }}>名單管理</Typography>
         </Box>
+        {profile.role === 'secretary' && profile.unit && (
+          <Box sx={{ display: 'inline-flex', px: 1.25, py: 0.375, bgcolor: '#EFF4FF', borderRadius: '999px' }}>
+            <Typography sx={{ fontSize: 32, fontWeight: 600, color: '#2549E5' }}>{profile.unit}</Typography>
+          </Box>
+        )}
+        {profile.role === 'admin' && (
+          <Select value={selectedUnit ?? ''} onChange={e => setSelectedUnit((e.target.value as Unit) || null)}
+            displayEmpty size="small" sx={{ minWidth: 130 }}>
+            <MenuItem value="">選擇單位</MenuItem>
+            {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
+          </Select>
+        )}
       </Box>
 
       {loading ? <Loading /> : (
         <>
-          {groups.length === 0 && (
+          {!effectiveUnit && profile.role === 'admin' ? (
+            <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 4 }}>請先選擇單位</Typography>
+          ) : groups.length === 0 ? (
             <Typography sx={{ color: 'text.disabled', mb: 3 }}>尚無名單群組，請先新增一個。</Typography>
-          )}
+          ) : null}
 
           {groups.map(g => (
             <GroupCard key={g.id} group={g}
@@ -347,6 +369,7 @@ export default function MembersPage() {
           <Button
             variant="outlined" startIcon={<AddIcon />} fullWidth
             onClick={() => setCreateDialogOpen(true)}
+            disabled={!effectiveUnit}
             sx={{ borderRadius: 3, py: 1.5, borderStyle: 'dashed' }}
           >
             新增群組

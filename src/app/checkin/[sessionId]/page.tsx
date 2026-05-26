@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useSnack } from '@/components/SnackProvider'
 import { Session, Class, Registration, Unit, Gender, UNITS, GENDERS } from '@/lib/types'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
@@ -41,6 +42,7 @@ export default function CheckinSessionPage() {
   const params = useParams()
   const router = useRouter()
   const sessionId = params.sessionId as string
+  const { showSnack } = useSnack()
 
   const [session, setSession] = useState<Session | null>(null)
   const [sessionLoading, setSessionLoading] = useState(true)
@@ -250,7 +252,7 @@ export default function CheckinSessionPage() {
       .select('id').eq('session_id', sessionId).eq('unit', unit)
       .eq('name', trimmedName).eq('gender', walkInForm.gender).limit(1)
     if (existing && existing.length > 0) {
-      alert(`「${trimmedName}」（${walkInForm.gender}）已在報名名單中`)
+      showSnack(`「${trimmedName}」（${walkInForm.gender}）已在報名名單中`, 'warning')
       return
     }
 
@@ -266,7 +268,7 @@ export default function CheckinSessionPage() {
     })
 
     if (error) {
-      alert('報名失敗：' + error.message)
+      showSnack('報名失敗：' + error.message, 'error')
     } else {
       setWalkInSuccess(trimmedName)
       setWalkInOpen(false)

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/AuthProvider'
+import { useSnack } from '@/components/SnackProvider'
 import { Session, Class, ClassTemplate, UNITS } from '@/lib/types'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs, { Dayjs } from 'dayjs'
@@ -50,6 +51,7 @@ function sessionChip(s: Session) {
 
 export default function AdminPage() {
   const { profile, loading: authLoading, signIn } = useAuth()
+  const { showSnack } = useSnack()
   const [sessions, setSessions] = useState<Session[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -181,7 +183,7 @@ export default function AdminPage() {
       .insert({ name: form.name, date: form.date?.format('YYYY-MM-DD') ?? '', reg_deadline: form.reg_deadline?.format('YYYY-MM-DD') ?? '', unit: sessionUnit })
       .select().single()
 
-    if (error || !session) { alert('建立失敗：' + error?.message); setSubmitting(false); return }
+    if (error || !session) { showSnack('建立失敗：' + error?.message, 'error'); setSubmitting(false); return }
 
     const selectedTemplates = classTemplates.filter(t => selectedClassIds.has(t.id))
     await supabase.from('classes').insert(
