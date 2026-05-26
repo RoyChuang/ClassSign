@@ -54,6 +54,21 @@ export interface ScheduleEntry {
   sort_order: number
 }
 
+export interface MemberGroup {
+  id: string
+  unit: string
+  name: string
+  created_at: string
+}
+
+export interface Member {
+  id: string
+  group_id: string
+  name: string
+  gender: Gender
+  sort_order: number
+}
+
 export interface Registration {
   id: string
   session_id: string

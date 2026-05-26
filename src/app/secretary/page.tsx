@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/AuthProvider'
-import { Session, Class, Registration, Unit, Gender, UNITS, GENDERS } from '@/lib/types'
+import { Session, Class, Registration, MemberGroup, Member, Unit, Gender, UNITS, GENDERS } from '@/lib/types'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
@@ -20,6 +20,7 @@ import IconButton from '@mui/material/IconButton'
 import DeleteIcon from '@mui/icons-material/Delete'
 import DownloadIcon from '@mui/icons-material/Download'
 import ListAltIcon from '@mui/icons-material/ListAlt'
+import GroupsIcon from '@mui/icons-material/Groups'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import LoginIcon from '@mui/icons-material/Login'
 import AddIcon from '@mui/icons-material/Add'
@@ -51,6 +52,15 @@ export default function SecretaryPage() {
 
   // 換班別 Popover
   const [classPopover, setClassPopover] = useState<{ anchorEl: HTMLElement; regId: string } | null>(null)
+
+  // 從群組匯入
+  const [groupImportOpen, setGroupImportOpen] = useState(false)
+  const [memberGroups, setMemberGroups] = useState<MemberGroup[]>([])
+  const [selectedGroupId, setSelectedGroupId] = useState<string>('')
+  const [groupMembers, setGroupMembers] = useState<Member[]>([])
+  const [groupImportClassId, setGroupImportClassId] = useState<string>('')
+  const [loadingGroupMembers, setLoadingGroupMembers] = useState(false)
+  const [groupImporting, setGroupImporting] = useState(false)
 
   // 匯入歷史名單
   const [importOpen, setImportOpen] = useState(false)
@@ -142,6 +152,58 @@ export default function SecretaryPage() {
     setRegistrations(prev => prev.filter(r => r.id !== deleteTarget))
     setDeleteTarget(null)
     setDeleting(false)
+  }
+
+  async function openGroupImport() {
+    setGroupImportClassId(form.class_id)
+    setGroupImportOpen(true)
+    if (memberGroups.length > 0) return
+    const { data } = await supabase
+      .from('member_groups')
+      .select('*')
+      .eq('unit', selectedUnit)
+      .order('created_at')
+    setMemberGroups(data ?? [])
+  }
+
+  async function onGroupChange(groupId: string) {
+    setSelectedGroupId(groupId)
+    setGroupMembers([])
+    if (!groupId) return
+    setLoadingGroupMembers(true)
+    const { data } = await supabase.from('members').select('*').eq('group_id', groupId).order('sort_order')
+    setGroupMembers(data ?? [])
+    setLoadingGroupMembers(false)
+  }
+
+  async function confirmGroupImport() {
+    if (!selectedSession || !selectedUnit || !groupImportClassId || groupMembers.length === 0) return
+    setGroupImporting(true)
+    const existingKeys = new Set(registrations.map(r => `${r.name}__${r.gender}`))
+    const toInsert = groupMembers.filter(m => !existingKeys.has(`${m.name}__${m.gender}`))
+    if (toInsert.length === 0) {
+      alert('群組所有成員已在名單中，無需重複匯入。')
+      setGroupImporting(false)
+      return
+    }
+    const rows = toInsert.map(m => ({
+      session_id: selectedSession,
+      class_id: groupImportClassId,
+      unit: selectedUnit,
+      name: m.name,
+      gender: m.gender,
+    }))
+    const { data: inserted, error } = await supabase.from('registrations').insert(rows).select()
+    if (error) alert('匯入失敗：' + error.message)
+    else {
+      setRegistrations(prev => [...prev, ...(inserted ?? [])])
+      setGroupImportOpen(false)
+      setSelectedGroupId('')
+      setGroupMembers([])
+      const skipped = groupMembers.length - toInsert.length
+      if (skipped > 0) alert(`已匯入 ${toInsert.length} 人，跳過 ${skipped} 位重複者。`)
+    }
+    setGroupImporting(false)
   }
 
   function closeImport() {
@@ -275,13 +337,18 @@ export default function SecretaryPage() {
         <>
           <Card sx={{ mb: 3 }}>
             <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1 }}>
                 <Typography sx={{ fontWeight: 600 }}>新增報名者</Typography>
-                {pastSessions.length > 0 && (
-                  <Button startIcon={<DownloadIcon />} onClick={() => setImportOpen(true)} sx={{ fontSize: 14 }}>
-                    匯入歷史名單
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button startIcon={<GroupsIcon />} onClick={openGroupImport} sx={{ fontSize: 14 }}>
+                    從群組匯入
                   </Button>
-                )}
+                  {pastSessions.length > 0 && (
+                    <Button startIcon={<DownloadIcon />} onClick={() => setImportOpen(true)} sx={{ fontSize: 14 }}>
+                      匯入歷史名單
+                    </Button>
+                  )}
+                </Box>
               </Box>
               <Box component="form" onSubmit={addPerson} sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <TextField required label="姓名" value={form.name}
@@ -356,6 +423,64 @@ export default function SecretaryPage() {
           )}
         </>
       )}
+
+      {/* 從群組匯入 Dialog */}
+      <Dialog open={groupImportOpen} onClose={() => !groupImporting && setGroupImportOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 600 }}>從名單群組匯入</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
+          {memberGroups.length === 0 ? (
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              此單位尚無名單群組，請先至「名單管理」建立群組並加入成員。
+            </Typography>
+          ) : (
+            <>
+              <FormControl fullWidth>
+                <InputLabel>選擇群組</InputLabel>
+                <Select label="選擇群組" value={selectedGroupId} onChange={e => onGroupChange(e.target.value)}>
+                  {memberGroups.map(g => <MenuItem key={g.id} value={g.id}>{g.name}</MenuItem>)}
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth>
+                <InputLabel>匯入至班別</InputLabel>
+                <Select label="匯入至班別" value={groupImportClassId} onChange={e => setGroupImportClassId(e.target.value)}>
+                  {classes.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+                </Select>
+              </FormControl>
+
+              {loadingGroupMembers && <Loading />}
+
+              {!loadingGroupMembers && selectedGroupId && groupMembers.length === 0 && (
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>此群組尚無成員</Typography>
+              )}
+
+              {!loadingGroupMembers && groupMembers.length > 0 && (() => {
+                const existingKeys = new Set(registrations.map(r => `${r.name}__${r.gender}`))
+                const newCount = groupMembers.filter(m => !existingKeys.has(`${m.name}__${m.gender}`)).length
+                const skipCount = groupMembers.length - newCount
+                return (
+                  <Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 2 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                      群組共 {groupMembers.length} 人
+                      {skipCount > 0 && `，${skipCount} 人已在名單中將自動跳過`}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      將新增 {newCount} 人至「{classes.find(c => c.id === groupImportClassId)?.name}」
+                    </Typography>
+                  </Box>
+                )
+              })()}
+            </>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button startIcon={<CloseIcon />} onClick={() => setGroupImportOpen(false)} disabled={groupImporting}>取消</Button>
+          <Button variant="contained" startIcon={<GroupsIcon />} onClick={confirmGroupImport}
+            disabled={groupImporting || !selectedGroupId || !groupImportClassId || groupMembers.length === 0}>
+            {groupImporting ? '匯入中...' : '確認匯入'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* 匯入歷史名單 Dialog */}
       <Dialog open={importOpen} onClose={() => !importing && closeImport()} maxWidth="sm" fullWidth>
