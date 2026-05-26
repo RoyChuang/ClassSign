@@ -80,7 +80,7 @@ export default function DashboardPage() {
         <FormControl sx={{ minWidth: 200 }}>
           <InputLabel>班會</InputLabel>
           <Select label="班會" value={selectedSession} onChange={e => setSelectedSession(e.target.value)}>
-            {sessions.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
+            {sessions.map(s => <MenuItem key={s.id} value={s.id}>{s.unit ? `[${s.unit}] ${s.name}` : `[聯合] ${s.name}`}</MenuItem>)}
           </Select>
         </FormControl>
         {classes.length > 0 && (

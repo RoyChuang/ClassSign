@@ -109,7 +109,7 @@ export default function Home() {
 
           {profile?.role === 'admin' && (
             <Box>
-              <SectionTitle label="管理功能" sub="需管理員權限" />
+              <SectionTitle label="管理功能" sub="需管理員或秘書權限" />
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 {adminNav.map(item => <NavCard key={item.href} {...item} />)}
               </Box>
@@ -118,7 +118,7 @@ export default function Home() {
 
           {profile?.role === 'secretary' && (
             <Box>
-              <SectionTitle label="秘書功能" sub="需秘書權限" />
+              <SectionTitle label="秘書功能" sub="需管理員或秘書權限" />
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 {secretaryNav.map(item => <NavCard key={item.href} {...item} />)}
               </Box>

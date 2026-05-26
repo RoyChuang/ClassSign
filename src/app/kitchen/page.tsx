@@ -103,7 +103,7 @@ export default function KitchenPage() {
       <FormControl fullWidth sx={{ mb: 4 }}>
         <InputLabel>班會</InputLabel>
         <Select label="班會" value={selectedSession} onChange={e => setSelectedSession(e.target.value)}>
-          {sessions.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
+          {sessions.map(s => <MenuItem key={s.id} value={s.id}>{s.unit ? `[${s.unit}] ${s.name}` : `[聯合] ${s.name}`}</MenuItem>)}
         </Select>
       </FormControl>
 

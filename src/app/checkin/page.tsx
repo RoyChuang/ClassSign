@@ -56,7 +56,7 @@ export default function CheckinPage() {
             {sessions.map(s => (
               <Card key={s.id} variant="outlined">
                 <CardActionArea onClick={() => router.push(`/checkin/${s.id}`)} sx={{ px: 2, py: 1.5 }}>
-                  <Typography sx={{ fontWeight: 600, fontSize: 15 }}>{s.name}</Typography>
+                  <Typography sx={{ fontWeight: 600, fontSize: 15 }}>{s.unit ? `[${s.unit}] ${s.name}` : `[聯合] ${s.name}`}</Typography>
                   <Typography variant="caption" sx={{ color: 'text.secondary' }}>{s.date}</Typography>
                 </CardActionArea>
               </Card>

@@ -250,7 +250,7 @@ export default function SecretaryPage() {
         <FormControl fullWidth>
           <InputLabel>選擇班會</InputLabel>
           <Select label="選擇班會" value={selectedSession} onChange={e => setSelectedSession(e.target.value)}>
-            {sessions.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
+            {sessions.map(s => <MenuItem key={s.id} value={s.id}>{s.unit ? `[${s.unit}] ${s.name}` : `[聯合] ${s.name}`}</MenuItem>)}
           </Select>
         </FormControl>
         <FormControl fullWidth>
@@ -286,7 +286,7 @@ export default function SecretaryPage() {
               <Box component="form" onSubmit={addPerson} sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <TextField required label="姓名" value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))} sx={{ width: 140 }} />
-                <ToggleButtonGroup exclusive value={form.gender}
+                <ToggleButtonGroup exclusive value={form.gender} sx={{ alignSelf: 'stretch' }}
                   onChange={(_, v) => v && setForm(f => ({ ...f, gender: v as Gender }))}>
                   <ToggleButton value="乾" sx={{ px: 2, fontWeight: 600, '&.Mui-selected': { bgcolor: '#DBEAFE', color: '#2563EB', '&:hover': { bgcolor: '#BFDBFE' } } }}>乾</ToggleButton>
                   <ToggleButton value="坤" sx={{ px: 2, fontWeight: 600, '&.Mui-selected': { bgcolor: '#FCE7F3', color: '#DB2777', '&:hover': { bgcolor: '#FBCFE8' } } }}>坤</ToggleButton>
@@ -297,7 +297,7 @@ export default function SecretaryPage() {
                     {classes.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
                   </Select>
                 </FormControl>
-                <Button type="submit" variant="contained" startIcon={<AddIcon />} disabled={submitting}>
+                <Button type="submit" variant="contained" startIcon={<AddIcon />} disabled={submitting} sx={{ alignSelf: 'stretch' }}>
                   {submitting ? '新增中...' : '新增'}
                 </Button>
               </Box>
