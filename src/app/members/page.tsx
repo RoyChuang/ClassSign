@@ -153,43 +153,48 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
       <Box
         onClick={handleToggle}
         sx={{
-          display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 2,
+          display: 'flex', flexDirection: 'column', px: 2.5, py: 2,
           cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' },
         }}
       >
-        {open
-          ? <KeyboardArrowDownIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
-          : <KeyboardArrowRightIcon sx={{ color: 'text.secondary', fontSize: 20 }} />}
-        {editingName ? (
-          <TextField
-            size="small" value={editNameValue} autoFocus
-            onClick={e => e.stopPropagation()}
-            onChange={e => setEditNameValue(e.target.value)}
-            onBlur={saveRename}
-            onKeyDown={e => { if (e.key === 'Enter') saveRename(); if (e.key === 'Escape') setEditingName(false) }}
-            sx={{ flex: 1, mr: 1 }}
-          />
-        ) : (
-          <Typography sx={{ fontWeight: 600, fontSize: 16, flex: 1 }}>{group.name}</Typography>
-        )}
+        {/* Row 1: arrow + name + edit + delete */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {open
+            ? <KeyboardArrowDownIcon sx={{ color: 'text.secondary', fontSize: 20, flexShrink: 0 }} />
+            : <KeyboardArrowRightIcon sx={{ color: 'text.secondary', fontSize: 20, flexShrink: 0 }} />}
+          {editingName ? (
+            <TextField
+              size="small" value={editNameValue} autoFocus
+              onClick={e => e.stopPropagation()}
+              onChange={e => setEditNameValue(e.target.value)}
+              onBlur={saveRename}
+              onKeyDown={e => { if (e.key === 'Enter') saveRename(); if (e.key === 'Escape') setEditingName(false) }}
+              sx={{ flex: 1 }}
+            />
+          ) : (
+            <Typography sx={{ fontWeight: 600, fontSize: 16, flex: 1 }}>{group.name}</Typography>
+          )}
+          {!editingName && (
+            <Button size="small" startIcon={<EditIcon />}
+              onClick={e => { e.stopPropagation(); setEditNameValue(group.name); setEditingName(true) }}
+              sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' } }}>
+              編輯
+            </Button>
+          )}
+          {!editingName && (
+            <Button size="small" startIcon={<DeleteIcon />}
+              onClick={e => { e.stopPropagation(); onDelete(group.id) }}
+              sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}>
+              刪除
+            </Button>
+          )}
+        </Box>
+        {/* Row 2: count below title */}
         {!editingName && (
-          <IconButton size="small" onClick={e => { e.stopPropagation(); setEditNameValue(group.name); setEditingName(true) }}
-            sx={{ color: 'text.disabled', '&:hover': { color: 'primary.main' } }}>
-            <EditIcon fontSize="small" />
-          </IconButton>
-        )}
-        {!editingName && (
-          <Typography sx={{ fontSize: 13, color: 'text.secondary', whiteSpace: 'nowrap' }}>
+          <Typography sx={{ fontSize: 13, color: 'text.secondary', pl: 3.5, mt: 0.25 }}>
             {loaded ? `${members.length} 人${members.length > 0 ? `（乾 ${qian} / 坤 ${kun}）` : ''}` : '…'}
           </Typography>
         )}
-        <IconButton
-          size="small"
-          onClick={e => { e.stopPropagation(); onDelete(group.id) }}
-          sx={{ color: 'text.disabled', '&:hover': { color: 'error.main' } }}
-        >
-          <DeleteIcon fontSize="small" />
-        </IconButton>
       </Box>
 
       <Collapse in={open} unmountOnExit>
@@ -198,7 +203,7 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
           {members.length === 0 ? (
             <Typography sx={{ color: 'text.disabled', fontSize: 14, py: 2 }}>尚無成員</Typography>
           ) : (
-            <Box sx={{ display: 'flex', gap: 2, pt: 2, pb: 1.5 }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, pt: 2, pb: 1.5 }}>
               {(['乾', '坤'] as Gender[]).map(gender => {
                 const list = members.filter(m => m.gender === gender)
                 if (list.length === 0) return null

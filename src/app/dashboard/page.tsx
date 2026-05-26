@@ -59,12 +59,12 @@ function UnitRows({ filtered, expandedUnit, setExpandedUnit }: UnitRowsProps) {
               <TableCell sx={{ whiteSpace: 'nowrap' }}><Typography sx={{ fontSize: 15, fontWeight: 500 }}>{unit}</Typography></TableCell>
               <TableCell align="center" sx={{ color: '#2563EB', whiteSpace: 'nowrap', fontSize: 15 }}>
                 <Box sx={{ display: { xs: 'none', sm: 'block' } }}>{qian}</Box>
-                <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{qian}/{qianIn}</Box>
+                <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{qian}/<span style={{ color: '#16A34A' }}>{qianIn}</span></Box>
               </TableCell>
               <TableCell align="center" sx={{ color: '#16A34A', whiteSpace: 'nowrap', fontSize: 15, display: { xs: 'none', sm: 'table-cell' } }}>{qianIn}</TableCell>
               <TableCell align="center" sx={{ color: '#DB2777', whiteSpace: 'nowrap', fontSize: 15 }}>
                 <Box sx={{ display: { xs: 'none', sm: 'block' } }}>{kun}</Box>
-                <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{kun}/{kunIn}</Box>
+                <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{kun}/<span style={{ color: '#16A34A' }}>{kunIn}</span></Box>
               </TableCell>
               <TableCell align="center" sx={{ color: '#16A34A', whiteSpace: 'nowrap', fontSize: 15, display: { xs: 'none', sm: 'table-cell' } }}>{kunIn}</TableCell>
               <TableCell align="center" sx={{ fontWeight: 600, whiteSpace: 'nowrap', fontSize: 15 }}>{qian + kun}</TableCell>
@@ -248,12 +248,12 @@ export default function DashboardPage() {
                 <TableCell sx={{ fontSize: 15, fontWeight: 600 }}>合計</TableCell>
                 <TableCell align="center" sx={{ color: '#2563EB', fontSize: 15, fontWeight: 700 }}>
                   <Box sx={{ display: { xs: 'none', sm: 'block' } }}>{totalByGender('乾')}</Box>
-                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{totalByGender('乾')}/{filtered.filter(r => r.gender === '乾' && r.checked_in).length}</Box>
+                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{totalByGender('乾')}/<span style={{ color: '#16A34A' }}>{filtered.filter(r => r.gender === '乾' && r.checked_in).length}</span></Box>
                 </TableCell>
                 <TableCell align="center" sx={{ color: '#16A34A', fontSize: 15, fontWeight: 700, display: { xs: 'none', sm: 'table-cell' } }}>{filtered.filter(r => r.gender === '乾' && r.checked_in).length}</TableCell>
                 <TableCell align="center" sx={{ color: '#DB2777', fontSize: 15, fontWeight: 700 }}>
                   <Box sx={{ display: { xs: 'none', sm: 'block' } }}>{totalByGender('坤')}</Box>
-                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{totalByGender('坤')}/{filtered.filter(r => r.gender === '坤' && r.checked_in).length}</Box>
+                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{totalByGender('坤')}/<span style={{ color: '#16A34A' }}>{filtered.filter(r => r.gender === '坤' && r.checked_in).length}</span></Box>
                 </TableCell>
                 <TableCell align="center" sx={{ color: '#16A34A', fontSize: 15, fontWeight: 700, display: { xs: 'none', sm: 'table-cell' } }}>{filtered.filter(r => r.gender === '坤' && r.checked_in).length}</TableCell>
                 <TableCell align="center" sx={{ fontSize: 15, fontWeight: 700 }}>{filtered.length}</TableCell>
