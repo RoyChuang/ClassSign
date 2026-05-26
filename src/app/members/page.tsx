@@ -114,9 +114,7 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
     const invalid: string[] = []
 
     for (const line of lines) {
-      const parts = line.split(/[\s\t]+/)
-      const name = parts[0]
-      const rawGender = parts[1] ?? ''
+      const name = line.replace(/\s+/g, '')
       if (!name) continue
       parsed.push({ name, gender: pasteGender })
     }
