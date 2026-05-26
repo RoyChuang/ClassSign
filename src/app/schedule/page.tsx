@@ -362,7 +362,7 @@ export default function SchedulePage() {
           </Box>
           {profile?.role === 'secretary' && profile.unit && (
             <Box sx={{ display: 'inline-flex', px: 1.25, py: 0.375, bgcolor: '#EFF4FF', borderRadius: '999px' }}>
-              <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#2549E5' }}>{profile.unit}</Typography>
+              <Typography sx={{ fontSize: 32, fontWeight: 600, color: '#2549E5' }}>{profile.unit}</Typography>
             </Box>
           )}
           {profile?.role === 'admin' && (
