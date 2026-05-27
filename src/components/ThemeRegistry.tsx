@@ -30,6 +30,13 @@ const theme = createTheme({
   },
   typography: {
     fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif',
+    // 語意化字體尺度 — 改這裡即可全站調整，高齡友善
+    body1:    { fontSize: 16 },  // 姓名、主要內容
+    body2:    { fontSize: 14 },  // 一般標籤、按鈕文字
+    subtitle1:{ fontSize: 16, fontWeight: 600 },  // 區塊標題
+    subtitle2:{ fontSize: 14, fontWeight: 600 },  // 子標題、班別名稱
+    caption:  { fontSize: 12 },  // 輔助說明、日期
+    overline: { fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const },  // 頁面 tag 標籤
     h1: { fontWeight: 900 },
     h2: { fontWeight: 900 },
     h3: { fontWeight: 800 },
