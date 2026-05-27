@@ -1,3 +1,70 @@
+# ClassSign 專案概覽
+
+## 專案簡介
+
+ClassSign 是一個佛堂班會掛號系統，供各單位秘書線上掛號報名，管理員建立班會，報到人員用 QR Code 報到，廚房和統計看板即時顯示人數。
+
+使用者以長者居多，UI 需要字體大、對比清晰、操作簡單。
+
+## 技術棧
+
+- Next.js 16 App Router + React 19 + TypeScript
+- MUI 9（UI 元件，主色 #2549E5，乾=藍 #2563EB，坤=粉 #DB2777，報到=綠 #16A34A）
+- Supabase（PostgreSQL + Auth + Realtime）
+- 版號目前：0.5.23
+
+## 角色與權限
+
+| 角色 | 說明 |
+|------|------|
+| admin | 建立/管理班會、class_templates、使用者管理，可存取所有單位 |
+| secretary | 掛號、名單管理，綁定單位，只能看自己單位的資料 |
+| viewer | 唯讀，僅供查看 |
+
+## 頁面對應
+
+| 路徑 | 功能 | 權限 |
+|------|------|------|
+| `/` | 首頁導覽 | 公開 |
+| `/admin` | 班會管理、班別範本 | admin/secretary |
+| `/secretary` | 掛號（新增/刪除/換班別）、匯入歷史名單、從群組匯入 | secretary |
+| `/members` | 名單群組管理（CRUD + 批次貼上） | secretary/admin |
+| `/dashboard` | 統計總覽，依單位展開成員，Realtime | 公開 |
+| `/kitchen` | 廚房看板（掛號/報到/乾坤人數），Realtime | 公開 |
+| `/checkin/[sessionId]` | QR Code 報到 | 公開 |
+| `/schedule` | 班表管理 | admin/secretary |
+
+## 主要 DB Tables
+
+| Table | 說明 |
+|-------|------|
+| sessions | 班會（name, date, reg_deadline, status, unit） |
+| classes | 班別，屬於 session（name, sort_order） |
+| class_templates | 班別範本，admin 管理，建立班會時選用 |
+| registrations | 掛號記錄（session_id, class_id, unit, name, gender, checked_in） |
+| profiles | 使用者（role, unit, display_name） |
+| member_groups | 名單群組（unit, name），秘書建立供重複使用 |
+| members | 群組成員（group_id, name, gender, sort_order） |
+| schedules / schedule_entries | 班表與排班日期 |
+
+## 常用元件
+
+- `RealtimeStatus` — 即時連線燈號（idle/connecting/connected/error）
+- `Loading` — 載入動畫，支援 `fullPage` prop
+- `SnackProvider` + `useSnack` — 全域 Snackbar，取代 alert()
+- `UpdateBanner` — 每 5 分鐘 polling `/version.json`，有新版本顯示提示
+- `AuthProvider` / `useAuth` — 提供 `profile`、`loading`、`signIn`
+
+## 重要慣例
+
+- 性別值：`'乾'`（男）、`'坤'`（女），存在 DB 就是這兩個中文字
+- unit 值：固定 10 個，見 `UNITS` 常數
+- 班會 `unit=null` 代表聯合班會，顯示時加 `[聯合]` 前綴；有 unit 則顯示 `[單位名]`
+- Realtime 訂閱在 useEffect 回傳值裡 `supabase.removeChannel(channel)`
+- 手機鎖屏回來後重建 Realtime：監聽 `visibilitychange`
+
+---
+
 # ClassSign 專案規則
 
 ## Push 前必須更新版號
