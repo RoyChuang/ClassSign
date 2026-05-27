@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/AuthProvider'
 import { useSnack } from '@/components/SnackProvider'
-import { Session, Class, ClassTemplate, UNITS } from '@/lib/types'
+import { Session, Class, ClassTemplate, SessionStatus, UNITS } from '@/lib/types'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs, { Dayjs } from 'dayjs'
 import Container from '@mui/material/Container'
@@ -34,15 +34,15 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import TuneIcon from '@mui/icons-material/Tune'
 import Divider from '@mui/material/Divider'
 import { Loading } from '@/components/Loading'
+import ConfirmDialog from '@/components/ConfirmDialog'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
-import DialogContentText from '@mui/material/DialogContentText'
 import DialogActions from '@mui/material/DialogActions'
 
 const supabase = createClient()
 
-const today = new Date().toISOString().slice(0, 10)
+const today = dayjs().format('YYYY-MM-DD')
 function sessionChip(s: Session) {
   if (s.status === 'finished') return { label: '已結束', color: 'default' as const }
   if (s.reg_deadline < today) return { label: '已截止', color: 'warning' as const }
@@ -83,15 +83,19 @@ export default function AdminPage() {
     if (!newTemplateName.trim()) return
     setTemplateSaving(true)
     const maxOrder = classTemplates.length > 0 ? Math.max(...classTemplates.map(t => t.sort_order)) + 1 : 0
-    await supabase.from('class_templates').insert({ name: newTemplateName.trim(), sort_order: maxOrder })
+    const { data, error } = await supabase.from('class_templates').insert({ name: newTemplateName.trim(), sort_order: maxOrder }).select().single()
+    if (error) { showSnack('新增失敗：' + error.message, 'error'); setTemplateSaving(false); return }
+    setClassTemplates(prev => [...prev, data])
+    setSelectedClassIds(prev => new Set([...prev, data.id]))
     setNewTemplateName('')
     setTemplateSaving(false)
-    await loadTemplates()
   }
 
   async function deleteTemplate(id: string) {
-    await supabase.from('class_templates').delete().eq('id', id)
-    await loadTemplates()
+    const { error } = await supabase.from('class_templates').delete().eq('id', id)
+    if (error) { showSnack('刪除失敗：' + error.message, 'error'); return }
+    setClassTemplates(prev => prev.filter(t => t.id !== id))
+    setSelectedClassIds(prev => { const n = new Set(prev); n.delete(id); return n })
   }
 
   async function moveTemplate(id: string, direction: 'up' | 'down') {
@@ -100,15 +104,12 @@ export default function AdminPage() {
     if (direction === 'down' && idx === classTemplates.length - 1) return
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1
     const a = classTemplates[idx], b = classTemplates[swapIdx]
-    // Optimistic update
     const newList = [...classTemplates]
     newList[idx] = b
     newList[swapIdx] = a
     setClassTemplates(newList)
-    // Persist sequentially to avoid conflicts
     await supabase.from('class_templates').update({ sort_order: b.sort_order }).eq('id', a.id)
     await supabase.from('class_templates').update({ sort_order: a.sort_order }).eq('id', b.id)
-    await loadTemplates()
   }
 
   async function loadSessions() {
@@ -148,18 +149,31 @@ export default function AdminPage() {
   async function saveEdit() {
     if (!editTarget || !editForm.date || !editForm.reg_deadline) return
     setSaving(true)
-    await supabase.from('sessions').update({
+    const targetId = editTarget.id
+    const updatedSession = {
+      ...editTarget,
       name: editForm.name,
       date: editForm.date.format('YYYY-MM-DD'),
       reg_deadline: editForm.reg_deadline.format('YYYY-MM-DD'),
       unit: editForm.unit || null,
-    }).eq('id', editTarget.id)
+    }
+    setSessions(prev => prev.map(s => s.id === targetId ? updatedSession : s))
+    setEditTarget(null)
+
+    const { error } = await supabase.from('sessions').update({
+      name: editForm.name,
+      date: editForm.date.format('YYYY-MM-DD'),
+      reg_deadline: editForm.reg_deadline.format('YYYY-MM-DD'),
+      unit: editForm.unit || null,
+    }).eq('id', targetId)
+
+    if (error) { showSnack('儲存失敗：' + error.message, 'error'); await loadSessions(); setSaving(false); return }
 
     const existingByName = new Map(editExistingClasses.map(c => [c.name, c]))
     const toAdd = classTemplates.filter(t => editSelectedClassIds.has(t.id) && !existingByName.has(t.name))
     if (toAdd.length > 0) {
       const maxOrder = editExistingClasses.length > 0 ? Math.max(...editExistingClasses.map(c => c.sort_order)) + 1 : 0
-      await supabase.from('classes').insert(toAdd.map((t, i) => ({ session_id: editTarget.id, name: t.name, sort_order: maxOrder + i })))
+      await supabase.from('classes').insert(toAdd.map((t, i) => ({ session_id: targetId, name: t.name, sort_order: maxOrder + i })))
     }
     const toRemove = classTemplates.filter(t => !editSelectedClassIds.has(t.id) && existingByName.has(t.name))
     for (const t of toRemove) {
@@ -167,10 +181,7 @@ export default function AdminPage() {
       const { count } = await supabase.from('registrations').select('id', { count: 'exact', head: true }).eq('class_id', cls.id)
       if ((count ?? 0) === 0) await supabase.from('classes').delete().eq('id', cls.id)
     }
-
-    setEditTarget(null)
     setSaving(false)
-    await loadSessions()
   }
 
   async function createSession(e: React.FormEvent | React.MouseEvent) {
@@ -195,20 +206,23 @@ export default function AdminPage() {
     setSubmitting(false)
   }
 
-  async function updateStatus(id: string, status: string) {
-    await supabase.from('sessions').update({ status }).eq('id', id)
-    await loadSessions()
+  async function updateStatus(id: string, status: SessionStatus) {
+    setSessions(prev => prev.map(s => s.id === id ? { ...s, status } : s))
+    const { error } = await supabase.from('sessions').update({ status }).eq('id', id)
+    if (error) { showSnack('更新失敗：' + error.message, 'error'); await loadSessions() }
   }
 
   async function confirmDelete() {
     if (!deleteTarget) return
     setDeleting(true)
-    await supabase.from('registrations').delete().eq('session_id', deleteTarget.id)
-    await supabase.from('classes').delete().eq('session_id', deleteTarget.id)
-    await supabase.from('sessions').delete().eq('id', deleteTarget.id)
+    const target = deleteTarget
+    setSessions(prev => prev.filter(s => s.id !== target.id))
     setDeleteTarget(null)
+    await supabase.from('registrations').delete().eq('session_id', target.id)
+    await supabase.from('classes').delete().eq('session_id', target.id)
+    const { error } = await supabase.from('sessions').delete().eq('id', target.id)
+    if (error) { showSnack('刪除失敗：' + error.message, 'error'); await loadSessions() }
     setDeleting(false)
-    await loadSessions()
   }
 
   return (
@@ -363,7 +377,7 @@ export default function AdminPage() {
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Chip label={chip.label} color={chip.color} />
-                      <Select value={s.status} onChange={e => updateStatus(s.id, e.target.value)} sx={{ fontSize: 14 }}>
+                      <Select value={s.status} onChange={e => updateStatus(s.id, e.target.value as SessionStatus)} sx={{ fontSize: 14 }}>
                         <MenuItem value="open">掛號中</MenuItem>
                         <MenuItem value="finished">已結束</MenuItem>
                       </Select>
@@ -466,22 +480,18 @@ export default function AdminPage() {
         </DialogActions>
       </Dialog>
 
-      {/* Delete Session Dialog */}
-      <Dialog open={!!deleteTarget} onClose={() => !deleting && setDeleteTarget(null)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>刪除班會</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            確定刪除「<Box component="span" sx={{ fontWeight: 600, color: 'text.primary' }}>{deleteTarget?.name}</Box>」？
-            <br />此操作無法復原，相關班別與報名資料也會一併刪除。
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button startIcon={<CloseIcon />} onClick={() => setDeleteTarget(null)} disabled={deleting}>取消</Button>
-          <Button variant="contained" color="error" startIcon={<DeleteIcon />} onClick={confirmDelete} disabled={deleting}>
-            {deleting ? '刪除中...' : '確定刪除'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="刪除班會"
+        content={<>確定刪除「<Box component="span" sx={{ fontWeight: 600, color: 'text.primary' }}>{deleteTarget?.name}</Box>」？<br />此操作無法復原，相關班別與報名資料也會一併刪除。</>}
+        confirmLabel="確定刪除"
+        loadingLabel="刪除中..."
+        onConfirm={confirmDelete}
+        loading={deleting}
+        confirmColor="error"
+        confirmIcon={<DeleteIcon />}
+      />
     </Container>
   )
 }

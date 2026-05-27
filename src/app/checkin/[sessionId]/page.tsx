@@ -32,6 +32,8 @@ import Chip from '@mui/material/Chip'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import { Loading } from '@/components/Loading'
+import ConfirmDialog from '@/components/ConfirmDialog'
+import { genderToggleQian, genderToggleKun } from '@/lib/sx'
 import { RealtimeStatus, RealtimeStatusType } from '@/components/RealtimeStatus'
 
 const supabase = createClient()
@@ -62,6 +64,13 @@ export default function CheckinSessionPage() {
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatusType>('idle')
   const [realtimeKey, setRealtimeKey] = useState(0)
   const unitCacheRef = useRef<Map<string, Reg[]>>(new Map())
+  const MAX_CACHED_UNITS = 5
+  function setCachedUnit(unit: Unit | string, list: Reg[]) {
+    const cache = unitCacheRef.current
+    cache.delete(unit)
+    cache.set(unit, list)
+    if (cache.size > MAX_CACHED_UNITS) cache.delete(cache.keys().next().value!)
+  }
   const [activeGender, setActiveGender] = useState<'乾' | '坤'>('乾')
 
   // 現場報名
@@ -115,8 +124,8 @@ export default function CheckinSessionPage() {
       setUnitLoading(false)
       return
     }
-    const list = (data ?? []) as Reg[]
-    unitCacheRef.current.set(unit, list)
+    const list: Reg[] = (data ?? []).map(r => ({ ...r, classes: r.classes ?? { name: '' } }))
+    setCachedUnit(unit, list)
     setAllResults(list)
     setCheckedIn(new Set(list.filter(r => r.checked_in).map(r => r.id)))
     setUnitLoading(false)
@@ -143,7 +152,7 @@ export default function CheckinSessionPage() {
             else s.delete(updated.id)
             return s
           })
-          unitCacheRef.current.set(selectedUnit as Unit,
+          setCachedUnit(selectedUnit as Unit,
             (unitCacheRef.current.get(selectedUnit as Unit) ?? []).map(r =>
               r.id === updated.id ? { ...r, checked_in: updated.checked_in, checked_in_at: updated.checked_in_at } : r
             )
@@ -158,7 +167,7 @@ export default function CheckinSessionPage() {
           setAllResults(prev => {
             if (prev.some(r => r.id === inserted.id)) return prev
             const newList = [...prev, inserted].sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'))
-            unitCacheRef.current.set(selectedUnit as Unit, newList)
+            setCachedUnit(selectedUnit as Unit, newList)
             return newList
           })
           if (inserted.checked_in) setCheckedIn(prev => new Set([...prev, inserted.id]))
@@ -216,7 +225,7 @@ export default function CheckinSessionPage() {
     setCheckedIn(prev => new Set([...prev, reg.id]))
     setAllResults(prev => {
       const updated = prev.map(r => r.id === reg.id ? { ...r, checked_in: true, checked_in_at: checkedInAt } : r)
-      unitCacheRef.current.set(reg.unit as Unit, updated)
+      setCachedUnit(reg.unit as Unit, updated)
       return updated
     })
   }
@@ -531,29 +540,27 @@ export default function CheckinSessionPage() {
         <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>此單位沒有報名記錄</Typography>
       )}
 
-      {/* 報到確認 Dialog */}
-      <Dialog open={!!confirmTarget} onClose={() => setConfirmTarget(null)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>確認報到</DialogTitle>
-        <DialogContent>
-          <Typography>確定為「{confirmTarget?.name}」報到？</Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button startIcon={<CloseIcon />} onClick={() => setConfirmTarget(null)}>取消</Button>
-          <Button variant="contained" startIcon={<CheckIcon />} onClick={() => { checkIn(confirmTarget!); setConfirmTarget(null) }}>確定報到</Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDialog
+        open={!!confirmTarget}
+        onClose={() => setConfirmTarget(null)}
+        title="確認報到"
+        content={`確定為「${confirmTarget?.name}」報到？`}
+        confirmLabel="確定報到"
+        onConfirm={() => { checkIn(confirmTarget!); setConfirmTarget(null) }}
+        confirmIcon={<CheckIcon />}
+      />
 
-      {/* 取消報到確認 Dialog */}
-      <Dialog open={!!cancelTarget} onClose={() => setCancelTarget(null)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>取消報到</DialogTitle>
-        <DialogContent>
-          <Typography>確定要取消「{cancelTarget?.name}」的報到？</Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button startIcon={<CloseIcon />} onClick={() => setCancelTarget(null)}>不取消</Button>
-          <Button variant="contained" color="error" startIcon={<UndoIcon />} onClick={cancelCheckIn}>確定取消</Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDialog
+        open={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        title="取消報到"
+        content={`確定要取消「${cancelTarget?.name}」的報到？`}
+        confirmLabel="確定取消"
+        cancelLabel="不取消"
+        onConfirm={cancelCheckIn}
+        confirmColor="error"
+        confirmIcon={<UndoIcon />}
+      />
 
       {/* 現場報名 Dialog */}
       <Dialog open={walkInOpen} onClose={() => !walkInSubmitting && setWalkInOpen(false)} maxWidth="xs" fullWidth>
@@ -578,8 +585,8 @@ export default function CheckinSessionPage() {
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
             <ToggleButtonGroup exclusive fullWidth value={walkInForm.gender}
               onChange={(_, v) => v && setWalkInForm(f => ({ ...f, gender: v as Gender }))}>
-              <ToggleButton value="乾" sx={{ fontWeight: 600, '&.Mui-selected': { bgcolor: '#DBEAFE', color: '#2563EB', '&:hover': { bgcolor: '#BFDBFE' } } }}>乾</ToggleButton>
-              <ToggleButton value="坤" sx={{ fontWeight: 600, '&.Mui-selected': { bgcolor: '#FCE7F3', color: '#DB2777', '&:hover': { bgcolor: '#FBCFE8' } } }}>坤</ToggleButton>
+              <ToggleButton value="乾" sx={genderToggleQian}>乾</ToggleButton>
+              <ToggleButton value="坤" sx={genderToggleKun}>坤</ToggleButton>
             </ToggleButtonGroup>
             <FormControl fullWidth>
               <InputLabel>班別</InputLabel>

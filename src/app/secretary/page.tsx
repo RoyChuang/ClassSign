@@ -35,6 +35,8 @@ import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import { Loading } from '@/components/Loading'
+import ConfirmDialog from '@/components/ConfirmDialog'
+import { genderToggleQian, genderToggleKun } from '@/lib/sx'
 
 const supabase = createClient()
 
@@ -141,10 +143,11 @@ export default function SecretaryPage() {
   }
 
   async function changeClass(regId: string, classId: string) {
-    const { error } = await supabase.from('registrations').update({ class_id: classId }).eq('id', regId)
+    const prev = registrations
+    setRegistrations(r => r.map(x => x.id === regId ? { ...x, class_id: classId } : x))
     setClassPopover(null)
-    if (error) { showSnack('更新失敗：' + error.message, 'error'); return }
-    setRegistrations(prev => prev.map(r => r.id === regId ? { ...r, class_id: classId } : r))
+    const { error } = await supabase.from('registrations').update({ class_id: classId }).eq('id', regId)
+    if (error) { showSnack('更新失敗：' + error.message, 'error'); setRegistrations(prev) }
   }
 
   async function confirmDelete() {
@@ -358,8 +361,8 @@ export default function SecretaryPage() {
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))} sx={{ width: 140 }} />
                 <ToggleButtonGroup exclusive value={form.gender} sx={{ alignSelf: 'stretch' }}
                   onChange={(_, v) => v && setForm(f => ({ ...f, gender: v as Gender }))}>
-                  <ToggleButton value="乾" sx={{ px: 2, fontWeight: 600, '&.Mui-selected': { bgcolor: '#DBEAFE', color: '#2563EB', '&:hover': { bgcolor: '#BFDBFE' } } }}>乾</ToggleButton>
-                  <ToggleButton value="坤" sx={{ px: 2, fontWeight: 600, '&.Mui-selected': { bgcolor: '#FCE7F3', color: '#DB2777', '&:hover': { bgcolor: '#FBCFE8' } } }}>坤</ToggleButton>
+                  <ToggleButton value="乾" sx={genderToggleQian}>乾</ToggleButton>
+                  <ToggleButton value="坤" sx={genderToggleKun}>坤</ToggleButton>
                 </ToggleButtonGroup>
                 <FormControl sx={{ width: 150 }}>
                   <InputLabel>班別</InputLabel>
@@ -564,19 +567,18 @@ export default function SecretaryPage() {
         </Box>
       </Popover>
 
-      {/* 刪除確認 Dialog */}
-      <Dialog open={!!deleteTarget} onClose={() => !deleting && setDeleteTarget(null)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>刪除報名者</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ pt: 1 }}>確定要刪除這筆報名記錄？此操作無法復原。</Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button startIcon={<CloseIcon />} onClick={() => setDeleteTarget(null)} disabled={deleting}>取消</Button>
-          <Button variant="contained" color="error" startIcon={<DeleteIcon />} onClick={confirmDelete} disabled={deleting}>
-            {deleting ? '刪除中...' : '確定刪除'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="刪除報名者"
+        content="確定要刪除這筆報名記錄？此操作無法復原。"
+        confirmLabel="確定刪除"
+        loadingLabel="刪除中..."
+        onConfirm={confirmDelete}
+        loading={deleting}
+        confirmColor="error"
+        confirmIcon={<DeleteIcon />}
+      />
     </Container>
   )
 }

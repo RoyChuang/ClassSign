@@ -104,12 +104,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const { email, user_metadata } = session.user
           const googleName = user_metadata.full_name ?? user_metadata.name ?? ''
 
-          // 先從快取顯示（即時）
+          // 先從快取顯示（即時），但 role/unit 為 null 直到 DB 確認
           const cached = getCached(email!)
-          if (cached) setProfile(cached)
+          if (cached) setProfile({ ...cached, role: 'viewer', unit: null })
           setLoading(false)
 
-          // 背景從 DB 更新
+          // 背景從 DB 讀取正式 role/unit
           fetchAndSetProfile(email!, googleName)
         } else {
           setLoading(false)
