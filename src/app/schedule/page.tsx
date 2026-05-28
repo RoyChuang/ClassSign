@@ -149,7 +149,7 @@ function EditDialog({ schedule, onClose, onSaved }: {
             {schedule?.start_date} ～ {schedule?.end_date}
           </Typography>
         </Box>
-        <IconButton aria-label="關閉" onClick={onClose} size="small" sx={{ flexShrink: 0, alignSelf: 'flex-start' }}>
+        <IconButton aria-label="關閉" onClick={onClose} sx={{ flexShrink: 0, alignSelf: 'flex-start' }}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -354,11 +354,11 @@ export default function SchedulePage() {
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 2, mb: 4, flexWrap: 'wrap' }}>
         <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <Box sx={{ width: 22, height: 22, borderRadius: '6px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <CalendarMonthIcon sx={{ fontSize: 13 }} />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <CalendarMonthIcon sx={{ fontSize: 18 }} />
             </Box>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 500 }}>班表管理</Typography>
+            <Typography component="h1" sx={{ fontSize: 22, fontWeight: 700 }}>班表管理</Typography>
           </Box>
           {profile?.role === 'secretary' && profile.unit && (
             <Box sx={{ display: 'inline-flex', px: 1.25, py: 0.375, bgcolor: '#EFF4FF', borderRadius: '999px' }}>
@@ -404,7 +404,7 @@ export default function SchedulePage() {
                       預覽
                     </Button>
                     <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={() => setEditTarget(s)}>編輯</Button>
-                    <IconButton size="small" aria-label="刪除班表" onClick={() => setDeleteTarget(s)} sx={{ color: 'error.main' }}>
+                    <IconButton aria-label="刪除班表" onClick={() => setDeleteTarget(s)} sx={{ color: 'error.main' }}>
                       <DeleteIcon sx={{ fontSize: 18 }} />
                     </IconButton>
                   </Box>
@@ -459,7 +459,7 @@ export default function SchedulePage() {
         slotProps={{ paper: { sx: { height: '90vh' } } }}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
           <Typography sx={{ fontWeight: 700, fontSize: 16 }}>預覽</Typography>
-          <IconButton size="small" aria-label="關閉預覽" onClick={() => setPreviewTarget(null)}><CloseIcon /></IconButton>
+          <IconButton aria-label="關閉預覽" onClick={() => setPreviewTarget(null)}><CloseIcon /></IconButton>
         </DialogTitle>
         <DialogContent sx={{ p: 0, overflow: 'hidden' }}>
           {previewTarget && (

@@ -229,11 +229,11 @@ export default function AdminPage() {
     <Container maxWidth="md" sx={{ py: 5 }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 3, mb: 4, flexWrap: 'wrap' }}>
         <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <Box sx={{ width: 22, height: 22, borderRadius: '6px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <SettingsIcon sx={{ fontSize: 13 }} />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <SettingsIcon sx={{ fontSize: 18 }} />
             </Box>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 500 }}>班會管理</Typography>
+            <Typography component="h1" sx={{ fontSize: 22, fontWeight: 700 }}>班會管理</Typography>
           </Box>
         </Box>
         {(profile?.role === 'admin' || profile?.role === 'secretary') && (
@@ -327,7 +327,7 @@ export default function AdminPage() {
             <Tab value="none" label={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                 <span>聯合</span>
-                <Box component="span" sx={{ fontSize: 10, fontWeight: 700, bgcolor: unitTab === 'none' ? 'primary.main' : 'rgba(0,0,0,0.15)', color: unitTab === 'none' ? 'white' : 'text.secondary', borderRadius: 10, px: 0.7, lineHeight: '16px', minWidth: 16, textAlign: 'center' }}>
+                <Box component="span" sx={{ fontSize: 12, fontWeight: 700, bgcolor: unitTab === 'none' ? 'primary.main' : 'rgba(0,0,0,0.15)', color: unitTab === 'none' ? 'white' : 'text.secondary', borderRadius: 10, px: 0.7, lineHeight: '16px', minWidth: 16, textAlign: 'center' }}>
                   {sessions.filter(s => !s.unit).length}
                 </Box>
               </Box>
@@ -337,7 +337,7 @@ export default function AdminPage() {
               return <Tab key={u} value={u} label={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                   <span>{u}</span>
-                  <Box component="span" sx={{ fontSize: 10, fontWeight: 700, bgcolor: selected ? 'primary.main' : 'rgba(0,0,0,0.15)', color: selected ? 'white' : 'text.secondary', borderRadius: 10, px: 0.7, lineHeight: '16px', minWidth: 16, textAlign: 'center' }}>
+                  <Box component="span" sx={{ fontSize: 12, fontWeight: 700, bgcolor: selected ? 'primary.main' : 'rgba(0,0,0,0.15)', color: selected ? 'white' : 'text.secondary', borderRadius: 10, px: 0.7, lineHeight: '16px', minWidth: 16, textAlign: 'center' }}>
                     {sessions.filter(s => s.unit === u).length}
                   </Box>
                 </Box>
@@ -369,7 +369,7 @@ export default function AdminPage() {
                           <Typography sx={{ fontWeight: 500 }}>{s.name}</Typography>
                           {s.unit && <Chip label={s.unit} variant="outlined" sx={{ fontSize: 14, height: 24 }} />}
                         </Box>
-                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>{s.date} · 截止 {s.reg_deadline}</Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>班會日：{s.date} · 截止：{s.reg_deadline}</Typography>
                       </Box>
                       <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0, ml: 1 }}>
                         <IconButton aria-label="編輯班會" onClick={() => openEdit(s)}><EditIcon fontSize="small" /></IconButton>
@@ -403,9 +403,9 @@ export default function AdminPage() {
           {classTemplates.map((t, idx) => (
             <Box key={t.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, py: 0.5 }}>
               <Typography sx={{ flex: 1, fontSize: 15 }}>{t.name}</Typography>
-              <IconButton size="small" aria-label="上移" onClick={() => moveTemplate(t.id, 'up')} disabled={idx === 0}><ArrowUpwardIcon fontSize="small" /></IconButton>
-              <IconButton size="small" aria-label="下移" onClick={() => moveTemplate(t.id, 'down')} disabled={idx === classTemplates.length - 1}><ArrowDownwardIcon fontSize="small" /></IconButton>
-              <IconButton size="small" aria-label={`刪除 ${t.name}`} color="error" onClick={() => deleteTemplate(t.id)}><DeleteIcon fontSize="small" /></IconButton>
+              <IconButton aria-label="上移" sx={{ p: 1 }} onClick={() => moveTemplate(t.id, 'up')} disabled={idx === 0}><ArrowUpwardIcon fontSize="small" /></IconButton>
+              <IconButton aria-label="下移" sx={{ p: 1 }} onClick={() => moveTemplate(t.id, 'down')} disabled={idx === classTemplates.length - 1}><ArrowDownwardIcon fontSize="small" /></IconButton>
+              <IconButton aria-label={`刪除 ${t.name}`} color="error" sx={{ p: 1 }} onClick={() => deleteTemplate(t.id)}><DeleteIcon fontSize="small" /></IconButton>
             </Box>
           ))}
           <Divider sx={{ my: 1.5 }} />

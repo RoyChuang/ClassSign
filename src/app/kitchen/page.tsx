@@ -87,10 +87,10 @@ export default function KitchenPage() {
       <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 3, mb: 4, flexWrap: 'wrap' }}>
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <Box sx={{ width: 22, height: 22, borderRadius: '6px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <KitchenIcon sx={{ fontSize: 13 }} />
+            <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <KitchenIcon sx={{ fontSize: 18 }} />
             </Box>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 500 }}>廚房看板</Typography>
+            <Typography component="h1" sx={{ fontSize: 22, fontWeight: 700 }}>廚房看板</Typography>
             <RealtimeStatus status={realtimeStatus} />
           </Box>
         </Box>
@@ -130,7 +130,7 @@ export default function KitchenPage() {
                 boxShadow: `0 4px 24px ${color}28`, p: 3,
               }}>
                 <Typography sx={{ fontSize: { xs: 52, sm: 64 }, fontWeight: 800, color, lineHeight: 1, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', mb: 1 }}>{value}</Typography>
-                <Typography sx={{ fontSize: 12, fontWeight: 700, color, opacity: 0.65, letterSpacing: '0.1em' }}>{label}</Typography>
+                <Typography sx={{ fontSize: 12, fontWeight: 700, color, opacity: 0.45, letterSpacing: '0.1em' }}>{label}</Typography>
               </Box>
             ))}
           </Box>
@@ -145,7 +145,7 @@ export default function KitchenPage() {
                 boxShadow: `0 4px 24px ${color}28`, p: 3,
               }}>
                 <Typography sx={{ fontSize: { xs: 40, sm: 48 }, fontWeight: 800, color, lineHeight: 1, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', mb: 1 }}>{value}</Typography>
-                <Typography sx={{ fontSize: 12, fontWeight: 700, color, opacity: 0.65, letterSpacing: '0.1em' }}>{label}</Typography>
+                <Typography sx={{ fontSize: 12, fontWeight: 700, color, opacity: 0.45, letterSpacing: '0.1em' }}>{label}</Typography>
               </Box>
             ))}
           </Box>

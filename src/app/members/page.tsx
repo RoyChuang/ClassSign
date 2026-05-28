@@ -149,7 +149,7 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
   const kun = members.filter(m => m.gender === '坤').length
 
   return (
-    <Card sx={{ borderRadius: 3, mb: 2 }}>
+    <Card sx={{ borderRadius: 3, mb: 2, border: '1px solid transparent', transition: 'border-color 0.15s', '&:hover': { borderColor: 'primary.light' } }}>
       <Box
         onClick={handleToggle}
         sx={{
@@ -222,8 +222,8 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
                           <Typography sx={{ fontSize: 14, fontWeight: 500, color: gender === '乾' ? '#2563EB' : '#DB2777' }}>
                             {m.name}
                           </Typography>
-                          <IconButton size="small" aria-label={`刪除 ${m.name}`} onClick={() => deleteMember(m.id)}
-                            sx={{ p: 0.25, color: 'text.disabled', '&:hover': { color: 'error.main' } }}>
+                          <IconButton aria-label={`刪除 ${m.name}`} onClick={() => deleteMember(m.id)}
+                            sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'error.main' } }}>
                             <DeleteIcon sx={{ fontSize: 14 }} />
                           </IconButton>
                         </Box>
@@ -346,11 +346,11 @@ export default function MembersPage() {
   return (
     <Container maxWidth="sm" sx={{ py: 5 }}>
       <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <Box sx={{ width: 22, height: 22, borderRadius: '6px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <GroupsIcon sx={{ fontSize: 13 }} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+          <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <GroupsIcon sx={{ fontSize: 18 }} />
           </Box>
-          <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 500 }}>名單管理</Typography>
+          <Typography component="h1" sx={{ fontSize: 22, fontWeight: 700 }}>名單管理</Typography>
         </Box>
         {profile.role === 'secretary' && profile.unit && (
           <Box sx={{ display: 'inline-flex', px: 1.25, py: 0.375, bgcolor: '#EFF4FF', borderRadius: '999px' }}>

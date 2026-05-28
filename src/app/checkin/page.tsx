@@ -41,11 +41,11 @@ export default function CheckinPage() {
   return (
     <Container maxWidth="sm" sx={{ py: 5 }}>
       <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <Box sx={{ width: 22, height: 22, borderRadius: '6px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <QrCodeScannerIcon sx={{ fontSize: 13 }} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <QrCodeScannerIcon sx={{ fontSize: 18 }} />
           </Box>
-          <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 500 }}>完成報到</Typography>
+          <Typography component="h1" sx={{ fontSize: 22, fontWeight: 700 }}>完成報到</Typography>
         </Box>
       </Box>
 
