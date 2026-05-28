@@ -149,7 +149,7 @@ function EditDialog({ schedule, onClose, onSaved }: {
             {schedule?.start_date} ～ {schedule?.end_date}
           </Typography>
         </Box>
-        <IconButton onClick={onClose} size="small" sx={{ flexShrink: 0, alignSelf: 'flex-start' }}>
+        <IconButton aria-label="關閉" onClick={onClose} size="small" sx={{ flexShrink: 0, alignSelf: 'flex-start' }}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -404,7 +404,7 @@ export default function SchedulePage() {
                       預覽
                     </Button>
                     <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={() => setEditTarget(s)}>編輯</Button>
-                    <IconButton size="small" onClick={() => setDeleteTarget(s)} sx={{ color: 'error.main' }}>
+                    <IconButton size="small" aria-label="刪除班表" onClick={() => setDeleteTarget(s)} sx={{ color: 'error.main' }}>
                       <DeleteIcon sx={{ fontSize: 18 }} />
                     </IconButton>
                   </Box>
@@ -459,7 +459,7 @@ export default function SchedulePage() {
         slotProps={{ paper: { sx: { height: '90vh' } } }}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
           <Typography sx={{ fontWeight: 700, fontSize: 16 }}>預覽</Typography>
-          <IconButton size="small" onClick={() => setPreviewTarget(null)}><CloseIcon /></IconButton>
+          <IconButton size="small" aria-label="關閉預覽" onClick={() => setPreviewTarget(null)}><CloseIcon /></IconButton>
         </DialogTitle>
         <DialogContent sx={{ p: 0, overflow: 'hidden' }}>
           {previewTarget && (

@@ -315,6 +315,7 @@ export default function AdminPage() {
       {(profile?.role === 'admin' || profile?.role === 'secretary') && <><Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>班會列表</Typography>
       <TextField
         fullWidth placeholder="搜尋班會名稱"
+        slotProps={{ htmlInput: { 'aria-label': '搜尋班會名稱' } }}
         value={search} onChange={e => setSearch(e.target.value)}
         sx={{ mb: 1.5 }}
       />
@@ -371,13 +372,13 @@ export default function AdminPage() {
                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>{s.date} · 截止 {s.reg_deadline}</Typography>
                       </Box>
                       <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0, ml: 1 }}>
-                        <IconButton onClick={() => openEdit(s)}><EditIcon fontSize="small" /></IconButton>
-                        <IconButton color="error" onClick={() => setDeleteTarget(s)}><DeleteIcon fontSize="small" /></IconButton>
+                        <IconButton aria-label="編輯班會" onClick={() => openEdit(s)}><EditIcon fontSize="small" /></IconButton>
+                        <IconButton aria-label="刪除班會" color="error" onClick={() => setDeleteTarget(s)}><DeleteIcon fontSize="small" /></IconButton>
                       </Box>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Chip label={chip.label} color={chip.color} />
-                      <Select value={s.status} onChange={e => updateStatus(s.id, e.target.value as SessionStatus)} sx={{ fontSize: 14 }}>
+                      <Select value={s.status} onChange={e => updateStatus(s.id, e.target.value as SessionStatus)} aria-label="班會狀態" sx={{ fontSize: 14 }}>
                         <MenuItem value="open">掛號中</MenuItem>
                         <MenuItem value="finished">已結束</MenuItem>
                       </Select>
@@ -402,14 +403,14 @@ export default function AdminPage() {
           {classTemplates.map((t, idx) => (
             <Box key={t.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, py: 0.5 }}>
               <Typography sx={{ flex: 1, fontSize: 15 }}>{t.name}</Typography>
-              <IconButton size="small" onClick={() => moveTemplate(t.id, 'up')} disabled={idx === 0}><ArrowUpwardIcon fontSize="small" /></IconButton>
-              <IconButton size="small" onClick={() => moveTemplate(t.id, 'down')} disabled={idx === classTemplates.length - 1}><ArrowDownwardIcon fontSize="small" /></IconButton>
-              <IconButton size="small" color="error" onClick={() => deleteTemplate(t.id)}><DeleteIcon fontSize="small" /></IconButton>
+              <IconButton size="small" aria-label="上移" onClick={() => moveTemplate(t.id, 'up')} disabled={idx === 0}><ArrowUpwardIcon fontSize="small" /></IconButton>
+              <IconButton size="small" aria-label="下移" onClick={() => moveTemplate(t.id, 'down')} disabled={idx === classTemplates.length - 1}><ArrowDownwardIcon fontSize="small" /></IconButton>
+              <IconButton size="small" aria-label={`刪除 ${t.name}`} color="error" onClick={() => deleteTemplate(t.id)}><DeleteIcon fontSize="small" /></IconButton>
             </Box>
           ))}
           <Divider sx={{ my: 1.5 }} />
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <TextField size="small" label="新班別名稱" value={newTemplateName}
+            <TextField size="small" label="新班別名稱" name="template-name" autoComplete="off" value={newTemplateName}
               onChange={e => setNewTemplateName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addTemplate()}
               sx={{ flex: 1 }} />

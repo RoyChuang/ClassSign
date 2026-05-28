@@ -94,8 +94,8 @@ export default function KitchenPage() {
             <RealtimeStatus status={realtimeStatus} />
           </Box>
         </Box>
-        <IconButton onClick={() => selectedSession && loadData()} disabled={!selectedSession || loading}
-          sx={{ color: 'text.secondary' }} title="手動更新">
+        <IconButton aria-label="手動更新" onClick={() => selectedSession && loadData()} disabled={!selectedSession || loading}
+          sx={{ color: 'text.secondary' }}>
           <RefreshIcon />
         </IconButton>
       </Box>

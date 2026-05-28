@@ -102,6 +102,7 @@ export default function UsersPage() {
 
       <TextField
         fullWidth placeholder="搜尋姓名或 Email"
+        slotProps={{ htmlInput: { 'aria-label': '搜尋姓名或 Email' } }}
         value={search} onChange={e => setSearch(e.target.value)}
         sx={{ mb: 2 }}
       />
@@ -128,7 +129,7 @@ export default function UsersPage() {
                   </Box>
                   <Typography variant="caption" sx={{ color: 'text.secondary' }}>{p.email}</Typography>
                 </Box>
-                <IconButton onClick={() => openEdit(p)}>
+                <IconButton aria-label="編輯使用者" onClick={() => openEdit(p)}>
                   <EditIcon fontSize="small" />
                 </IconButton>
               </CardContent>

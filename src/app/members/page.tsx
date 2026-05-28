@@ -222,7 +222,7 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
                           <Typography sx={{ fontSize: 14, fontWeight: 500, color: gender === '乾' ? '#2563EB' : '#DB2777' }}>
                             {m.name}
                           </Typography>
-                          <IconButton size="small" onClick={() => deleteMember(m.id)}
+                          <IconButton size="small" aria-label={`刪除 ${m.name}`} onClick={() => deleteMember(m.id)}
                             sx={{ p: 0.25, color: 'text.disabled', '&:hover': { color: 'error.main' } }}>
                             <DeleteIcon sx={{ fontSize: 14 }} />
                           </IconButton>
