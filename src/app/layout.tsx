@@ -25,8 +25,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
             <UpdateBanner />
             <footer style={{ display: 'flex', justifyContent: 'center', padding: '32px 0 24px' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: 'rgba(255,255,255,0.7)', border: '1px solid #E3E9F2', borderRadius: 999, fontSize: 12, fontFamily: 'inherit' }}>
-                <span style={{ color: '#94A3B8' }}>版本</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '8px 16px', background: 'rgba(255,255,255,0.7)', border: '1px solid #E3E9F2', borderRadius: 999, fontSize: 14, fontFamily: 'inherit' }}>
+                <span style={{ color: '#475569' }}>版本</span>
                 <span style={{ fontWeight: 700, color: '#1F263A', fontFamily: 'monospace' }}>v{pkg.version}</span>
               </span>
             </footer>

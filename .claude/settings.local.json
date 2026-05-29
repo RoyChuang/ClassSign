@@ -8,7 +8,13 @@
       "Read(//Users/roy/.claude/plugins/cache/thedotmack/claude-mem/12.1.1/**)",
       "Bash(curl -sf \"http://localhost:37777/api/projects\")",
       "Bash(curl -sf \"http://localhost:37777/api/observations?project=ClassSign&limit=5\")",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "mcp__plugin_claude-mem_mcp-search__smart_outline",
+      "Bash(node -e \"console.log\\(JSON.stringify\\({version:'0.5.26',ts:Date.now\\(\\)}\\)\\)\")",
+      "Bash(ls /tmp/ui-ux-pro-max-skill/.claude/skills/)",
+      "Read(//private/tmp/ui-ux-pro-max-skill/.claude/skills/**)",
+      "Bash(python3 .claude/skills/ui-ux-pro-max/scripts/search.py \"accessibility elderly large-text high-contrast touch-target\" --domain ux)",
+      "Bash(python3 /Users/roy/Documents/ClassSign/.claude/skills/ui-ux-pro-max/scripts/search.py \"version number placement footer navigation settings\" --domain ux -n 5)"
     ]
   }
 }

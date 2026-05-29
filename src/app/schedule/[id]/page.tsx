@@ -94,9 +94,9 @@ export default function ScheduleViewPage() {
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <Box sx={{ width: 22, height: 22, borderRadius: '6px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <CalendarMonthIcon sx={{ fontSize: 13 }} />
+              <CalendarMonthIcon sx={{ fontSize: 15 }} />
             </Box>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 500 }}>班表</Typography>
+            <Typography sx={{ fontSize: 14, color: 'text.secondary', fontWeight: 500 }}>班表</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
             <Typography sx={{ fontWeight: 700, fontSize: { xs: 26, sm: 34 }, color: 'text.primary', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
@@ -104,14 +104,14 @@ export default function ScheduleViewPage() {
             </Typography>
             {schedule!.unit && (
               <Chip label={schedule!.unit} size="small" variant="outlined"
-                sx={{ fontSize: 13, height: 26, borderColor: '#BFDBFE', color: '#2549E5', bgcolor: '#EFF4FF', fontWeight: 600 }} />
+                sx={{ fontSize: 14, height: 28, borderColor: '#BFDBFE', color: '#2549E5', bgcolor: '#EFF4FF', fontWeight: 600 }} />
             )}
           </Box>
-          <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5 }}>
+          <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 0.5 }}>
             {schedule!.start_date} ～ {schedule!.end_date}
           </Typography>
           {schedule!.note && (
-            <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5, whiteSpace: 'pre-wrap' }}>
+            <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 0.5, whiteSpace: 'pre-wrap' }}>
               {schedule!.note}
             </Typography>
           )}
@@ -119,11 +119,11 @@ export default function ScheduleViewPage() {
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
           <Button size="small" startIcon={<RefreshIcon sx={{ fontSize: '14px !important' }} />}
             onClick={() => window.location.reload()}
-            sx={{ fontSize: 13, color: 'text.secondary', px: 0, minWidth: 0, fontWeight: 500, '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}>
+            sx={{ fontSize: 14, color: 'text.secondary', px: 0, minWidth: 0, fontWeight: 500, '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}>
             更新
           </Button>
           <Button size="small" startIcon={<ShareIcon sx={{ fontSize: '14px !important' }} />} onClick={share}
-            sx={{ fontSize: 13, color: copied ? '#16A34A' : '#2549E5', px: 0, minWidth: 0, fontWeight: 500, '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}>
+            sx={{ fontSize: 14, color: copied ? '#16A34A' : '#2549E5', px: 0, minWidth: 0, fontWeight: 500, '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}>
             {copied ? '已複製' : '複製連結'}
           </Button>
         </Box>
@@ -145,7 +145,7 @@ export default function ScheduleViewPage() {
                   </Typography>
                   <Box sx={{ display: 'inline-flex', px: 0.75, py: 0.125, borderRadius: '999px', mt: 0.375,
                     bgcolor: dow === 0 ? '#FEE2E2' : dow === 6 ? '#DBEAFE' : isToday ? '#DBEAFE' : '#F1F5F9' }}>
-                    <Typography sx={{ fontSize: 11, fontWeight: 700, lineHeight: 1.6,
+                    <Typography sx={{ fontSize: 13, fontWeight: 700, lineHeight: 1.6,
                       color: dow === 0 ? '#EF4444' : dow === 6 ? '#3B82F6' : isToday ? 'primary.main' : '#64748B' }}>
                       {DAY_LABELS[dow]}
                     </Typography>
@@ -172,7 +172,7 @@ export default function ScheduleViewPage() {
           {/* 星期標題 */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 0.5 }}>
             {DAY_LABELS.map((label, i) => (
-              <Typography key={i} sx={{ textAlign: 'center', fontSize: 13, fontWeight: 600, py: 0.5,
+              <Typography key={i} sx={{ textAlign: 'center', fontSize: 14, fontWeight: 600, py: 0.5,
                 color: i === 0 ? '#EF4444' : i === 6 ? '#3B82F6' : 'text.secondary' }}>
                 {label}
               </Typography>
@@ -193,14 +193,14 @@ export default function ScheduleViewPage() {
                   }}>
                     {date && (
                       <>
-                        <Typography sx={{ fontSize: 13, fontWeight: isToday ? 800 : 700, lineHeight: 1.6,
+                        <Typography sx={{ fontSize: 14, fontWeight: isToday ? 800 : 700, lineHeight: 1.6,
                           color: di === 0 ? '#EF4444' : di === 6 ? '#3B82F6' : isToday ? 'primary.main' : 'text.secondary' }}>
                           {dayjs(date).format('D')}
                         </Typography>
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
                           {names.map((name, ni) => (
                             <Chip key={ni} label={`${ni + 1}. ${name}`} size="small"
-                              sx={{ fontSize: 13, height: 26, bgcolor: '#F1F5F9', color: 'text.primary', fontWeight: 500, borderRadius: '6px' }} />
+                              sx={{ fontSize: 14, bgcolor: '#F1F5F9', color: 'text.primary', fontWeight: 500, borderRadius: '6px' }} />
                           ))}
                         </Box>
                       </>
