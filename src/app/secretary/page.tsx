@@ -530,8 +530,8 @@ export default function SecretaryPage() {
                     >
                       <Checkbox checked={importSelected.has(r.id)} disableRipple />
                       <Typography variant="body2" sx={{ fontWeight: 500, mr: 1 }}>{r.name}</Typography>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', mr: 1 }}>{r.gender}</Typography>
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>{importClassMap[r.class_id]}</Typography>
+                      <Typography variant="body2" sx={{ color: 'text.secondary', mr: 1 }}>{r.gender}</Typography>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>{importClassMap[r.class_id]}</Typography>
                     </Box>
                   </Box>
                 ))}
@@ -556,7 +556,7 @@ export default function SecretaryPage() {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       >
         <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 140 }}>
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, px: 0.5 }}>換班別</Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, px: 0.5 }}>換班別</Typography>
           {classes.map(c => (
             <Box key={c.id}
               onClick={() => classPopover && changeClass(classPopover.regId, c.id)}

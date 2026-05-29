@@ -141,15 +141,18 @@ function EditDialog({ schedule, onClose, onSaved }: {
     <Dialog open={!!schedule} onClose={() => !saving && onClose()} maxWidth="xl" fullWidth
       slotProps={{ paper: { sx: { maxHeight: '90vh' } } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, pb: 1 }}>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <TextField key={schedule?.id + '-t'} inputRef={titleRef} defaultValue={schedule?.title ?? ''}
-            size="small" fullWidth placeholder="班表名稱"
-            sx={{ mb: 0.5, '& input': { fontWeight: 700, fontSize: 16 } }} />
-          <Typography sx={{ fontSize: 15, fontWeight: 500, color: 'text.secondary', textAlign: 'center' }}>
-            {schedule?.start_date} ～ {schedule?.end_date}
-          </Typography>
+            size="small" placeholder="班表名稱"
+            sx={{ flex: 1, '& input': { fontWeight: 700, fontSize: 16 } }} />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+            <CalendarMonthIcon sx={{ fontSize: 15, color: 'text.secondary' }} />
+            <Typography sx={{ fontSize: 14, fontWeight: 500, color: 'text.secondary', whiteSpace: 'nowrap' }}>
+              {schedule?.start_date} ～ {schedule?.end_date}
+            </Typography>
+          </Box>
         </Box>
-        <IconButton aria-label="關閉" onClick={onClose} sx={{ flexShrink: 0, alignSelf: 'flex-start' }}>
+        <IconButton aria-label="關閉" onClick={onClose} sx={{ flexShrink: 0 }}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -172,7 +175,7 @@ function EditDialog({ schedule, onClose, onSaved }: {
                     </Typography>
                     <Box sx={{ display: 'inline-flex', px: 0.75, py: 0.125, borderRadius: '999px', mt: 0.375,
                       bgcolor: dow === 0 ? '#FEE2E2' : dow === 6 ? '#DBEAFE' : '#F1F5F9' }}>
-                      <Typography sx={{ fontSize: 11, fontWeight: 700, lineHeight: 1.6,
+                      <Typography sx={{ fontSize: 13, fontWeight: 700, lineHeight: 1.6,
                         color: dow === 0 ? '#EF4444' : dow === 6 ? '#3B82F6' : '#64748B' }}>
                         {DAY_LABELS[dow]}
                       </Typography>
@@ -195,7 +198,7 @@ function EditDialog({ schedule, onClose, onSaved }: {
         <Box sx={{ display: useListLayout ? 'none' : { xs: 'none', lg: 'block' } }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 0.5 }}>
             {DAY_LABELS.map((label, i) => (
-              <Typography key={i} sx={{ textAlign: 'center', fontSize: 12, fontWeight: 600, py: 0.5,
+              <Typography key={i} sx={{ textAlign: 'center', fontSize: 13, fontWeight: 600, py: 0.5,
                 color: i === 0 ? '#EF4444' : i === 6 ? '#3B82F6' : 'text.secondary' }}>
                 {label}
               </Typography>
@@ -215,13 +218,13 @@ function EditDialog({ schedule, onClose, onSaved }: {
                     {date && (
                       <>
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                          <Typography sx={{ fontSize: 13, fontWeight: 700,
+                          <Typography sx={{ fontSize: 14, fontWeight: 700,
                             color: di === 0 ? '#EF4444' : di === 6 ? '#3B82F6' : 'text.secondary' }}>
                             {dayjs(date).format('M/D')}
                           </Typography>
-                          <Button size="small" startIcon={<PersonAddIcon sx={{ fontSize: 13 }} />}
+                          <Button size="small" startIcon={<PersonAddIcon sx={{ fontSize: 14 }} />}
                             onClick={() => addEmptyInput(date)}
-                            sx={{ fontSize: 12, px: 0.75, py: 0.25, minWidth: 0, bgcolor: '#EFF4FF', color: '#2549E5', borderRadius: '6px', flexShrink: 0, fontWeight: 600, '&:hover': { bgcolor: '#DBEAFE' } }}>
+                            sx={{ fontSize: 14, px: 0.75, minWidth: 0, bgcolor: '#EFF4FF', color: '#2549E5', borderRadius: '6px', flexShrink: 0, fontWeight: 600, '&:hover': { bgcolor: '#DBEAFE' } }}>
                             新增
                           </Button>
                         </Box>
@@ -392,11 +395,11 @@ export default function SchedulePage() {
                 <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { sm: 'center' }, gap: { xs: 1.5, sm: 2 } }}>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography sx={{ fontWeight: 700, fontSize: { xs: 17, sm: 16 } }}>{s.title}</Typography>
-                    <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.25 }}>
+                    <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 0.25 }}>
                       {s.start_date} ～ {s.end_date}
                     </Typography>
                     {s.note && (
-                      <Typography sx={{ fontSize: 12, color: 'text.disabled', mt: 0.5, whiteSpace: 'pre-wrap' }}>{s.note}</Typography>
+                      <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 0.5, whiteSpace: 'pre-wrap' }}>{s.note}</Typography>
                     )}
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>

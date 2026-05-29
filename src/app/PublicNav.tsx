@@ -58,7 +58,7 @@ export function PublicNav() {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
         <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, px: 1.25, py: 0.5, bgcolor: '#EFF4FF', borderRadius: '999px', flexShrink: 0 }}>
           <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#3B66F5', flexShrink: 0 }} />
-          <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#2549E5', letterSpacing: '0.02em' }}>公開功能</Typography>
+          <Typography sx={{ fontSize: 14, fontWeight: 600, color: '#2549E5', letterSpacing: '0.02em' }}>公開功能</Typography>
         </Box>
         <Box sx={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, #E3E9F2, transparent)' }} />
       </Box>

@@ -22,7 +22,8 @@ const theme = createTheme({
     divider: '#E2E8F0',
     text: {
       primary: '#1E293B',
-      secondary: '#64748B',
+      secondary: '#475569',
+      disabled: '#64748B',
     },
     success: { main: '#16A34A' },
     error: { main: '#DC2626' },
@@ -31,11 +32,11 @@ const theme = createTheme({
   typography: {
     fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif',
     // 語意化字體尺度 — 改這裡即可全站調整，高齡友善
-    body1:    { fontSize: 16 },  // 姓名、主要內容
-    body2:    { fontSize: 14 },  // 一般標籤、按鈕文字
+    body1:    { fontSize: 16, lineHeight: 1.65 },  // 姓名、主要內容
+    body2:    { fontSize: 15, lineHeight: 1.6 },  // 一般標籤、按鈕文字
     subtitle1:{ fontSize: 16, fontWeight: 600 },  // 區塊標題
-    subtitle2:{ fontSize: 14, fontWeight: 600 },  // 子標題、班別名稱
-    caption:  { fontSize: 12 },  // 輔助說明、日期
+    subtitle2:{ fontSize: 15, fontWeight: 600 },  // 子標題、班別名稱
+    caption:  { fontSize: 14 },  // 輔助說明、日期
     overline: { fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const },  // 頁面 tag 標籤
     h1: { fontWeight: 900 },
     h2: { fontWeight: 900 },
@@ -49,7 +50,13 @@ const theme = createTheme({
     MuiButton: {
       defaultProps: { disableElevation: true },
       styleOverrides: {
-        root: { textTransform: 'none', fontWeight: 500 },
+        root: { textTransform: 'none', fontWeight: 500, minHeight: 44 },
+        sizeSmall: { minHeight: 44 },
+      },
+    },
+    MuiIconButton: {
+      styleOverrides: {
+        root: { minWidth: 44, minHeight: 44 },
       },
     },
     MuiCard: {
@@ -59,7 +66,7 @@ const theme = createTheme({
     },
     MuiTableCell: {
       styleOverrides: {
-        head: { fontWeight: 600, backgroundColor: '#F8FAFC', color: '#64748B', fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.05em' },
+        head: { fontWeight: 600, backgroundColor: '#F8FAFC', color: '#475569', fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.05em' },
         body: { borderBottomColor: '#F1F5F9' },
       },
     },
@@ -70,7 +77,8 @@ const theme = createTheme({
     },
     MuiChip: {
       styleOverrides: {
-        root: { borderRadius: 6, fontWeight: 500 },
+        root: { borderRadius: 6, fontWeight: 500, minHeight: 36 },
+        sizeSmall: { minHeight: 32 },
       },
     },
     MuiOutlinedInput: {
