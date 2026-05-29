@@ -7,6 +7,7 @@ import { UpdateBanner } from '@/components/UpdateBanner'
 import { SnackProvider } from '@/components/SnackProvider'
 import pkg from '../../package.json'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { Analytics } from '@vercel/analytics/next'
 export const metadata: Metadata = {
   title: 'ClassSign 班會掛號系統',
   description: '班會掛號系統',
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </span>
             </footer>
             <SpeedInsights />
+            <Analytics />
             </SnackProvider>
           </AuthProvider>
         </ThemeRegistry>
