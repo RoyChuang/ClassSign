@@ -258,7 +258,7 @@ export default function AdminPage() {
       ) : null}
 
       {/* 建立班會 Dialog */}
-      <Dialog open={createOpen} onClose={() => !submitting && setCreateOpen(false)} maxWidth="xs" fullWidth>
+      <Dialog open={createOpen} onClose={() => { if (submitting) return; setForm({ name: '', date: null, reg_deadline: null, unit: '' }); setSelectedClassIds(new Set()); setCreateOpen(false) }} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 600 }}>建立新班會</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
           <TextField required label="班會名稱" placeholder="例：115年5月全家福班"
@@ -272,13 +272,13 @@ export default function AdminPage() {
               slotProps={{ textField: { size: 'small', required: true } }} />
           </Box>
           <FormControl fullWidth>
-            <InputLabel>適用單位</InputLabel>
+            <InputLabel shrink>適用單位</InputLabel>
             {profile?.role === 'secretary' ? (
-              <Select label="適用單位" value={profile.unit ?? ''} disabled>
+              <Select label="適用單位" value={profile.unit ?? ''} disabled notched>
                 <MenuItem value={profile.unit ?? ''}>{profile.unit}</MenuItem>
               </Select>
             ) : (
-              <Select label="適用單位" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}>
+              <Select label="適用單位" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} displayEmpty renderValue={v => v || '聯合'} notched>
                 <MenuItem value=''>聯合</MenuItem>
                 {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
               </Select>
@@ -304,7 +304,7 @@ export default function AdminPage() {
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button startIcon={<CloseIcon />} onClick={() => setCreateOpen(false)} disabled={submitting}>取消</Button>
+          <Button startIcon={<CloseIcon />} onClick={() => { setForm({ name: '', date: null, reg_deadline: null, unit: '' }); setSelectedClassIds(new Set()); setCreateOpen(false) }} disabled={submitting}>取消</Button>
           <Button variant="contained" startIcon={<AddIcon />} onClick={e => createSession(e as unknown as React.FormEvent)}
             disabled={submitting || !form.name || !form.date || !form.reg_deadline || selectedClassIds.size === 0}>
             {submitting ? '建立中...' : '建立班會'}
@@ -367,7 +367,7 @@ export default function AdminPage() {
                       <Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <Typography sx={{ fontWeight: 500 }}>{s.name}</Typography>
-                          {s.unit && <Chip label={s.unit} variant="outlined" sx={{ fontSize: 14, height: 24 }} />}
+                          <Chip label={s.unit ?? '聯合'} variant="outlined" sx={{ fontSize: 14, height: 24, ...(s.unit ? {} : { borderColor: '#94A3B8', color: 'text.secondary' }) }} />
                         </Box>
                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>班會日：{s.date} · 截止：{s.reg_deadline}</Typography>
                       </Box>
@@ -438,13 +438,13 @@ export default function AdminPage() {
             onChange={val => setEditForm(f => ({ ...f, reg_deadline: val }))}
             slotProps={{ textField: { size: 'small', fullWidth: true } }} />
           <FormControl fullWidth>
-            <InputLabel>適用單位</InputLabel>
+            <InputLabel shrink>適用單位</InputLabel>
             {profile?.role === 'secretary' ? (
-              <Select label="適用單位" value={editForm.unit} disabled>
+              <Select label="適用單位" value={editForm.unit} disabled notched>
                 <MenuItem value={editForm.unit}>{editForm.unit}</MenuItem>
               </Select>
             ) : (
-              <Select label="適用單位" value={editForm.unit} onChange={e => setEditForm(f => ({ ...f, unit: e.target.value }))}>
+              <Select label="適用單位" value={editForm.unit} onChange={e => setEditForm(f => ({ ...f, unit: e.target.value }))} displayEmpty renderValue={v => v || '聯合'} notched>
                 <MenuItem value=''>聯合</MenuItem>
                 {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
               </Select>
