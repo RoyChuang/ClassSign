@@ -1,44 +1,21 @@
-'use client'
-
 import Link from 'next/link'
-import { useAuth } from '@/components/AuthProvider'
 import Container from '@mui/material/Container'
+import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Card from '@mui/material/Card'
 import CardActionArea from '@mui/material/CardActionArea'
-import Box from '@mui/material/Box'
-import SettingsIcon from '@mui/icons-material/Settings'
-import ListAltIcon from '@mui/icons-material/ListAlt'
-import BarChartIcon from '@mui/icons-material/BarChart'
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
+import BarChartIcon from '@mui/icons-material/BarChart'
 import KitchenIcon from '@mui/icons-material/Kitchen'
-import PeopleIcon from '@mui/icons-material/People'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
-import GroupsIcon from '@mui/icons-material/Groups'
 import type { SvgIconComponent } from '@mui/icons-material'
+import { AuthNav } from './AuthNav'
 
 const publicNav = [
   { href: '/checkin', label: '完成報到', desc: '輸入姓名搜尋，協助完成報到', Icon: QrCodeScannerIcon },
   { href: '/dashboard', label: '統計總覽', desc: '各單位乾坤人數一覽', Icon: BarChartIcon },
   { href: '/kitchen', label: '廚房看板', desc: '掛號及報到人數', Icon: KitchenIcon },
 ]
-
-const adminNav = [
-  { href: '/admin', label: '班會管理', desc: '建立班會、調整狀態', Icon: SettingsIcon },
-  { href: '/secretary', label: '秘書掛號', desc: '填寫各單位報名名單', Icon: ListAltIcon },
-  { href: '/members', label: '名單管理', desc: '建立成員群組，供掛號快速匯入', Icon: GroupsIcon },
-  { href: '/schedule', label: '班表管理', desc: '建立日期排班班表', Icon: CalendarMonthIcon },
-  { href: '/admin/users', label: '使用者管理', desc: '設定角色、單位與別名', Icon: PeopleIcon },
-]
-
-const secretaryNav = [
-  { href: '/admin', label: '班會管理', desc: '建立本單位班會、調整狀態', Icon: SettingsIcon },
-  { href: '/secretary', label: '秘書掛號', desc: '填寫本單位報名名單', Icon: ListAltIcon },
-  { href: '/members', label: '名單管理', desc: '建立成員群組，供掛號快速匯入', Icon: GroupsIcon },
-  { href: '/schedule', label: '班表管理', desc: '建立日期排班班表', Icon: CalendarMonthIcon },
-]
-
 
 function SectionTitle({ label, sub }: { label: string; sub?: string }) {
   return (
@@ -89,12 +66,8 @@ function NavCard({ href, label, desc, Icon }: { href: string; label: string; des
 }
 
 export default function Home() {
-  const { profile } = useAuth()
-  const hasAdminSection = profile?.role === 'admin' || profile?.role === 'secretary'
-
   return (
     <>
-      {/* 漸層背景 */}
       <Box sx={{ position: 'fixed', inset: 0, zIndex: -1, background: 'linear-gradient(135deg, #EFF6FF 0%, #F1F5F9 50%, #EEF2FF 100%)' }}>
         <Box sx={{ position: 'absolute', top: '8%', left: '5%', width: 320, height: 320, borderRadius: '50%', background: 'rgba(37,99,235,0.08)', filter: 'blur(70px)' }} />
         <Box sx={{ position: 'absolute', bottom: '15%', right: '5%', width: 240, height: 240, borderRadius: '50%', background: 'rgba(99,102,241,0.07)', filter: 'blur(60px)' }} />
@@ -103,30 +76,13 @@ export default function Home() {
 
       <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <Container maxWidth="sm" sx={{ py: 7, flex: 1 }}>
-          <Box sx={{ mb: hasAdminSection ? 3 : 0 }}>
-            {profile && <SectionTitle label="公開功能" sub={hasAdminSection ? '所有人皆可使用' : undefined} />}
+          <Box>
+            <SectionTitle label="公開功能" />
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               {publicNav.map(item => <NavCard key={item.href} {...item} />)}
             </Box>
           </Box>
-
-          {profile?.role === 'admin' && (
-            <Box>
-              <SectionTitle label="管理功能" sub="需管理員或秘書權限" />
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                {adminNav.map(item => <NavCard key={item.href} {...item} />)}
-              </Box>
-            </Box>
-          )}
-
-          {profile?.role === 'secretary' && (
-            <Box>
-              <SectionTitle label="秘書功能" sub="需管理員或秘書權限" />
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                {secretaryNav.map(item => <NavCard key={item.href} {...item} />)}
-              </Box>
-            </Box>
-          )}
+          <AuthNav />
         </Container>
       </Box>
     </>
