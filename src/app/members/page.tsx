@@ -191,7 +191,7 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
         </Box>
         {/* Row 2: count below title */}
         {!editingName && (
-          <Typography sx={{ fontSize: 13, color: 'text.secondary', pl: 3.5, mt: 0.25 }}>
+          <Typography sx={{ fontSize: 14, color: 'text.secondary', pl: 3.5, mt: 0.25 }}>
             {loaded ? `${members.length} 人${members.length > 0 ? `（乾 ${qian} / 坤 ${kun}）` : ''}` : '…'}
           </Typography>
         )}
@@ -209,7 +209,7 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
                 if (list.length === 0) return null
                 return (
                   <Box key={gender} sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography sx={{ fontSize: 12, fontWeight: 600, mb: 1, color: gender === '乾' ? '#2563EB' : '#DB2777' }}>
+                    <Typography sx={{ fontSize: 13, fontWeight: 600, mb: 1, color: gender === '乾' ? '#2563EB' : '#DB2777' }}>
                       {gender}（{list.length}）
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -219,12 +219,12 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
                           bgcolor: gender === '乾' ? '#EFF6FF' : '#FDF2F8',
                           borderRadius: 2, px: 1.25, py: 0.5,
                         }}>
-                          <Typography sx={{ fontSize: 14, fontWeight: 500, color: gender === '乾' ? '#2563EB' : '#DB2777' }}>
+                          <Typography sx={{ fontSize: 16, fontWeight: 500, color: gender === '乾' ? '#2563EB' : '#DB2777' }}>
                             {m.name}
                           </Typography>
                           <IconButton aria-label={`刪除 ${m.name}`} onClick={() => deleteMember(m.id)}
                             sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'error.main' } }}>
-                            <DeleteIcon sx={{ fontSize: 14 }} />
+                            <DeleteIcon sx={{ fontSize: 16 }} />
                           </IconButton>
                         </Box>
                       ))}
@@ -344,7 +344,7 @@ export default function MembersPage() {
   }
 
   return (
-    <Container maxWidth="sm" sx={{ py: 5 }}>
+    <Container maxWidth="md" sx={{ py: 5 }}>
       <Box sx={{ mb: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
           <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -359,7 +359,7 @@ export default function MembersPage() {
         )}
         {profile.role === 'admin' && (
           <Select value={selectedUnit ?? ''} onChange={e => setSelectedUnit((e.target.value as Unit) || null)}
-            displayEmpty size="small" sx={{ minWidth: 130 }}>
+            displayEmpty sx={{ minWidth: 130 }}>
             <MenuItem value="">選擇單位</MenuItem>
             {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
           </Select>
