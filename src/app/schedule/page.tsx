@@ -141,7 +141,7 @@ function EditDialog({ schedule, onClose, onSaved }: {
     <Dialog open={!!schedule} onClose={() => !saving && onClose()} maxWidth="xl" fullWidth
       slotProps={{ paper: { sx: { maxHeight: '90vh' } } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, pb: 1 }}>
-        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'stretch', sm: 'center' }, gap: { xs: 0.75, sm: 1.5 } }}>
           <TextField key={schedule?.id + '-t'} inputRef={titleRef} defaultValue={schedule?.title ?? ''}
             size="small" placeholder="班表名稱"
             sx={{ flex: 1, '& input': { fontWeight: 700, fontSize: 16 } }} />
