@@ -13,6 +13,9 @@ try {
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  experimental: {
+    optimizePackageImports: ['@mui/material', '@mui/icons-material', '@mui/x-date-pickers'],
+  },
 };
 
 export default nextConfig;
