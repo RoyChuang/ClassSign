@@ -51,6 +51,7 @@ export default function CheckinSessionPage() {
   const [sessionNotFound, setSessionNotFound] = useState(false)
   const [sessionEnded, setSessionEnded] = useState(false)
 
+  // For joint sessions: optional display filter. For non-joint: load trigger (locked to session.unit)
   const [selectedUnit, setSelectedUnit] = useState<Unit | ''>('')
   const [nameFilter, setNameFilter] = useState('')
   const [allResults, setAllResults] = useState<Reg[]>([])
@@ -72,15 +73,13 @@ export default function CheckinSessionPage() {
     if (cache.size > MAX_CACHED_UNITS) cache.delete(cache.keys().next().value!)
   }
   const [activeGender, setActiveGender] = useState<'乾' | '坤'>('乾')
-
-  // 現場報名
   const [classFilter, setClassFilter] = useState<string>('')
-
-  // 現場報名
   const [walkInOpen, setWalkInOpen] = useState(false)
   const [classes, setClasses] = useState<Class[]>([])
   const [walkInForm, setWalkInForm] = useState<{ name: string; gender: Gender; class_id: string; unit: Unit | '' }>({ name: '', gender: '乾', class_id: '', unit: '' })
   const [walkInSubmitting, setWalkInSubmitting] = useState(false)
+
+  const isJoint = session !== null && !session.unit
 
   useEffect(() => {
     supabase.from('sessions').select('*').eq('id', sessionId).eq('status', 'open').single()
@@ -131,66 +130,131 @@ export default function CheckinSessionPage() {
     setUnitLoading(false)
   }, [sessionId])
 
-  useEffect(() => {
-    if (!selectedUnit) { setAllResults([]); return }
-    loadUnit(selectedUnit as Unit)
-  }, [selectedUnit, loadUnit])
+  const loadAll = useCallback(async () => {
+    setUnitLoading(true)
+    setLoadError(false)
+    const { data, error } = await supabase
+      .from('registrations')
+      .select('*, classes(name)')
+      .eq('session_id', sessionId)
+      .order('name')
+    if (error) { setLoadError(true); setUnitLoading(false); return }
+    const list: Reg[] = (data ?? []).map(r => ({ ...r, classes: r.classes ?? { name: '' } }))
+    setAllResults(list)
+    setCheckedIn(new Set(list.filter(r => r.checked_in).map(r => r.id)))
+    setUnitLoading(false)
+  }, [sessionId])
 
   useEffect(() => {
-    if (!selectedUnit) { setRealtimeStatus('idle'); return }
-    setRealtimeStatus('connecting')
-    let connectionCount = 0
-    const channel = supabase
-      .channel(`checkin-${sessionId}-${selectedUnit}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'registrations', filter: `session_id=eq.${sessionId}` },
-        (payload) => {
-          const updated = payload.new as Registration
-          if (updated.unit !== selectedUnit) return
-          setCheckedIn(prev => {
-            const s = new Set(prev)
-            if (updated.checked_in) s.add(updated.id)
-            else s.delete(updated.id)
-            return s
-          })
-          setCachedUnit(selectedUnit as Unit,
-            (unitCacheRef.current.get(selectedUnit as Unit) ?? []).map(r =>
+    if (!session) return
+    if (!session.unit) { loadAll(); return }
+    if (!selectedUnit) { setAllResults([]); return }
+    loadUnit(selectedUnit as Unit)
+  }, [session, selectedUnit, loadUnit, loadAll])
+
+  useEffect(() => {
+    if (!session) return
+    if (!session.unit) {
+      // Joint: subscribe to all units
+      setRealtimeStatus('connecting')
+      let connectionCount = 0
+      const channel = supabase
+        .channel(`checkin-${sessionId}-all`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'registrations', filter: `session_id=eq.${sessionId}` },
+          (payload) => {
+            const updated = payload.new as Registration
+            setCheckedIn(prev => {
+              const s = new Set(prev)
+              if (updated.checked_in) s.add(updated.id)
+              else s.delete(updated.id)
+              return s
+            })
+            setAllResults(prev => prev.map(r =>
               r.id === updated.id ? { ...r, checked_in: updated.checked_in, checked_in_at: updated.checked_in_at } : r
-            )
-          )
-        })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations', filter: `session_id=eq.${sessionId}` },
-        (payload) => {
-          const raw = payload.new as Registration
-          if (raw.unit !== selectedUnit) return
-          const classObj = classes.find(c => c.id === raw.class_id)
-          const inserted: Reg = { ...raw, classes: { name: classObj?.name ?? '' } } as Reg
-          setAllResults(prev => {
-            if (prev.some(r => r.id === inserted.id)) return prev
-            const newList = [...prev, inserted].sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'))
-            setCachedUnit(selectedUnit as Unit, newList)
-            return newList
+            ))
           })
-          if (inserted.checked_in) setCheckedIn(prev => new Set([...prev, inserted.id]))
-        })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          connectionCount++
-          if (connectionCount > 1) {
-            unitCacheRef.current.delete(selectedUnit as Unit)
-            loadUnit(selectedUnit as Unit)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations', filter: `session_id=eq.${sessionId}` },
+          (payload) => {
+            const raw = payload.new as Registration
+            const classObj = classes.find(c => c.id === raw.class_id)
+            const inserted: Reg = { ...raw, classes: { name: classObj?.name ?? '' } } as Reg
+            setAllResults(prev => {
+              if (prev.some(r => r.id === inserted.id)) return prev
+              return [...prev, inserted].sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'))
+            })
+            if (inserted.checked_in) setCheckedIn(prev => new Set([...prev, inserted.id]))
+          })
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            connectionCount++
+            if (connectionCount > 1) loadAll()
+            setRealtimeStatus('connected')
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            setRealtimeStatus('error')
           }
-          setRealtimeStatus('connected')
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          setRealtimeStatus('error')
-        }
-      })
-    return () => { supabase.removeChannel(channel) }
-  }, [sessionId, selectedUnit, realtimeKey, loadUnit])
+        })
+      return () => { supabase.removeChannel(channel) }
+    } else {
+      // Non-joint: per-unit subscription
+      if (!selectedUnit) { setRealtimeStatus('idle'); return }
+      setRealtimeStatus('connecting')
+      let connectionCount = 0
+      const channel = supabase
+        .channel(`checkin-${sessionId}-${selectedUnit}`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'registrations', filter: `session_id=eq.${sessionId}` },
+          (payload) => {
+            const updated = payload.new as Registration
+            if (updated.unit !== selectedUnit) return
+            setCheckedIn(prev => {
+              const s = new Set(prev)
+              if (updated.checked_in) s.add(updated.id)
+              else s.delete(updated.id)
+              return s
+            })
+            setCachedUnit(selectedUnit as Unit,
+              (unitCacheRef.current.get(selectedUnit as Unit) ?? []).map(r =>
+                r.id === updated.id ? { ...r, checked_in: updated.checked_in, checked_in_at: updated.checked_in_at } : r
+              )
+            )
+          })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations', filter: `session_id=eq.${sessionId}` },
+          (payload) => {
+            const raw = payload.new as Registration
+            if (raw.unit !== selectedUnit) return
+            const classObj = classes.find(c => c.id === raw.class_id)
+            const inserted: Reg = { ...raw, classes: { name: classObj?.name ?? '' } } as Reg
+            setAllResults(prev => {
+              if (prev.some(r => r.id === inserted.id)) return prev
+              const newList = [...prev, inserted].sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'))
+              setCachedUnit(selectedUnit as Unit, newList)
+              return newList
+            })
+            if (inserted.checked_in) setCheckedIn(prev => new Set([...prev, inserted.id]))
+          })
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            connectionCount++
+            if (connectionCount > 1) {
+              unitCacheRef.current.delete(selectedUnit as Unit)
+              loadUnit(selectedUnit as Unit)
+            }
+            setRealtimeStatus('connected')
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            setRealtimeStatus('error')
+          }
+        })
+      return () => { supabase.removeChannel(channel) }
+    }
+  }, [sessionId, session, selectedUnit, realtimeKey, loadUnit, loadAll])
 
   useEffect(() => {
     const handleVisible = () => {
       if (document.visibilityState !== 'visible') return
-      if (selectedUnit) {
+      if (!session) return
+      if (!session.unit) {
+        loadAll()
+        setRealtimeKey(k => k + 1)
+      } else if (selectedUnit) {
         unitCacheRef.current.delete(selectedUnit as Unit)
         loadUnit(selectedUnit as Unit)
         setRealtimeKey(k => k + 1)
@@ -198,17 +262,21 @@ export default function CheckinSessionPage() {
     }
     document.addEventListener('visibilitychange', handleVisible)
     return () => document.removeEventListener('visibilitychange', handleVisible)
-  }, [selectedUnit, loadUnit])
+  }, [session, selectedUnit, loadUnit, loadAll])
 
-  const nameFiltered = allResults.filter(r => !nameFilter.trim() || r.name.includes(nameFilter.trim()))
+  // For joint: apply unit filter client-side; for non-joint: allResults is already unit-specific
+  const unitFiltered = isJoint && selectedUnit ? allResults.filter(r => r.unit === selectedUnit) : allResults
+  const nameFiltered = unitFiltered.filter(r => !nameFilter.trim() || r.name.includes(nameFilter.trim()))
   const filtered = nameFiltered.filter(r => !classFilter || r.class_id === classFilter)
   const classCounts = new Map(classes.map(c => [c.id, nameFiltered.filter(r => r.class_id === c.id).length]))
   const qian = filtered.filter(r => r.gender === '乾')
   const kun = filtered.filter(r => r.gender === '坤')
-  const totalCheckedCount = allResults.filter(r => checkedIn.has(r.id)).length
-  const totalPct = allResults.length > 0 ? Math.round(totalCheckedCount / allResults.length * 100) : 0
+  const totalCheckedCount = unitFiltered.filter(r => checkedIn.has(r.id)).length
+  const totalPct = unitFiltered.length > 0 ? Math.round(totalCheckedCount / unitFiltered.length * 100) : 0
   const qianChecked = qian.filter(r => checkedIn.has(r.id)).length
   const kunChecked = kun.filter(r => checkedIn.has(r.id)).length
+
+  const hasUnit = isJoint || !!selectedUnit
 
   async function checkIn(reg: Reg) {
     if (checkedIn.has(reg.id)) return
@@ -225,7 +293,7 @@ export default function CheckinSessionPage() {
     setCheckedIn(prev => new Set([...prev, reg.id]))
     setAllResults(prev => {
       const updated = prev.map(r => r.id === reg.id ? { ...r, checked_in: true, checked_in_at: checkedInAt } : r)
-      setCachedUnit(reg.unit as Unit, updated)
+      if (!isJoint) setCachedUnit(reg.unit as Unit, updated)
       return updated
     })
   }
@@ -247,7 +315,7 @@ export default function CheckinSessionPage() {
 
   function openWalkIn() {
     const defaultClass = classes.find(c => c.name === '壇主人才班') ?? classes[0]
-    setWalkInForm({ name: nameFilter.trim(), gender: '乾', class_id: defaultClass?.id ?? '', unit: selectedUnit })
+    setWalkInForm({ name: nameFilter.trim(), gender: '乾', class_id: defaultClass?.id ?? '', unit: isJoint ? '' : selectedUnit })
     setWalkInSuccess('')
     setWalkInOpen(true)
   }
@@ -281,8 +349,12 @@ export default function CheckinSessionPage() {
     } else {
       setWalkInSuccess(trimmedName)
       setWalkInOpen(false)
-      if (unit !== selectedUnit) setSelectedUnit(unit as Unit)
-      else { unitCacheRef.current.delete(unit as Unit); await loadUnit(unit as Unit) }
+      if (isJoint) {
+        await loadAll()
+      } else {
+        if (unit !== selectedUnit) setSelectedUnit(unit as Unit)
+        else { unitCacheRef.current.delete(unit as Unit); await loadUnit(unit as Unit) }
+      }
     }
     setWalkInSubmitting(false)
   }
@@ -312,7 +384,6 @@ export default function CheckinSessionPage() {
       {/* Page header */}
       <Box sx={{ mb: 3, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 3, flexWrap: 'wrap' }}>
         <Box>
-          {/* Tag row */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <Box sx={{ width: 22, height: 22, borderRadius: '6px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <QrCodeScannerIcon sx={{ fontSize: 13 }} />
@@ -320,19 +391,17 @@ export default function CheckinSessionPage() {
             <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 500 }}>完成報到</Typography>
             <RealtimeStatus status={realtimeStatus} />
           </Box>
-          {/* Big title */}
           <Typography sx={{ fontWeight: 700, fontSize: { xs: 26, sm: 34 }, color: 'text.primary', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
             {session?.name}
           </Typography>
-          {/* Share link */}
           <Button onClick={shareLink} size="small" startIcon={<PersonAddIcon sx={{ fontSize: '14px !important' }} />}
             sx={{ mt: 0.75, fontSize: 13, color: copied ? '#16A34A' : '#2549E5', px: 0, minWidth: 0, fontWeight: 500,
               '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}>
             {copied ? '已複製' : '複製連結'}
           </Button>
         </Box>
-        {/* 現場報名 */}
-        <Button variant="contained" startIcon={<PersonAddIcon />} onClick={openWalkIn} disabled={!selectedUnit}
+        <Button variant="contained" startIcon={<PersonAddIcon />} onClick={openWalkIn}
+          disabled={!isJoint && !selectedUnit}
           sx={{ flexShrink: 0, borderRadius: '12px', px: 2.5, py: 1.25, fontSize: 15,
             boxShadow: '0 8px 20px -10px rgba(37,73,229,0.55)',
             transition: 'transform 160ms ease, box-shadow 160ms ease',
@@ -342,17 +411,15 @@ export default function CheckinSessionPage() {
       </Box>
 
       {/* 統計列 */}
-      {selectedUnit && !unitLoading && !loadError && allResults.length > 0 && (
+      {hasUnit && !unitLoading && !loadError && unitFiltered.length > 0 && (
         <Card sx={{ mb: 2 }}>
           <CardContent sx={{ p: 2, '&:last-child': { pb: 2 }, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            {/* 進度條 */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Box sx={{ flex: 1, height: 8, bgcolor: '#ECF0F7', borderRadius: '999px', overflow: 'hidden' }}>
                 <Box sx={{ height: '100%', width: `${totalPct}%`, background: 'linear-gradient(90deg, #3B66F5, #1E3AC4)', borderRadius: 'inherit', transition: 'width 1.4s cubic-bezier(.2,.7,.2,1) 0.2s' }} />
               </Box>
               <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'primary.main', minWidth: 36, textAlign: 'right' }}>{totalPct}%</Typography>
             </Box>
-            {/* 數字統計 */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
                 <Typography sx={{ fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'text.primary' }}>
@@ -363,14 +430,14 @@ export default function CheckinSessionPage() {
               <Box sx={{ width: '1px', height: 22, bgcolor: 'divider', flexShrink: 0 }} />
               <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
                 <Typography sx={{ fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'text.primary' }}>
-                  {allResults.length - totalCheckedCount}<Typography component="span" sx={{ fontSize: 13, fontWeight: 500, color: 'text.disabled', ml: 0.25 }}>位</Typography>
+                  {unitFiltered.length - totalCheckedCount}<Typography component="span" sx={{ fontSize: 13, fontWeight: 500, color: 'text.disabled', ml: 0.25 }}>位</Typography>
                 </Typography>
                 <Typography sx={{ fontSize: 12.5, color: 'text.secondary', fontWeight: 500 }}>未報到</Typography>
               </Box>
               <Box sx={{ width: '1px', height: 22, bgcolor: 'divider', flexShrink: 0 }} />
               <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
                 <Typography sx={{ fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'text.primary' }}>
-                  {allResults.length}<Typography component="span" sx={{ fontSize: 13, fontWeight: 500, color: 'text.disabled', ml: 0.25 }}>位</Typography>
+                  {unitFiltered.length}<Typography component="span" sx={{ fontSize: 13, fontWeight: 500, color: 'text.disabled', ml: 0.25 }}>位</Typography>
                 </Typography>
                 <Typography sx={{ fontSize: 12.5, color: 'text.secondary', fontWeight: 500 }}>總人數</Typography>
               </Box>
@@ -384,14 +451,17 @@ export default function CheckinSessionPage() {
         <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
             <FormControl fullWidth>
-              <InputLabel>單位</InputLabel>
+              <InputLabel shrink={isJoint || !!selectedUnit}>單位</InputLabel>
               {session?.unit ? (
                 <Select label="單位" value={selectedUnit} disabled>
                   <MenuItem value={selectedUnit}>{selectedUnit}</MenuItem>
                 </Select>
               ) : (
-                <Select label="單位" value={selectedUnit}
+                <Select label="單位" value={selectedUnit} displayEmpty
+                  notched={isJoint}
+                  renderValue={v => v || (isJoint ? '全部' : '')}
                   onChange={e => { setSelectedUnit(e.target.value as Unit); setNameFilter(''); setClassFilter(''); setWalkInSuccess('') }}>
+                  {isJoint && <MenuItem value=''>全部</MenuItem>}
                   {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
                 </Select>
               )}
@@ -399,14 +469,14 @@ export default function CheckinSessionPage() {
             <TextField
               label="篩選姓名" placeholder="輸入篩選"
               value={nameFilter} onChange={e => setNameFilter(e.target.value)}
-              disabled={!selectedUnit}
+              disabled={!hasUnit}
             />
           </Box>
         </CardContent>
       </Card>
 
       {/* 班別篩選 */}
-      {selectedUnit && classes.length > 0 && (
+      {hasUnit && classes.length > 0 && (
         <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
           {[{ id: '', name: '全部', count: nameFiltered.length }, ...classes.map(c => ({ id: c.id, name: c.name, count: classCounts.get(c.id) ?? 0 }))].map(item => {
             const selected = classFilter === item.id
@@ -445,11 +515,11 @@ export default function CheckinSessionPage() {
       {unitLoading && <Loading />}
 
       {loadError && (
-        <Typography sx={{ color: 'error.main', textAlign: 'center', py: 3 }}>載入失敗，請重新選擇單位</Typography>
+        <Typography sx={{ color: 'error.main', textAlign: 'center', py: 3 }}>載入失敗，請重新整理</Typography>
       )}
 
       {/* 乾坤 — xs: tab 切換單欄 / sm+: 雙欄並排 */}
-      {selectedUnit && !unitLoading && !loadError && allResults.length > 0 && filtered.length > 0 && (<>
+      {hasUnit && !unitLoading && !loadError && unitFiltered.length > 0 && filtered.length > 0 && (<>
         {/* xs: 乾/坤 tab 切換 */}
         <Box sx={{ display: { xs: 'flex', sm: 'none' }, gap: 1, mb: 1.5 }}>
           {(['乾', '坤'] as const).map(g => {
@@ -486,7 +556,7 @@ export default function CheckinSessionPage() {
         {/* xs: 單欄列表 */}
         <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1 }}>
           {(activeGender === '乾' ? qian : kun).map(r =>
-            <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} onCheckin={() => setConfirmTarget(r)} onCancel={() => setCancelTarget(r)} />
+            <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} showUnit={isJoint} onCheckin={() => setConfirmTarget(r)} onCancel={() => setCancelTarget(r)} />
           )}
           {(activeGender === '乾' ? qian : kun).length === 0 && (
             <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>無資料</Typography>
@@ -495,7 +565,6 @@ export default function CheckinSessionPage() {
 
         {/* sm+: 雙欄並排 */}
         <Box sx={{ display: { xs: 'none', sm: 'grid' }, gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 1.5 }}>
-          {/* 乾 */}
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, pb: 1.5, pt: 0.5 }}>
               <Typography sx={{ fontWeight: 700, color: '#2563EB', fontSize: 16, display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
@@ -507,11 +576,10 @@ export default function CheckinSessionPage() {
               </Box>
             </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {qian.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} onCheckin={() => setConfirmTarget(r)} onCancel={() => setCancelTarget(r)} />)}
+              {qian.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} showUnit={isJoint} onCheckin={() => setConfirmTarget(r)} onCancel={() => setCancelTarget(r)} />)}
               {qian.length === 0 && <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>無資料</Typography>}
             </Box>
           </Box>
-          {/* 坤 */}
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, pb: 1.5, pt: 0.5 }}>
               <Typography sx={{ fontWeight: 700, color: '#DB2777', fontSize: 16, display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
@@ -523,21 +591,23 @@ export default function CheckinSessionPage() {
               </Box>
             </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {kun.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} onCheckin={() => setConfirmTarget(r)} onCancel={() => setCancelTarget(r)} />)}
+              {kun.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} showUnit={isJoint} onCheckin={() => setConfirmTarget(r)} onCancel={() => setCancelTarget(r)} />)}
               {kun.length === 0 && <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>無資料</Typography>}
             </Box>
           </Box>
         </Box>
       </>)}
 
-      {selectedUnit && !unitLoading && !loadError && allResults.length > 0 && filtered.length === 0 && (
+      {hasUnit && !unitLoading && !loadError && unitFiltered.length > 0 && filtered.length === 0 && (
         <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>
           {nameFilter.trim() ? `找不到含「${nameFilter.trim()}」的記錄` : '此班別沒有報名記錄'}
         </Typography>
       )}
 
-      {selectedUnit && !unitLoading && !loadError && allResults.length === 0 && (
-        <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>此單位沒有報名記錄</Typography>
+      {hasUnit && !unitLoading && !loadError && unitFiltered.length === 0 && (
+        <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>
+          {isJoint && selectedUnit ? '此單位沒有報名記錄' : '沒有報名記錄'}
+        </Typography>
       )}
 
       <ConfirmDialog
@@ -608,17 +678,18 @@ export default function CheckinSessionPage() {
   )
 }
 
-function PersonCard({ r, done, onCheckin, onCancel }: { r: Reg; done: boolean; onCheckin: () => void; onCancel: () => void }) {
+function PersonCard({ r, done, showUnit, onCheckin, onCancel }: { r: Reg; done: boolean; showUnit?: boolean; onCheckin: () => void; onCancel: () => void }) {
   const timeStr = done && r.checked_in_at
     ? new Date(r.checked_in_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })
     : null
+  const subLabel = showUnit ? `${r.unit} · ${r.classes?.name}` : r.classes?.name
   return (
     <Card sx={{ borderColor: done ? 'rgba(20,184,106,0.25)' : 'divider', bgcolor: done ? '#F0FDF4' : 'background.paper', transition: 'border-color 180ms ease, background 180ms ease' }}>
       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', alignItems: 'stretch', gap: 1.5 }}>
         {done ? (
           <>
             <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <Typography noWrap sx={{ fontSize: 12, color: '#16A34A', lineHeight: 1.2, opacity: 0.8 }}>{r.classes?.name}</Typography>
+              <Typography noWrap sx={{ fontSize: 12, color: '#16A34A', lineHeight: 1.2, opacity: 0.8 }}>{subLabel}</Typography>
               <Typography noWrap sx={{ fontWeight: 700, fontSize: 18, lineHeight: 1.35, color: '#15803D' }}>{r.name}</Typography>
             </Box>
             <Box onClick={onCancel} sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', cursor: 'pointer', gap: 0.25, px: 0.5, borderRadius: 1, '&:hover': { bgcolor: 'rgba(20,184,106,0.06)' } }}>
@@ -632,7 +703,7 @@ function PersonCard({ r, done, onCheckin, onCancel }: { r: Reg; done: boolean; o
         ) : (
           <>
             <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <Typography noWrap sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1.2 }}>{r.classes?.name}</Typography>
+              <Typography noWrap sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1.2 }}>{subLabel}</Typography>
               <Typography noWrap sx={{ fontWeight: 700, fontSize: 18, lineHeight: 1.35, color: 'text.primary' }}>{r.name}</Typography>
             </Box>
             <Button variant="contained" size="small" startIcon={<CheckIcon />} onClick={onCheckin}
