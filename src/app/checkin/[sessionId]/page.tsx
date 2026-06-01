@@ -145,12 +145,18 @@ export default function CheckinSessionPage() {
     setUnitLoading(false)
   }, [sessionId])
 
+  // Joint: load once when session is ready
   useEffect(() => {
-    if (!session) return
-    if (!session.unit) { loadAll(); return }
+    if (!session || session.unit) return
+    loadAll()
+  }, [session, loadAll])
+
+  // Non-joint: reload when selectedUnit changes
+  useEffect(() => {
+    if (!session || !session.unit) return
     if (!selectedUnit) { setAllResults([]); return }
     loadUnit(selectedUnit as Unit)
-  }, [session, selectedUnit, loadUnit, loadAll])
+  }, [session, selectedUnit, loadUnit])
 
   useEffect(() => {
     if (!session) return
