@@ -1,13 +1,22 @@
 import type { Metadata } from 'next'
-import './globals.css'
+import { Noto_Sans_TC } from 'next/font/google'
 import { AuthProvider } from '@/components/AuthProvider'
 import { Navbar } from '@/components/Navbar'
 import { ThemeRegistry } from '@/components/ThemeRegistry'
 import { UpdateBanner } from '@/components/UpdateBanner'
 import { SnackProvider } from '@/components/SnackProvider'
-import pkg from '../../package.json'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/next'
+import pkg from '../../package.json'
+import './globals.css'
+
+const notoSansTC = Noto_Sans_TC({
+  weight: ['300', '400', '500', '700', '900'],
+  subsets: ['latin'],
+  display: 'swap',
+  preload: false,
+})
+
 export const metadata: Metadata = {
   title: 'ClassSign 班會掛號系統',
   description: '班會掛號系統',
@@ -16,7 +25,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-TW">
+    <html lang="zh-TW" className={notoSansTC.className}>
       <body>
         <ThemeRegistry>
           <AuthProvider>
