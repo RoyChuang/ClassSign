@@ -283,6 +283,7 @@ export default function CheckinSessionPage() {
   const kunChecked = kun.filter(r => checkedIn.has(r.id)).length
 
   const hasUnit = isJoint || !!selectedUnit
+  const chipItems = [{ id: '', name: '全部', count: nameFiltered.length }, ...classes.map(c => ({ id: c.id, name: c.name, count: classCounts.get(c.id) ?? 0 }))]
 
   async function checkIn(reg: Reg) {
     if (checkedIn.has(reg.id)) return
@@ -452,62 +453,52 @@ export default function CheckinSessionPage() {
         </Card>
       )}
 
-      {/* 單位 + 姓名篩選 */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-            <FormControl fullWidth>
-              <InputLabel shrink={isJoint || !!selectedUnit}>單位</InputLabel>
-              {session?.unit ? (
-                <Select label="單位" value={selectedUnit} disabled>
-                  <MenuItem value={selectedUnit}>{selectedUnit}</MenuItem>
-                </Select>
-              ) : (
-                <Select label="單位" value={selectedUnit} displayEmpty
-                  notched={isJoint}
-                  renderValue={v => v || (isJoint ? '全部' : '')}
-                  onChange={e => { setSelectedUnit(e.target.value as Unit); setNameFilter(''); setClassFilter(''); setWalkInSuccess('') }}>
-                  {isJoint && <MenuItem value=''>全部</MenuItem>}
-                  {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
-                </Select>
-              )}
-            </FormControl>
-            <TextField
-              label="篩選姓名" placeholder="輸入篩選"
-              value={nameFilter} onChange={e => setNameFilter(e.target.value)}
-              disabled={!hasUnit}
+      {/* 過濾列：單位 + 班別 chips + 篩選姓名，同一列自然換行 */}
+      <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+        <FormControl size="small" sx={{ minWidth: 110, flexShrink: 0 }}>
+          <InputLabel shrink={isJoint || !!selectedUnit}>單位</InputLabel>
+          {session?.unit ? (
+            <Select label="單位" value={selectedUnit} disabled notched>
+              <MenuItem value={selectedUnit}>{selectedUnit}</MenuItem>
+            </Select>
+          ) : (
+            <Select label="單位" value={selectedUnit} displayEmpty
+              notched={isJoint}
+              renderValue={v => v || (isJoint ? '全部' : '')}
+              onChange={e => { setSelectedUnit(e.target.value as Unit); setNameFilter(''); setClassFilter(''); setWalkInSuccess('') }}>
+              {isJoint && <MenuItem value=''>全部</MenuItem>}
+              {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
+            </Select>
+          )}
+        </FormControl>
+        {hasUnit && chipItems.map(item => {
+          const selected = classFilter === item.id
+          return (
+            <Chip key={item.id}
+              onClick={() => setClassFilter(item.id)}
+              color={selected ? 'primary' : 'default'}
+              sx={{ flexShrink: 0, fontSize: 14, height: 36, px: 0.5,
+                ...(selected ? {} : { bgcolor: 'white', border: '1px solid', borderColor: 'divider' }) }}
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.875 }}>
+                  {item.name}
+                  <Box component="span" sx={{
+                    fontSize: 11.5, fontWeight: 700, px: 0.875, lineHeight: '20px',
+                    borderRadius: '999px',
+                    bgcolor: selected ? 'rgba(255,255,255,0.22)' : '#ECF0F7',
+                    color: selected ? 'white' : 'text.secondary',
+                  }}>{item.count}</Box>
+                </Box>
+              }
             />
-          </Box>
-        </CardContent>
-      </Card>
-
-      {/* 班別篩選 */}
-      {hasUnit && classes.length > 0 && (
-        <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-          {[{ id: '', name: '全部', count: nameFiltered.length }, ...classes.map(c => ({ id: c.id, name: c.name, count: classCounts.get(c.id) ?? 0 }))].map(item => {
-            const selected = classFilter === item.id
-            return (
-              <Chip key={item.id}
-                onClick={() => setClassFilter(item.id)}
-                color={selected ? 'primary' : 'default'}
-                sx={{ flexShrink: 0, fontSize: 14, height: 36, px: 0.5,
-                  ...(selected ? {} : { bgcolor: 'white', border: '1px solid', borderColor: 'divider' }) }}
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.875 }}>
-                    {item.name}
-                    <Box component="span" sx={{
-                      fontSize: 11.5, fontWeight: 700, px: 0.875, lineHeight: '20px',
-                      borderRadius: '999px',
-                      bgcolor: selected ? 'rgba(255,255,255,0.22)' : '#ECF0F7',
-                      color: selected ? 'white' : 'text.secondary',
-                    }}>{item.count}</Box>
-                  </Box>
-                }
-              />
-            )
-          })}
-        </Box>
-      )}
+          )
+        })}
+        <TextField size="small" label="篩選姓名" placeholder="輸入篩選"
+          value={nameFilter} onChange={e => setNameFilter(e.target.value)}
+          disabled={!hasUnit}
+          sx={{ width: 150, flexShrink: 0 }}
+        />
+      </Box>
 
       {walkInSuccess && (
         <Card sx={{ mb: 2, borderColor: '#BBF7D0', bgcolor: '#F0FDF4' }}>
