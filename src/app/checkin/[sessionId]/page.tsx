@@ -283,7 +283,7 @@ export default function CheckinSessionPage() {
   const kunChecked = kun.filter(r => checkedIn.has(r.id)).length
 
   const hasUnit = isJoint || !!selectedUnit
-  const chipItems = [{ id: '', name: '全部', count: nameFiltered.length }, ...classes.map(c => ({ id: c.id, name: c.name, count: classCounts.get(c.id) ?? 0 }))]
+  const chipItems = [{ id: '', name: '全班別', count: nameFiltered.length }, ...classes.map(c => ({ id: c.id, name: c.name, count: classCounts.get(c.id) ?? 0 }))]
 
   async function checkIn(reg: Reg) {
     if (checkedIn.has(reg.id)) return
