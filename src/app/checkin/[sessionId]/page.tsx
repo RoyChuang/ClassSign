@@ -454,7 +454,8 @@ export default function CheckinSessionPage() {
       )}
 
       {/* 過濾列：單位 + 班別 chips + 篩選姓名，同一列自然換行 */}
-      <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+      <Card sx={{ mb: 2 }}><CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
         <FormControl size="small" sx={{ minWidth: 110, flexShrink: 0 }}>
           <InputLabel shrink={isJoint || !!selectedUnit}>單位</InputLabel>
           {session?.unit ? (
@@ -499,6 +500,7 @@ export default function CheckinSessionPage() {
           sx={{ width: 150, flexShrink: 0 }}
         />
       </Box>
+      </CardContent></Card>
 
       {walkInSuccess && (
         <Card sx={{ mb: 2, borderColor: '#BBF7D0', bgcolor: '#F0FDF4' }}>
