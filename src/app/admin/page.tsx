@@ -348,7 +348,7 @@ export default function AdminPage() {
         )
       })()}
       {loading ? <Loading /> : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           {(() => {
             const filtered = sessions.filter(s => {
               const matchSearch = !search.trim() || s.name.toLowerCase().includes(search.trim().toLowerCase())
@@ -362,28 +362,64 @@ export default function AdminPage() {
             .map(s => {
               const chip = sessionChip(s)
               return (
-                <Card key={s.id}>
-                  <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
-                      <Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography sx={{ fontWeight: 500 }}>{s.name}</Typography>
-                          <Chip label={s.unit ?? '聯合'} variant="outlined" sx={{ fontSize: 14, height: 24, ...(s.unit ? {} : { borderColor: '#94A3B8', color: 'text.secondary' }) }} />
-                        </Box>
-                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>班會日：{s.date} · 截止：{s.reg_deadline}</Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0, ml: 1 }}>
-                        <IconButton aria-label="編輯班會" onClick={() => openEdit(s)}><EditIcon fontSize="small" /></IconButton>
-                        <IconButton aria-label="刪除班會" color="error" onClick={() => setDeleteTarget(s)}><DeleteIcon fontSize="small" /></IconButton>
+                <Card key={s.id} variant="outlined" sx={{
+                  width: { xs: '100%', sm: 'calc(50% - 8px)', lg: 'calc(33.333% - 11px)' },
+                  borderRadius: '14px',
+                  borderColor: s.status === 'open' ? 'rgba(22,163,74,0.25)' : 'divider',
+                  transition: 'box-shadow 180ms ease, border-color 180ms ease',
+                  '&:hover': { boxShadow: '0 4px 16px rgba(0,0,0,0.08)', borderColor: s.status === 'open' ? 'rgba(22,163,74,0.5)' : '#CBD5E1' },
+                }}>
+                  <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+                    {/* 頂部：單位 tag + 操作按鈕 */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.25 }}>
+                      <Chip
+                        label={s.unit ?? '聯合'}
+                        size="small"
+                        sx={{
+                          fontSize: 12, height: 24, fontWeight: 600, borderRadius: '7px',
+                          ...(s.unit
+                            ? { bgcolor: '#EFF4FF', color: '#2549E5' }
+                            : { bgcolor: '#F1F5F9', color: '#475569' }),
+                        }}
+                      />
+                      <Box sx={{ display: 'flex', gap: 0.25, ml: 1 }}>
+                        <IconButton aria-label="編輯班會" size="small" onClick={() => openEdit(s)} sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main', bgcolor: '#EFF4FF' } }}>
+                          <EditIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                        <IconButton aria-label="刪除班會" size="small" onClick={() => setDeleteTarget(s)} sx={{ color: 'text.secondary', '&:hover': { color: 'error.main', bgcolor: '#FEF2F2' } }}>
+                          <DeleteIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
                       </Box>
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip label={chip.label} color={chip.color} />
-                      <Select value={s.status} onChange={e => updateStatus(s.id, e.target.value as SessionStatus)} aria-label="班會狀態" sx={{ fontSize: 14 }}>
-                        <MenuItem value="open">掛號中</MenuItem>
-                        <MenuItem value="finished">已結束</MenuItem>
-                      </Select>
+
+                    {/* 班會名稱 */}
+                    <Typography sx={{ fontWeight: 700, fontSize: 17, lineHeight: 1.4, color: '#1D1D1F', mb: 0.75 }}>
+                      {s.name}
+                    </Typography>
+
+                    {/* 日期資訊 */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, mb: 2 }}>
+                      <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>班會日：{s.date}</Typography>
+                      <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>截止日：{s.reg_deadline}</Typography>
                     </Box>
+
+                    {/* 狀態 Select — 樣式化成彩色 chip 外觀 */}
+                    <Select
+                      value={s.status}
+                      onChange={e => updateStatus(s.id, e.target.value as SessionStatus)}
+                      aria-label="班會狀態"
+                      size="small"
+                      sx={{
+                        fontSize: 13, fontWeight: 600, borderRadius: '8px',
+                        ...(s.status === 'open'
+                          ? { bgcolor: '#DCFCE7', color: '#15803D', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'transparent' }, '& .MuiSvgIcon-root': { color: '#15803D' } }
+                          : { bgcolor: '#F1F5F9', color: '#64748B', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'transparent' }, '& .MuiSvgIcon-root': { color: '#64748B' } }),
+                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'transparent' },
+                      }}
+                    >
+                      <MenuItem value="open">掛號中</MenuItem>
+                      <MenuItem value="finished">已結束</MenuItem>
+                    </Select>
                   </CardContent>
                 </Card>
               )
