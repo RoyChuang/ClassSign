@@ -47,7 +47,7 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
   const [loaded, setLoaded] = useState(false)
   const [form, setForm] = useState({ name: '', gender: '乾' as Gender })
   const [adding, setAdding] = useState(false)
-  const [editingName, setEditingName] = useState(false)
+  const [renameOpen, setRenameOpen] = useState(false)
   const [editNameValue, setEditNameValue] = useState(group.name)
   const [pasteOpen, setPasteOpen] = useState(false)
   const [pasteText, setPasteText] = useState('')
@@ -68,10 +68,10 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
 
   async function saveRename() {
     const name = editNameValue.trim()
-    if (!name || name === group.name) { setEditingName(false); return }
+    if (!name || name === group.name) { setRenameOpen(false); return }
     const { error } = await supabase.from('member_groups').update({ name }).eq('id', group.id)
     if (error) showSnack('更新失敗：' + error.message, 'error')
-    else { onRename(group.id, name); setEditingName(false) }
+    else { onRename(group.id, name); setRenameOpen(false) }
   }
 
   async function addMember(e: React.FormEvent) {
@@ -159,7 +159,7 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
           </Typography>
           <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
             <Button size="small" startIcon={<EditIcon sx={{ fontSize: 15 }} />}
-              onClick={() => { setEditNameValue(group.name); setEditingName(true); setDetailOpen(true) }}>
+              onClick={() => setDetailOpen(true)}>
               編輯
             </Button>
             <Button size="small" color="error" startIcon={<DeleteIcon sx={{ fontSize: 15 }} />}
@@ -171,25 +171,16 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
       </Card>
 
       {/* Detail Dialog */}
-      <Dialog open={detailOpen} onClose={() => { setDetailOpen(false); setEditingName(false) }} maxWidth="sm" fullWidth>
+      <Dialog open={detailOpen} onClose={() => setDetailOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pr: 1.5 }}>
-          {editingName ? (
-            <TextField
-              size="small" value={editNameValue} autoFocus sx={{ flex: 1 }}
-              onChange={e => setEditNameValue(e.target.value)}
-              onBlur={saveRename}
-              onKeyDown={e => { if (e.key === 'Enter') saveRename(); if (e.key === 'Escape') setEditingName(false) }}
-            />
-          ) : (
-            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography sx={{ fontWeight: 700, fontSize: 18 }}>{group.name}</Typography>
-              <Chip label={`${members.length} 人`} size="small" sx={{ fontSize: 12, bgcolor: '#F1F5F9', color: '#64748B', borderRadius: '8px' }} />
-              <IconButton size="small" onClick={() => { setEditNameValue(group.name); setEditingName(true) }} sx={{ color: 'text.secondary' }}>
-                <EditIcon sx={{ fontSize: 17 }} />
-              </IconButton>
-            </Box>
-          )}
-          <IconButton size="small" onClick={() => { setDetailOpen(false); setEditingName(false) }}>
+          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography sx={{ fontWeight: 700, fontSize: 18 }}>{group.name}</Typography>
+            <Chip label={`${members.length} 人`} size="small" sx={{ fontSize: 12, bgcolor: '#F1F5F9', color: '#64748B', borderRadius: '8px' }} />
+            <IconButton size="small" onClick={() => { setEditNameValue(group.name); setRenameOpen(true) }} sx={{ color: 'text.secondary' }}>
+              <EditIcon sx={{ fontSize: 17 }} />
+            </IconButton>
+          </Box>
+          <IconButton size="small" onClick={() => setDetailOpen(false)}>
             <CloseIcon sx={{ fontSize: 20 }} />
           </IconButton>
         </DialogTitle>
@@ -251,6 +242,23 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
 
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button startIcon={<ContentPasteIcon />} onClick={() => setPasteOpen(true)}>批次貼上</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Rename Dialog */}
+      <Dialog open={renameOpen} onClose={() => setRenameOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 600 }}>重新命名</DialogTitle>
+        <DialogContent sx={{ pt: '12px !important' }}>
+          <TextField
+            fullWidth autoFocus label="群組名稱"
+            value={editNameValue}
+            onChange={e => setEditNameValue(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') saveRename() }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button onClick={() => setRenameOpen(false)}>取消</Button>
+          <Button variant="contained" onClick={saveRename} disabled={!editNameValue.trim()}>儲存</Button>
         </DialogActions>
       </Dialog>
 
