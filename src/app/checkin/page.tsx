@@ -9,11 +9,8 @@ import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import CardActionArea from '@mui/material/CardActionArea'
-import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent'
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { Loading } from '@/components/Loading'
 
 const supabase = createClient()
@@ -31,7 +28,6 @@ export default function CheckinPage() {
       })
   }, [])
 
-  // 只有一個班會時自動跳轉
   useEffect(() => {
     if (loaded && sessions.length === 1) router.replace(`/checkin/${sessions[0].id}`)
   }, [loaded, sessions, router])
@@ -40,33 +36,30 @@ export default function CheckinPage() {
 
   return (
     <Container maxWidth="sm" sx={{ py: 5 }}>
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <QrCodeScannerIcon sx={{ fontSize: 18 }} />
-          </Box>
-          <Typography component="h1" sx={{ fontSize: 22, fontWeight: 700 }}>完成報到</Typography>
+      <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <QrCodeScannerIcon sx={{ fontSize: 18 }} />
         </Box>
+        <Typography component="h1" sx={{ fontSize: 22, fontWeight: 700 }}>選擇班會</Typography>
       </Box>
 
-      <Dialog open onClose={() => {}} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>選擇班會</DialogTitle>
-        <DialogContent sx={{ px: 2, pb: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {sessions.map(s => (
-              <Card key={s.id} variant="outlined">
-                <CardActionArea onClick={() => router.push(`/checkin/${s.id}`)} sx={{ px: 2, py: 1.5 }}>
-                  <Typography sx={{ fontWeight: 600, fontSize: 15 }}>{s.unit ? `[${s.unit}] ${s.name}` : `[聯合] ${s.name}`}</Typography>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>{s.date}</Typography>
-                </CardActionArea>
-              </Card>
-            ))}
-            {sessions.length === 0 && (
-              <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 2 }}>目前沒有開放報到的班會</Typography>
-            )}
-          </Box>
-        </DialogContent>
-      </Dialog>
+      {sessions.length === 0 ? (
+        <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 4 }}>目前沒有開放報到的班會</Typography>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {sessions.map(s => (
+            <Card key={s.id} variant="outlined" sx={{ borderRadius: '12px', transition: 'border-color 150ms ease, box-shadow 150ms ease', '&:hover': { borderColor: 'primary.main', boxShadow: '0 4px 16px rgba(37,73,229,0.12)' } }}>
+              <CardActionArea onClick={() => router.push(`/checkin/${s.id}`)} sx={{ px: 2.5, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography sx={{ fontWeight: 600, fontSize: 16 }}>{s.unit ? `[${s.unit}] ${s.name}` : `[聯合] ${s.name}`}</Typography>
+                  <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.25 }}>{s.date}</Typography>
+                </Box>
+                <ChevronRightIcon sx={{ color: 'text.disabled', flexShrink: 0 }} />
+              </CardActionArea>
+            </Card>
+          ))}
+        </Box>
+      )}
     </Container>
   )
 }
