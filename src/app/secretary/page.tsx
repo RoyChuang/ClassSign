@@ -397,18 +397,18 @@ export default function SecretaryPage() {
                 return (
                   <Box key={cls.id}>
                     {/* 班別標題 */}
-                    <Box sx={{ px: 2, py: 0.75, bgcolor: '#F8FAFC', borderTop: '1px solid', borderBottom: '1px solid', borderColor: 'divider' }}>
-                      <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'text.secondary', letterSpacing: '0.04em' }}>{cls.name}</Typography>
+                    <Box sx={{ px: 2, py: 0.75, bgcolor: '#bed8f2', borderTop: '1px solid', borderBottom: '1px solid', borderColor: 'divider' }}>
+                      <Typography sx={{ fontSize: 18, fontWeight: 600, color: 'text.primary', letterSpacing: '0.04em' }}>{cls.name}</Typography>
                     </Box>
                     {/* 每列乾/坤對齊 */}
                     {Array.from({ length: rows }).map((_, i) => (
                       <Box key={i} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: i > 0 ? '1px solid' : 'none', borderColor: 'divider' }}>
                         {[qian[i], kun[i]].map((r, gi) => (
-                          <Box key={gi} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, borderRight: gi === 0 ? '1px solid' : 'none', borderColor: 'divider', minHeight: 44 }}>
+                          <Box key={gi} sx={{ display: 'flex', flexDirection: 'column', px: 2, py: 1, borderRight: gi === 0 ? '1px solid' : 'none', borderColor: 'divider', minHeight: 44 }}>
                             {r ? (
                               <>
                                 <Typography sx={{ fontSize: 16, fontWeight: 500 }}>{r.name}</Typography>
-                                <Box sx={{ display: 'flex' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.5 }}>
                                   <Button size="small" startIcon={<SwapHorizIcon fontSize="small" />} onClick={e => setClassPopover({ anchorEl: e.currentTarget, regId: r.id })}>換班</Button>
                                   <Button size="small" color="error" startIcon={<DeleteIcon fontSize="small" />} onClick={() => setDeleteTarget(r.id)}>刪除</Button>
                                 </Box>
