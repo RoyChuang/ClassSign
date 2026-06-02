@@ -408,9 +408,7 @@ export default function SchedulePage() {
                       預覽
                     </Button>
                     <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={() => setEditTarget(s)}>編輯</Button>
-                    <IconButton aria-label="刪除班表" onClick={() => setDeleteTarget(s)} sx={{ color: 'error.main' }}>
-                      <DeleteIcon sx={{ fontSize: 18 }} />
-                    </IconButton>
+                    <Button variant="outlined" size="small" color="error" startIcon={<DeleteIcon />} onClick={() => setDeleteTarget(s)}>刪除</Button>
                   </Box>
                 </Box>
               </CardContent>

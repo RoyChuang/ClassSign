@@ -382,13 +382,9 @@ export default function AdminPage() {
                             : { bgcolor: '#F1F5F9', color: '#475569' }),
                         }}
                       />
-                      <Box sx={{ display: 'flex', gap: 0.25, ml: 1 }}>
-                        <IconButton aria-label="編輯班會" size="small" onClick={() => openEdit(s)} sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main', bgcolor: '#EFF4FF' } }}>
-                          <EditIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                        <IconButton aria-label="刪除班會" size="small" onClick={() => setDeleteTarget(s)} sx={{ color: 'text.secondary', '&:hover': { color: 'error.main', bgcolor: '#FEF2F2' } }}>
-                          <DeleteIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
+                      <Box sx={{ display: 'flex', gap: 0.75, ml: 1 }}>
+                        <Button variant="outlined" size="small" startIcon={<EditIcon sx={{ fontSize: 15 }} />} onClick={() => openEdit(s)}>編輯</Button>
+                        <Button variant="outlined" size="small" color="error" startIcon={<DeleteIcon sx={{ fontSize: 15 }} />} onClick={() => setDeleteTarget(s)}>刪除</Button>
                       </Box>
                     </Box>
 

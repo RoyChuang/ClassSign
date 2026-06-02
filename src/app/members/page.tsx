@@ -175,16 +175,14 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
             <Typography sx={{ fontWeight: 600, fontSize: 16, flex: 1 }}>{group.name}</Typography>
           )}
           {!editingName && (
-            <Button size="small" startIcon={<EditIcon />}
-              onClick={e => { e.stopPropagation(); setEditNameValue(group.name); setEditingName(true) }}
-              sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' } }}>
+            <Button variant="outlined" size="small" startIcon={<EditIcon />}
+              onClick={e => { e.stopPropagation(); setEditNameValue(group.name); setEditingName(true) }}>
               編輯
             </Button>
           )}
           {!editingName && (
-            <Button size="small" startIcon={<DeleteIcon />}
-              onClick={e => { e.stopPropagation(); onDelete(group.id) }}
-              sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}>
+            <Button variant="outlined" size="small" color="error" startIcon={<DeleteIcon />}
+              onClick={e => { e.stopPropagation(); onDelete(group.id) }}>
               刪除
             </Button>
           )}
