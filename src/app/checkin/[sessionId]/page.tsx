@@ -1,10 +1,9 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { useSnack } from '@/components/SnackProvider'
-import { Session, Class, Registration, Unit, Gender, UNITS, GENDERS } from '@/lib/types'
+import { Unit, Gender, UNITS, GENDERS } from '@/lib/types'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
@@ -34,11 +33,8 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import { Loading } from '@/components/Loading'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { genderToggleQian, genderToggleKun } from '@/lib/sx'
-import { RealtimeStatus, RealtimeStatusType } from '@/components/RealtimeStatus'
-
-const supabase = createClient()
-
-type Reg = Registration & { classes: { name: string } }
+import { RealtimeStatus } from '@/components/RealtimeStatus'
+import { useCheckinData, Reg } from './useCheckinData'
 
 export default function CheckinSessionPage() {
   const params = useParams()
@@ -46,231 +42,43 @@ export default function CheckinSessionPage() {
   const sessionId = params.sessionId as string
   const { showSnack } = useSnack()
 
-  const [session, setSession] = useState<Session | null>(null)
-  const [sessionLoading, setSessionLoading] = useState(true)
-  const [sessionNotFound, setSessionNotFound] = useState(false)
-  const [sessionEnded, setSessionEnded] = useState(false)
-
-  // For joint sessions: optional display filter. For non-joint: load trigger (locked to session.unit)
   const [selectedUnit, setSelectedUnit] = useState<Unit | ''>('')
   const [nameFilter, setNameFilter] = useState('')
-  const [allResults, setAllResults] = useState<Reg[]>([])
-  const [unitLoading, setUnitLoading] = useState(false)
-  const [loadError, setLoadError] = useState(false)
-  const [checkedIn, setCheckedIn] = useState<Set<string>>(new Set())
+  const [classFilter, setClassFilter] = useState<string>('')
+  const [activeGender, setActiveGender] = useState<'乾' | '坤'>('乾')
   const [confirmTarget, setConfirmTarget] = useState<Reg | null>(null)
   const [cancelTarget, setCancelTarget] = useState<Reg | null>(null)
   const [copied, setCopied] = useState(false)
-  const [walkInSuccess, setWalkInSuccess] = useState<string>('')
-  const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatusType>('idle')
-  const [realtimeKey, setRealtimeKey] = useState(0)
-  const unitCacheRef = useRef<Map<string, Reg[]>>(new Map())
-  const MAX_CACHED_UNITS = 5
-  function setCachedUnit(unit: Unit | string, list: Reg[]) {
-    const cache = unitCacheRef.current
-    cache.delete(unit)
-    cache.set(unit, list)
-    if (cache.size > MAX_CACHED_UNITS) cache.delete(cache.keys().next().value!)
-  }
-  const [activeGender, setActiveGender] = useState<'乾' | '坤'>('乾')
-  const [classFilter, setClassFilter] = useState<string>('')
   const [walkInOpen, setWalkInOpen] = useState(false)
-  const [classes, setClasses] = useState<Class[]>([])
   const [walkInForm, setWalkInForm] = useState<{ name: string; gender: Gender; class_id: string; unit: Unit | '' }>({ name: '', gender: '乾', class_id: '', unit: '' })
   const [walkInSubmitting, setWalkInSubmitting] = useState(false)
+  const [walkInSuccess, setWalkInSuccess] = useState<string>('')
 
-  const isJoint = session !== null && !session.unit
+  const {
+    session, sessionLoading, sessionNotFound, sessionEnded,
+    classes,
+    allResults, checkedIn,
+    unitLoading, loadError,
+    realtimeStatus,
+    isJoint,
+    checkIn, cancelCheckIn,
+    loadUnit, loadAll, clearUnitCache,
+    registerWalkIn,
+  } = useCheckinData(sessionId, selectedUnit)
 
-  useEffect(() => {
-    supabase.from('sessions').select('*').eq('id', sessionId).eq('status', 'open').single()
-      .then(({ data, error }) => {
-        if (error || !data) setSessionNotFound(true)
-        else setSession(data)
-        setSessionLoading(false)
-      })
-  }, [sessionId])
-
-  useEffect(() => {
-    supabase.from('classes').select('*').eq('session_id', sessionId).order('sort_order')
-      .then(({ data }) => {
-        setClasses(data ?? [])
-        const defaultClass = (data ?? []).find(c => c.name === '壇主人才班') ?? data?.[0]
-        setWalkInForm(f => ({ ...f, class_id: defaultClass?.id ?? '' }))
-      })
-  }, [sessionId])
-
+  // Lock selectedUnit to session.unit for non-joint sessions
   useEffect(() => {
     if (session?.unit) setSelectedUnit(session.unit as Unit)
   }, [session])
 
-  const loadUnit = useCallback(async (unit: Unit) => {
-    const cached = unitCacheRef.current.get(unit)
-    if (cached) {
-      setAllResults(cached)
-      setCheckedIn(new Set(cached.filter(r => r.checked_in).map(r => r.id)))
-      return
-    }
-    setUnitLoading(true)
-    setLoadError(false)
-    const { data, error } = await supabase
-      .from('registrations')
-      .select('*, classes(name)')
-      .eq('session_id', sessionId)
-      .eq('unit', unit)
-      .order('name')
-    if (error) {
-      setLoadError(true)
-      setUnitLoading(false)
-      return
-    }
-    const list: Reg[] = (data ?? []).map(r => ({ ...r, classes: r.classes ?? { name: '' } }))
-    setCachedUnit(unit, list)
-    setAllResults(list)
-    setCheckedIn(new Set(list.filter(r => r.checked_in).map(r => r.id)))
-    setUnitLoading(false)
-  }, [sessionId])
-
-  const loadAll = useCallback(async () => {
-    setUnitLoading(true)
-    setLoadError(false)
-    const { data, error } = await supabase
-      .from('registrations')
-      .select('*, classes(name)')
-      .eq('session_id', sessionId)
-      .order('name')
-    if (error) { setLoadError(true); setUnitLoading(false); return }
-    const list: Reg[] = (data ?? []).map(r => ({ ...r, classes: r.classes ?? { name: '' } }))
-    setAllResults(list)
-    setCheckedIn(new Set(list.filter(r => r.checked_in).map(r => r.id)))
-    setUnitLoading(false)
-  }, [sessionId])
-
-  // Joint: load once when session is ready
+  // Set default class_id for walk-in form once classes load
   useEffect(() => {
-    if (!session || session.unit) return
-    loadAll()
-  }, [session, loadAll])
+    if (!classes.length) return
+    const defaultClass = classes.find(c => c.name === '壇主人才班') ?? classes[0]
+    setWalkInForm(f => ({ ...f, class_id: defaultClass?.id ?? '' }))
+  }, [classes])
 
-  // Non-joint: reload when selectedUnit changes
-  useEffect(() => {
-    if (!session || !session.unit) return
-    if (!selectedUnit) { setAllResults([]); return }
-    loadUnit(selectedUnit as Unit)
-  }, [session, selectedUnit, loadUnit])
-
-  useEffect(() => {
-    if (!session) return
-    if (!session.unit) {
-      // Joint: subscribe to all units
-      setRealtimeStatus('connecting')
-      let connectionCount = 0
-      const channel = supabase
-        .channel(`checkin-${sessionId}-all`)
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'registrations', filter: `session_id=eq.${sessionId}` },
-          (payload) => {
-            const updated = payload.new as Registration
-            setCheckedIn(prev => {
-              const s = new Set(prev)
-              if (updated.checked_in) s.add(updated.id)
-              else s.delete(updated.id)
-              return s
-            })
-            setAllResults(prev => prev.map(r =>
-              r.id === updated.id ? { ...r, checked_in: updated.checked_in, checked_in_at: updated.checked_in_at } : r
-            ))
-          })
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations', filter: `session_id=eq.${sessionId}` },
-          (payload) => {
-            const raw = payload.new as Registration
-            const classObj = classes.find(c => c.id === raw.class_id)
-            const inserted: Reg = { ...raw, classes: { name: classObj?.name ?? '' } } as Reg
-            setAllResults(prev => {
-              if (prev.some(r => r.id === inserted.id)) return prev
-              return [...prev, inserted].sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'))
-            })
-            if (inserted.checked_in) setCheckedIn(prev => new Set([...prev, inserted.id]))
-          })
-        .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            connectionCount++
-            if (connectionCount > 1) loadAll()
-            setRealtimeStatus('connected')
-          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            setRealtimeStatus('error')
-          }
-        })
-      return () => { supabase.removeChannel(channel) }
-    } else {
-      // Non-joint: per-unit subscription
-      if (!selectedUnit) { setRealtimeStatus('idle'); return }
-      setRealtimeStatus('connecting')
-      let connectionCount = 0
-      const channel = supabase
-        .channel(`checkin-${sessionId}-${selectedUnit}`)
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'registrations', filter: `session_id=eq.${sessionId}` },
-          (payload) => {
-            const updated = payload.new as Registration
-            if (updated.unit !== selectedUnit) return
-            setCheckedIn(prev => {
-              const s = new Set(prev)
-              if (updated.checked_in) s.add(updated.id)
-              else s.delete(updated.id)
-              return s
-            })
-            setCachedUnit(selectedUnit as Unit,
-              (unitCacheRef.current.get(selectedUnit as Unit) ?? []).map(r =>
-                r.id === updated.id ? { ...r, checked_in: updated.checked_in, checked_in_at: updated.checked_in_at } : r
-              )
-            )
-          })
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations', filter: `session_id=eq.${sessionId}` },
-          (payload) => {
-            const raw = payload.new as Registration
-            if (raw.unit !== selectedUnit) return
-            const classObj = classes.find(c => c.id === raw.class_id)
-            const inserted: Reg = { ...raw, classes: { name: classObj?.name ?? '' } } as Reg
-            setAllResults(prev => {
-              if (prev.some(r => r.id === inserted.id)) return prev
-              const newList = [...prev, inserted].sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'))
-              setCachedUnit(selectedUnit as Unit, newList)
-              return newList
-            })
-            if (inserted.checked_in) setCheckedIn(prev => new Set([...prev, inserted.id]))
-          })
-        .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            connectionCount++
-            if (connectionCount > 1) {
-              unitCacheRef.current.delete(selectedUnit as Unit)
-              loadUnit(selectedUnit as Unit)
-            }
-            setRealtimeStatus('connected')
-          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            setRealtimeStatus('error')
-          }
-        })
-      return () => { supabase.removeChannel(channel) }
-    }
-  }, [sessionId, session, selectedUnit, realtimeKey, loadUnit, loadAll])
-
-  useEffect(() => {
-    const handleVisible = () => {
-      if (document.visibilityState !== 'visible') return
-      if (!session) return
-      if (!session.unit) {
-        loadAll()
-        setRealtimeKey(k => k + 1)
-      } else if (selectedUnit) {
-        unitCacheRef.current.delete(selectedUnit as Unit)
-        loadUnit(selectedUnit as Unit)
-        setRealtimeKey(k => k + 1)
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisible)
-    return () => document.removeEventListener('visibilitychange', handleVisible)
-  }, [session, selectedUnit, loadUnit, loadAll])
-
-  // For joint: apply unit filter client-side; for non-joint: allResults is already unit-specific
+  // Derived state
   const unitFiltered = useMemo(
     () => isJoint && selectedUnit ? allResults.filter(r => r.unit === selectedUnit) : allResults,
     [isJoint, selectedUnit, allResults]
@@ -300,43 +108,6 @@ export default function CheckinSessionPage() {
   const hasUnit = isJoint || !!selectedUnit
   const chipItems = [{ id: '', name: '全班別', count: nameFiltered.length }, ...classes.map(c => ({ id: c.id, name: c.name, count: classCounts.get(c.id) ?? 0 }))]
 
-  async function checkIn(reg: Reg) {
-    if (checkedIn.has(reg.id)) return
-    const checkedInAt = new Date().toISOString()
-    const { data, error } = await supabase.from('registrations')
-      .update({ checked_in: true, checked_in_at: checkedInAt })
-      .eq('id', reg.id)
-      .select('id')
-    if (error || !data || data.length === 0) {
-      const { data: s } = await supabase.from('sessions').select('status').eq('id', sessionId).single()
-      if (s?.status === 'finished') setSessionEnded(true)
-      return
-    }
-    setCheckedIn(prev => new Set([...prev, reg.id]))
-    setAllResults(prev => {
-      const updated = prev.map(r => r.id === reg.id ? { ...r, checked_in: true, checked_in_at: checkedInAt } : r)
-      if (!isJoint) setCachedUnit(reg.unit as Unit, updated)
-      return updated
-    })
-  }
-
-  async function cancelCheckIn() {
-    if (!cancelTarget) return
-    const target = cancelTarget
-    const { error } = await supabase.from('registrations')
-      .update({ checked_in: false, checked_in_at: null })
-      .eq('id', target.id)
-    if (!error) {
-      setCheckedIn(prev => { const s = new Set(prev); s.delete(target.id); return s })
-      setAllResults(prev => {
-        const updated = prev.map(r => r.id === target.id ? { ...r, checked_in: false, checked_in_at: null } : r)
-        if (!isJoint) setCachedUnit(target.unit as Unit, updated)
-        return updated
-      })
-    }
-    setCancelTarget(null)
-  }
-
   async function shareLink() {
     await navigator.clipboard.writeText(window.location.href)
     setCopied(true)
@@ -352,38 +123,24 @@ export default function CheckinSessionPage() {
 
   async function submitWalkIn() {
     const trimmedName = walkInForm.name.trim()
-    const unit = walkInForm.unit || selectedUnit
+    const unit = (walkInForm.unit || selectedUnit) as Unit
     if (!unit || !trimmedName || !walkInForm.class_id) return
 
-    const { data: existing } = await supabase.from('registrations')
-      .select('id').eq('session_id', sessionId).eq('unit', unit)
-      .eq('name', trimmedName).eq('gender', walkInForm.gender).limit(1)
-    if (existing && existing.length > 0) {
-      showSnack(`「${trimmedName}」（${walkInForm.gender}）已在報名名單中`, 'warning')
-      return
-    }
-
     setWalkInSubmitting(true)
-    const { error } = await supabase.from('registrations').insert({
-      session_id: sessionId,
-      unit,
-      name: trimmedName,
-      gender: walkInForm.gender,
-      class_id: walkInForm.class_id,
-      checked_in: true,
-      checked_in_at: new Date().toISOString(),
-    })
+    const { duplicate, error } = await registerWalkIn({ unit, name: trimmedName, gender: walkInForm.gender, class_id: walkInForm.class_id })
 
-    if (error) {
-      showSnack('報名失敗：' + error.message, 'error')
+    if (duplicate) {
+      showSnack(`「${trimmedName}」（${walkInForm.gender}）已在報名名單中`, 'warning')
+    } else if (error) {
+      showSnack('報名失敗：' + error, 'error')
     } else {
       setWalkInSuccess(trimmedName)
       setWalkInOpen(false)
       if (isJoint) {
         await loadAll()
       } else {
-        if (unit !== selectedUnit) setSelectedUnit(unit as Unit)
-        else { unitCacheRef.current.delete(unit as Unit); await loadUnit(unit as Unit) }
+        if (unit !== selectedUnit) setSelectedUnit(unit)
+        else { clearUnitCache(unit); await loadUnit(unit) }
       }
     }
     setWalkInSubmitting(false)
@@ -476,7 +233,7 @@ export default function CheckinSessionPage() {
         </Card>
       )}
 
-      {/* 過濾列：單位 + 班別 chips + 篩選姓名，同一列自然換行 */}
+      {/* 過濾列 */}
       <Card sx={{ mb: 2 }}><CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
         <FormControl size="small" sx={{ minWidth: 110, flexShrink: 0 }}>
@@ -540,7 +297,6 @@ export default function CheckinSessionPage() {
         <Typography sx={{ color: 'error.main', textAlign: 'center', py: 3 }}>載入失敗，請重新整理</Typography>
       )}
 
-      {/* 乾坤 — xs: tab 切換單欄 / sm+: 雙欄並排 */}
       {hasUnit && !unitLoading && !loadError && unitFiltered.length > 0 && filtered.length > 0 && (<>
         {/* xs: 乾/坤 tab 切換 */}
         <Box sx={{ display: { xs: 'flex', sm: 'none' }, gap: 1, mb: 1.5 }}>
@@ -649,12 +405,11 @@ export default function CheckinSessionPage() {
         content={`確定要取消「${cancelTarget?.name}」的報到？`}
         confirmLabel="確定取消"
         cancelLabel="不取消"
-        onConfirm={cancelCheckIn}
+        onConfirm={async () => { await cancelCheckIn(cancelTarget!); setCancelTarget(null) }}
         confirmColor="error"
         confirmIcon={<UndoIcon />}
       />
 
-      {/* 現場報名 Dialog */}
       <Dialog open={walkInOpen} onClose={() => !walkInSubmitting && setWalkInOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 600 }}>現場報名並報到</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
