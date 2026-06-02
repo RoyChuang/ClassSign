@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useSnack } from '@/components/SnackProvider'
@@ -271,16 +271,31 @@ export default function CheckinSessionPage() {
   }, [session, selectedUnit, loadUnit, loadAll])
 
   // For joint: apply unit filter client-side; for non-joint: allResults is already unit-specific
-  const unitFiltered = isJoint && selectedUnit ? allResults.filter(r => r.unit === selectedUnit) : allResults
-  const nameFiltered = unitFiltered.filter(r => !nameFilter.trim() || r.name.includes(nameFilter.trim()))
-  const filtered = nameFiltered.filter(r => !classFilter || r.class_id === classFilter)
-  const classCounts = new Map(classes.map(c => [c.id, nameFiltered.filter(r => r.class_id === c.id).length]))
-  const qian = filtered.filter(r => r.gender === '乾')
-  const kun = filtered.filter(r => r.gender === '坤')
-  const totalCheckedCount = unitFiltered.filter(r => checkedIn.has(r.id)).length
-  const totalPct = unitFiltered.length > 0 ? Math.round(totalCheckedCount / unitFiltered.length * 100) : 0
-  const qianChecked = qian.filter(r => checkedIn.has(r.id)).length
-  const kunChecked = kun.filter(r => checkedIn.has(r.id)).length
+  const unitFiltered = useMemo(
+    () => isJoint && selectedUnit ? allResults.filter(r => r.unit === selectedUnit) : allResults,
+    [isJoint, selectedUnit, allResults]
+  )
+  const nameFiltered = useMemo(
+    () => unitFiltered.filter(r => !nameFilter.trim() || r.name.includes(nameFilter.trim())),
+    [unitFiltered, nameFilter]
+  )
+  const filtered = useMemo(
+    () => nameFiltered.filter(r => !classFilter || r.class_id === classFilter),
+    [nameFiltered, classFilter]
+  )
+  const classCounts = useMemo(
+    () => new Map(classes.map(c => [c.id, nameFiltered.filter(r => r.class_id === c.id).length])),
+    [classes, nameFiltered]
+  )
+  const qian = useMemo(() => filtered.filter(r => r.gender === '乾'), [filtered])
+  const kun = useMemo(() => filtered.filter(r => r.gender === '坤'), [filtered])
+  const totalCheckedCount = useMemo(() => unitFiltered.filter(r => checkedIn.has(r.id)).length, [unitFiltered, checkedIn])
+  const totalPct = useMemo(
+    () => unitFiltered.length > 0 ? Math.round(totalCheckedCount / unitFiltered.length * 100) : 0,
+    [unitFiltered, totalCheckedCount]
+  )
+  const qianChecked = useMemo(() => qian.filter(r => checkedIn.has(r.id)).length, [qian, checkedIn])
+  const kunChecked = useMemo(() => kun.filter(r => checkedIn.has(r.id)).length, [kun, checkedIn])
 
   const hasUnit = isJoint || !!selectedUnit
   const chipItems = [{ id: '', name: '全班別', count: nameFiltered.length }, ...classes.map(c => ({ id: c.id, name: c.name, count: classCounts.get(c.id) ?? 0 }))]
@@ -307,10 +322,18 @@ export default function CheckinSessionPage() {
 
   async function cancelCheckIn() {
     if (!cancelTarget) return
+    const target = cancelTarget
     const { error } = await supabase.from('registrations')
       .update({ checked_in: false, checked_in_at: null })
-      .eq('id', cancelTarget.id)
-    if (!error) setCheckedIn(prev => { const s = new Set(prev); s.delete(cancelTarget.id); return s })
+      .eq('id', target.id)
+    if (!error) {
+      setCheckedIn(prev => { const s = new Set(prev); s.delete(target.id); return s })
+      setAllResults(prev => {
+        const updated = prev.map(r => r.id === target.id ? { ...r, checked_in: false, checked_in_at: null } : r)
+        if (!isJoint) setCachedUnit(target.unit as Unit, updated)
+        return updated
+      })
+    }
     setCancelTarget(null)
   }
 

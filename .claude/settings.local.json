@@ -14,7 +14,18 @@
       "Bash(ls /tmp/ui-ux-pro-max-skill/.claude/skills/)",
       "Read(//private/tmp/ui-ux-pro-max-skill/.claude/skills/**)",
       "Bash(python3 .claude/skills/ui-ux-pro-max/scripts/search.py \"accessibility elderly large-text high-contrast touch-target\" --domain ux)",
-      "Bash(python3 /Users/roy/Documents/ClassSign/.claude/skills/ui-ux-pro-max/scripts/search.py \"version number placement footer navigation settings\" --domain ux -n 5)"
+      "Bash(python3 /Users/roy/Documents/ClassSign/.claude/skills/ui-ux-pro-max/scripts/search.py \"version number placement footer navigation settings\" --domain ux -n 5)",
+      "Bash(git commit -m ' *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(python3 /Users/roy/Documents/ClassSign/.claude/skills/ui-ux-pro-max/scripts/search.py \"card layout progress information hierarchy\" --domain style -n 4)",
+      "Bash(du -sh /private/tmp/claude-501/ 2>/dev/null; ls /private/tmp/claude-501/ 2>/dev/null | head -20)",
+      "Read(//private/tmp/claude-501/**)",
+      "Bash(rm -f /private/tmp/claude-501/-Users-roy-Documents-ClassSign/21c430f5-20ee-46ff-adbb-354ae1c84d62/tasks/*.output 2>/dev/null; grep -n \"^import Chip\" /Users/roy/Documents/ClassSign/src/app/members/page.tsx)"
+    ],
+    "additionalDirectories": [
+      "/private/tmp/claude-501/-Users-roy-Documents-ClassSign/21c430f5-20ee-46ff-adbb-354ae1c84d62/tasks"
     ]
   }
 }

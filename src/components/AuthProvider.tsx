@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           // 先從快取顯示（即時），但 role/unit 為 null 直到 DB 確認
           const cached = getCached(email!)
-          if (cached) setProfile({ ...cached, role: 'viewer', unit: null })
+          if (cached) setProfile(cached)
           setLoading(false)
 
           // 背景從 DB 讀取正式 role/unit

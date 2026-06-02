@@ -10,6 +10,7 @@ export function UpdateBanner() {
     let initialTs: number | null = null
 
     const check = async () => {
+      if (document.visibilityState === 'hidden') return
       try {
         const res = await fetch(`/version.json?t=${Date.now()}`)
         const { ts } = await res.json()
@@ -23,7 +24,11 @@ export function UpdateBanner() {
 
     check()
     const id = setInterval(check, 5 * 60 * 1000)
-    return () => clearInterval(id)
+    document.addEventListener('visibilitychange', check)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', check)
+    }
   }, [])
 
   return (
