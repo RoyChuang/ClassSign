@@ -373,7 +373,7 @@ export default function CheckinSessionPage() {
       <ErrorOutlineIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
       <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }}>找不到此班會</Typography>
       <Typography variant="body2" sx={{ color: 'text.disabled', mb: 3 }}>連結可能已失效或班會已結束</Typography>
-      <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => router.push('/checkin')}>回選班會</Button>
+      <Button startIcon={<ArrowBackIcon />} onClick={() => router.push('/checkin')}>回選班會</Button>
     </Container>
   )
 
@@ -382,7 +382,7 @@ export default function CheckinSessionPage() {
       <ErrorOutlineIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
       <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }}>班會已結束</Typography>
       <Typography variant="body2" sx={{ color: 'text.disabled', mb: 3 }}>此班會的報到已關閉</Typography>
-      <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => router.push('/checkin')}>回選班會</Button>
+      <Button startIcon={<ArrowBackIcon />} onClick={() => router.push('/checkin')}>回選班會</Button>
     </Container>
   )
 

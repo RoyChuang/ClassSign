@@ -240,7 +240,7 @@ export default function AdminPage() {
         {(profile?.role === 'admin' || profile?.role === 'secretary') && (
           <Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
             {profile?.role === 'admin' && (
-              <Button variant="outlined" startIcon={<TuneIcon />} onClick={() => setTemplateOpen(true)}>班別設定</Button>
+              <Button startIcon={<TuneIcon />} onClick={() => setTemplateOpen(true)}>班別設定</Button>
             )}
             <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setSelectedClassIds(new Set()); setCreateOpen(true) }}>建立班會</Button>
           </Box>
@@ -370,8 +370,8 @@ export default function AdminPage() {
                   '&:hover': { boxShadow: '0 4px 16px rgba(0,0,0,0.08)', borderColor: s.status === 'open' ? 'rgba(22,163,74,0.5)' : '#CBD5E1' },
                 }}>
                   <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-                    {/* 頂部：單位 tag + 操作按鈕 */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.25 }}>
+                    {/* 頂部：單位 tag */}
+                    <Box sx={{ mb: 1.25 }}>
                       <Chip
                         label={s.unit ?? '聯合'}
                         size="small"
@@ -382,10 +382,6 @@ export default function AdminPage() {
                             : { bgcolor: '#F1F5F9', color: '#475569' }),
                         }}
                       />
-                      <Box sx={{ display: 'flex', gap: 0.75, ml: 1 }}>
-                        <Button variant="outlined" size="small" startIcon={<EditIcon sx={{ fontSize: 15 }} />} onClick={() => openEdit(s)}>編輯</Button>
-                        <Button variant="outlined" size="small" color="error" startIcon={<DeleteIcon sx={{ fontSize: 15 }} />} onClick={() => setDeleteTarget(s)}>刪除</Button>
-                      </Box>
                     </Box>
 
                     {/* 班會名稱 */}
@@ -399,23 +395,29 @@ export default function AdminPage() {
                       <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>截止日：{s.reg_deadline}</Typography>
                     </Box>
 
-                    {/* 狀態 Select — 樣式化成彩色 chip 外觀 */}
-                    <Select
-                      value={s.status}
-                      onChange={e => updateStatus(s.id, e.target.value as SessionStatus)}
-                      aria-label="班會狀態"
-                      size="small"
-                      sx={{
-                        fontSize: 13, fontWeight: 600, borderRadius: '8px',
-                        ...(s.status === 'open'
-                          ? { bgcolor: '#DCFCE7', color: '#15803D', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'transparent' }, '& .MuiSvgIcon-root': { color: '#15803D' } }
-                          : { bgcolor: '#F1F5F9', color: '#64748B', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'transparent' }, '& .MuiSvgIcon-root': { color: '#64748B' } }),
-                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'transparent' },
-                      }}
-                    >
-                      <MenuItem value="open">掛號中</MenuItem>
-                      <MenuItem value="finished">已結束</MenuItem>
-                    </Select>
+                    {/* 底部：狀態 + 操作按鈕 */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                      <Select
+                        value={s.status}
+                        onChange={e => updateStatus(s.id, e.target.value as SessionStatus)}
+                        aria-label="班會狀態"
+                        size="small"
+                        sx={{
+                          fontSize: 13, fontWeight: 600, borderRadius: '8px',
+                          ...(s.status === 'open'
+                            ? { bgcolor: '#DCFCE7', color: '#15803D', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'transparent' }, '& .MuiSvgIcon-root': { color: '#15803D' } }
+                            : { bgcolor: '#F1F5F9', color: '#64748B', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'transparent' }, '& .MuiSvgIcon-root': { color: '#64748B' } }),
+                          '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'transparent' },
+                        }}
+                      >
+                        <MenuItem value="open">掛號中</MenuItem>
+                        <MenuItem value="finished">已結束</MenuItem>
+                      </Select>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <Button size="small" startIcon={<EditIcon sx={{ fontSize: 15 }} />} onClick={() => openEdit(s)}>編輯</Button>
+                        <Button size="small" color="error" startIcon={<DeleteIcon sx={{ fontSize: 15 }} />} onClick={() => setDeleteTarget(s)}>刪除</Button>
+                      </Box>
+                    </Box>
                   </CardContent>
                 </Card>
               )

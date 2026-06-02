@@ -129,7 +129,7 @@ export default function UsersPage() {
                   </Box>
                   <Typography variant="caption" sx={{ color: 'text.secondary' }}>{p.email}</Typography>
                 </Box>
-                <Button variant="outlined" size="small" startIcon={<EditIcon fontSize="small" />} onClick={() => openEdit(p)}>編輯</Button>
+                <Button size="small" startIcon={<EditIcon fontSize="small" />} onClick={() => openEdit(p)}>編輯</Button>
               </CardContent>
             </Card>
           ))}

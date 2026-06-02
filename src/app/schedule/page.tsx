@@ -13,6 +13,7 @@ import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Button from '@mui/material/Button'
+import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import TextField from '@mui/material/TextField'
 import Select from '@mui/material/Select'
@@ -22,6 +23,7 @@ import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AddIcon from '@mui/icons-material/Add'
 import PersonAddIcon from '@mui/icons-material/PersonAdd'
 import ShareIcon from '@mui/icons-material/Share'
@@ -385,35 +387,44 @@ export default function SchedulePage() {
 
       {/* 班表列表 */}
       {loading ? <Loading /> : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           {!effectiveUnit && profile?.role === 'admin' ? (
-            <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 4 }}>請先選擇單位</Typography>
+            <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 4, width: '100%' }}>請先選擇單位</Typography>
           ) : displaySchedules.length === 0 ? (
-            <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 4 }}>尚無班表，點右上角新增</Typography>
-          ) : displaySchedules.map(s => (
-            <Card key={s.id}>
-              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { sm: 'center' }, gap: { xs: 1.5, sm: 2 } }}>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography sx={{ fontWeight: 700, fontSize: { xs: 17, sm: 16 } }}>{s.title}</Typography>
-                    <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 0.25 }}>
-                      {s.start_date} ～ {s.end_date}
+            <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 4, width: '100%' }}>尚無班表，點右上角新增</Typography>
+          ) : displaySchedules.map(s => {
+            const sameDay = s.start_date === s.end_date
+            return (
+              <Card key={s.id} variant="outlined" sx={{
+                width: { xs: '100%', sm: 'calc(50% - 8px)', lg: 'calc(33.333% - 11px)' },
+                borderRadius: '16px',
+                borderColor: 'divider',
+                transition: 'border-color 180ms ease, box-shadow 180ms ease',
+                '&:hover': { borderColor: 'primary.main', boxShadow: '0 4px 20px rgba(37,73,229,0.10)' },
+              }}>
+                <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 }, display: 'flex', flexDirection: 'column', gap: 1.5, height: '100%' }}>
+                  {s.unit && (
+                    <Chip label={s.unit} size="small" sx={{ alignSelf: 'flex-start', fontSize: 12, height: 24, fontWeight: 600, bgcolor: '#EFF4FF', color: '#2549E5', borderRadius: '8px' }} />
+                  )}
+                  <Typography sx={{ fontWeight: 700, fontSize: 17, lineHeight: 1.4, color: '#1D1D1F', flex: 1 }}>{s.title}</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                    <CalendarTodayIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
+                    <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
+                      {sameDay ? s.start_date : `${s.start_date} ～ ${s.end_date}`}
                     </Typography>
-                    {s.note && (
-                      <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 0.5, whiteSpace: 'pre-wrap' }}>{s.note}</Typography>
-                    )}
                   </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-                    <Button variant="outlined" size="small" startIcon={<VisibilityIcon />} onClick={() => setPreviewTarget(s)}>
-                      預覽
-                    </Button>
-                    <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={() => setEditTarget(s)}>編輯</Button>
-                    <Button variant="outlined" size="small" color="error" startIcon={<DeleteIcon />} onClick={() => setDeleteTarget(s)}>刪除</Button>
+                  {s.note && (
+                    <Typography sx={{ fontSize: 13, color: 'text.secondary', whiteSpace: 'pre-wrap' }}>{s.note}</Typography>
+                  )}
+                  <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                    <Button size="small" startIcon={<VisibilityIcon sx={{ fontSize: 15 }} />} onClick={() => setPreviewTarget(s)}>預覽</Button>
+                    <Button size="small" startIcon={<EditIcon sx={{ fontSize: 15 }} />} onClick={() => setEditTarget(s)}>編輯</Button>
+                    <Button size="small" color="error" startIcon={<DeleteIcon sx={{ fontSize: 15 }} />} onClick={() => setDeleteTarget(s)}>刪除</Button>
                   </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            )
+          })}
         </Box>
       )}
 

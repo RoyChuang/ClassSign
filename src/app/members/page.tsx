@@ -17,6 +17,8 @@ import IconButton from '@mui/material/IconButton'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Collapse from '@mui/material/Collapse'
+import Chip from '@mui/material/Chip'
+import Divider from '@mui/material/Divider'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -25,9 +27,8 @@ import LoginIcon from '@mui/icons-material/Login'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
-import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
 import GroupsIcon from '@mui/icons-material/Groups'
+import CloseIcon from '@mui/icons-material/Close'
 import ContentPasteIcon from '@mui/icons-material/ContentPaste'
 import { Loading } from '@/components/Loading'
 
@@ -42,7 +43,7 @@ interface GroupCardProps {
 function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
   const { showSnack } = useSnack()
   const [members, setMembers] = useState<Member[]>([])
-  const [open, setOpen] = useState(false)
+  const [detailOpen, setDetailOpen] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [form, setForm] = useState({ name: '', gender: '乾' as Gender })
   const [adding, setAdding] = useState(false)
@@ -71,11 +72,6 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
     const { error } = await supabase.from('member_groups').update({ name }).eq('id', group.id)
     if (error) showSnack('更新失敗：' + error.message, 'error')
     else { onRename(group.id, name); setEditingName(false) }
-  }
-
-  function handleToggle() {
-    if (!open && !loaded) loadMembers()
-    setOpen(o => !o)
   }
 
   async function addMember(e: React.FormEvent) {
@@ -149,59 +145,60 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
   const kun = members.filter(m => m.gender === '坤').length
 
   return (
-    <Card sx={{ borderRadius: 3, mb: 2, border: '1px solid transparent', transition: 'border-color 0.15s', '&:hover': { borderColor: 'primary.light' } }}>
-      <Box
-        onClick={handleToggle}
-        sx={{
-          display: 'flex', flexDirection: 'column', px: 2.5, py: 2,
-          cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' },
-        }}
-      >
-        {/* Row 1: arrow + name + edit + delete */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {open
-            ? <KeyboardArrowDownIcon sx={{ color: 'text.secondary', fontSize: 20, flexShrink: 0 }} />
-            : <KeyboardArrowRightIcon sx={{ color: 'text.secondary', fontSize: 20, flexShrink: 0 }} />}
+    <>
+      {/* Grid Card */}
+      <Card variant="outlined" onClick={() => setDetailOpen(true)} sx={{
+        borderRadius: '16px', borderColor: 'divider', width: '100%', cursor: 'pointer',
+        transition: 'border-color 180ms ease, box-shadow 180ms ease',
+        '&:hover': { borderColor: 'primary.main', boxShadow: '0 4px 20px rgba(37,73,229,0.10)' },
+      }}>
+        <Box sx={{ p: 2.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 17, color: '#1D1D1F', lineHeight: 1.4 }}>{group.name}</Typography>
+          <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
+            {loaded ? `${members.length} 人${members.length > 0 ? `（乾 ${qian} / 坤 ${kun}）` : ''}` : '…'}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
+            <Button size="small" startIcon={<EditIcon sx={{ fontSize: 15 }} />}
+              onClick={() => { setEditNameValue(group.name); setEditingName(true); setDetailOpen(true) }}>
+              編輯
+            </Button>
+            <Button size="small" color="error" startIcon={<DeleteIcon sx={{ fontSize: 15 }} />}
+              onClick={() => onDelete(group.id)}>
+              刪除
+            </Button>
+          </Box>
+        </Box>
+      </Card>
+
+      {/* Detail Dialog */}
+      <Dialog open={detailOpen} onClose={() => { setDetailOpen(false); setEditingName(false) }} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pr: 1.5 }}>
           {editingName ? (
             <TextField
-              size="small" value={editNameValue} autoFocus
-              onClick={e => e.stopPropagation()}
+              size="small" value={editNameValue} autoFocus sx={{ flex: 1 }}
               onChange={e => setEditNameValue(e.target.value)}
               onBlur={saveRename}
               onKeyDown={e => { if (e.key === 'Enter') saveRename(); if (e.key === 'Escape') setEditingName(false) }}
-              sx={{ flex: 1 }}
             />
           ) : (
-            <Typography sx={{ fontWeight: 600, fontSize: 16, flex: 1 }}>{group.name}</Typography>
+            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography sx={{ fontWeight: 700, fontSize: 18 }}>{group.name}</Typography>
+              <Chip label={`${members.length} 人`} size="small" sx={{ fontSize: 12, bgcolor: '#F1F5F9', color: '#64748B', borderRadius: '8px' }} />
+              <IconButton size="small" onClick={() => { setEditNameValue(group.name); setEditingName(true) }} sx={{ color: 'text.secondary' }}>
+                <EditIcon sx={{ fontSize: 17 }} />
+              </IconButton>
+            </Box>
           )}
-          {!editingName && (
-            <Button variant="outlined" size="small" startIcon={<EditIcon />}
-              onClick={e => { e.stopPropagation(); setEditNameValue(group.name); setEditingName(true) }}>
-              編輯
-            </Button>
-          )}
-          {!editingName && (
-            <Button variant="outlined" size="small" color="error" startIcon={<DeleteIcon />}
-              onClick={e => { e.stopPropagation(); onDelete(group.id) }}>
-              刪除
-            </Button>
-          )}
-        </Box>
-        {/* Row 2: count below title */}
-        {!editingName && (
-          <Typography sx={{ fontSize: 14, color: 'text.secondary', pl: 3.5, mt: 0.25 }}>
-            {loaded ? `${members.length} 人${members.length > 0 ? `（乾 ${qian} / 坤 ${kun}）` : ''}` : '…'}
-          </Typography>
-        )}
-      </Box>
+          <IconButton size="small" onClick={() => { setDetailOpen(false); setEditingName(false) }}>
+            <CloseIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        </DialogTitle>
 
-      <Collapse in={open} unmountOnExit>
-        <Box sx={{ px: 2.5, pb: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
-          {/* Member list */}
+        <DialogContent sx={{ pt: '4px !important' }}>
           {members.length === 0 ? (
-            <Typography sx={{ color: 'text.disabled', fontSize: 14, py: 2 }}>尚無成員</Typography>
+            <Typography sx={{ color: 'text.disabled', fontSize: 14, py: 2 }}>尚無成員，請新增。</Typography>
           ) : (
-            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, pt: 2, pb: 1.5 }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 2 }}>
               {(['乾', '坤'] as Gender[]).map(gender => {
                 const list = members.filter(m => m.gender === gender)
                 if (list.length === 0) return null
@@ -217,7 +214,7 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
                           bgcolor: gender === '乾' ? '#EFF6FF' : '#FDF2F8',
                           borderRadius: 2, px: 1.25, py: 0.5,
                         }}>
-                          <Typography sx={{ fontSize: 16, fontWeight: 500, color: gender === '乾' ? '#2563EB' : '#DB2777' }}>
+                          <Typography sx={{ fontSize: 15, fontWeight: 500, color: gender === '乾' ? '#2563EB' : '#DB2777' }}>
                             {m.name}
                           </Typography>
                           <IconButton aria-label={`刪除 ${m.name}`} onClick={() => deleteMember(m.id)}
@@ -233,31 +230,33 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
             </Box>
           )}
 
-          {/* Add form */}
+          <Divider sx={{ my: 2 }} />
+
           <Box component="form" onSubmit={addMember}
-            sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'flex-end', pt: 1.5 }}>
+            sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
             <TextField
-              label="姓名" value={form.name}
+              label="姓名" size="small" value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              sx={{ width: 130 }}
+              sx={{ flex: 1, minWidth: 100 }}
             />
             <ToggleButtonGroup exclusive value={form.gender}
-              sx={{ alignSelf: 'stretch' }}
               onChange={(_, v) => v && setForm(f => ({ ...f, gender: v as Gender }))}>
               <ToggleButton value="乾" sx={{ px: 2, fontWeight: 600, '&.Mui-selected': { bgcolor: '#DBEAFE', color: '#2563EB' } }}>乾</ToggleButton>
               <ToggleButton value="坤" sx={{ px: 2, fontWeight: 600, '&.Mui-selected': { bgcolor: '#FCE7F3', color: '#DB2777' } }}>坤</ToggleButton>
             </ToggleButtonGroup>
             <Button type="submit" variant="contained" startIcon={<AddIcon />}
-              disabled={adding || !form.name.trim()} sx={{ alignSelf: 'stretch' }}>新增</Button>
-            <Button variant="outlined" startIcon={<ContentPasteIcon />}
-              onClick={() => setPasteOpen(true)} sx={{ ml: 'auto', alignSelf: 'stretch' }}>批次貼上</Button>
+              disabled={adding || !form.name.trim()}>新增</Button>
           </Box>
-        </Box>
-      </Collapse>
+        </DialogContent>
 
-      {/* Paste dialog */}
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button startIcon={<ContentPasteIcon />} onClick={() => setPasteOpen(true)}>批次貼上</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Paste Dialog */}
       <Dialog open={pasteOpen} onClose={() => setPasteOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>批次貼上名單</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600 }}>批次貼上名單</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '12px !important' }}>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             每行一人，直接貼上姓名欄。選好性別後匯入，可多次切換。
@@ -279,7 +278,7 @@ function GroupCard({ group, onDelete, onRename }: GroupCardProps) {
           <Button variant="contained" onClick={confirmPaste} disabled={pasting || !pasteText.trim()}>匯入</Button>
         </DialogActions>
       </Dialog>
-    </Card>
+    </>
   )
 }
 
@@ -343,25 +342,31 @@ export default function MembersPage() {
 
   return (
     <Container maxWidth="md" sx={{ py: 5 }}>
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+      <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <GroupsIcon sx={{ fontSize: 18 }} />
           </Box>
           <Typography component="h1" sx={{ fontSize: 22, fontWeight: 700 }}>名單管理</Typography>
+          {profile.role === 'secretary' && profile.unit && (
+            <Chip label={profile.unit} size="small" sx={{ fontSize: 13, fontWeight: 600, bgcolor: '#EFF4FF', color: '#2549E5', borderRadius: '8px' }} />
+          )}
         </Box>
-        {profile.role === 'secretary' && profile.unit && (
-          <Box sx={{ display: 'inline-flex', px: 1.25, py: 0.375, bgcolor: '#EFF4FF', borderRadius: '999px' }}>
-            <Typography sx={{ fontSize: 32, fontWeight: 600, color: '#2549E5' }}>{profile.unit}</Typography>
-          </Box>
-        )}
-        {profile.role === 'admin' && (
-          <Select value={selectedUnit ?? ''} onChange={e => setSelectedUnit((e.target.value as Unit) || null)}
-            displayEmpty sx={{ minWidth: 130 }}>
-            <MenuItem value="">選擇單位</MenuItem>
-            {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
-          </Select>
-        )}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          {profile.role === 'admin' && (
+            <Select value={selectedUnit ?? ''} onChange={e => setSelectedUnit((e.target.value as Unit) || null)}
+              displayEmpty size="small" sx={{ minWidth: 120 }}>
+              <MenuItem value="">選擇單位</MenuItem>
+              {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
+            </Select>
+          )}
+          <Button variant="contained" startIcon={<AddIcon />}
+            onClick={() => setCreateDialogOpen(true)}
+            disabled={!effectiveUnit}
+          >
+            新增群組
+          </Button>
+        </Box>
       </Box>
 
       {loading ? <Loading /> : (
@@ -372,21 +377,17 @@ export default function MembersPage() {
             <Typography sx={{ color: 'text.disabled', mb: 3 }}>尚無名單群組，請先新增一個。</Typography>
           ) : null}
 
-          {groups.map(g => (
-            <GroupCard key={g.id} group={g}
-              onDelete={id => setDeleteTarget(id)}
-              onRename={(id, name) => setGroups(prev => prev.map(x => x.id === id ? { ...x, name } : x))}
-            />
-          ))}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'stretch' }}>
+            {groups.map(g => (
+              <Box key={g.id} sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)', lg: 'calc(33.333% - 11px)' }, display: 'flex' }}>
+                <GroupCard group={g}
+                  onDelete={id => setDeleteTarget(id)}
+                  onRename={(id, name) => setGroups(prev => prev.map(x => x.id === id ? { ...x, name } : x))}
+                />
+              </Box>
+            ))}
+          </Box>
 
-          <Button
-            variant="outlined" startIcon={<AddIcon />} fullWidth
-            onClick={() => setCreateDialogOpen(true)}
-            disabled={!effectiveUnit}
-            sx={{ borderRadius: 3, py: 1.5, borderStyle: 'dashed' }}
-          >
-            新增群組
-          </Button>
         </>
       )}
 

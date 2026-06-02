@@ -409,10 +409,8 @@ export default function SecretaryPage() {
                               <>
                                 <Typography sx={{ fontSize: 16, fontWeight: 500 }}>{r.name}</Typography>
                                 <Box sx={{ display: 'flex' }}>
-                                  <IconButton aria-label="更改班別" sx={{ color: 'text.disabled' }} onClick={e => setClassPopover({ anchorEl: e.currentTarget, regId: r.id })}>
-                                    <SwapHorizIcon fontSize="small" />
-                                  </IconButton>
-                                  <IconButton aria-label="刪除報名" color="error" onClick={() => setDeleteTarget(r.id)}><DeleteIcon fontSize="small" /></IconButton>
+                                  <Button size="small" startIcon={<SwapHorizIcon fontSize="small" />} onClick={e => setClassPopover({ anchorEl: e.currentTarget, regId: r.id })}>換班</Button>
+                                  <Button size="small" color="error" startIcon={<DeleteIcon fontSize="small" />} onClick={() => setDeleteTarget(r.id)}>刪除</Button>
                                 </Box>
                               </>
                             ) : (
