@@ -16,8 +16,7 @@ export function PublicNav() {
     <HomeNavSection
       headingId="public-nav-heading"
       label="公開功能"
-      description="現場報到、統計查詢與廚房同步皆可直接使用，適合會場入口與後勤協作。"
-      items={publicNav}
+items={publicNav}
       tone="sky"
     />
   )

@@ -2,7 +2,6 @@
 
 import { useAuth } from '@/components/AuthProvider'
 import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
 import SettingsIcon from '@mui/icons-material/Settings'
 import ListAltIcon from '@mui/icons-material/ListAlt'
 import PeopleIcon from '@mui/icons-material/People'
@@ -46,22 +45,7 @@ export function AuthNav() {
         description={description}
         items={nav}
         tone="slate"
-        footer={
-          <Box sx={{
-            px: 1.25, py: 0.875,
-            borderRadius: '12px',
-            bgcolor: 'rgba(15,23,42,0.04)',
-            border: '1px solid rgba(203,213,225,0.6)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 0.75,
-          }}>
-            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#16A34A', flexShrink: 0 }} />
-            <Typography sx={{ fontSize: 13, color: 'text.secondary', fontWeight: 500 }}>
-              已登入：{profile.displayName}{profile.unit ? `　${profile.unit}` : ''}
-            </Typography>
-          </Box>
-        }
+
       />
     </Box>
   )
