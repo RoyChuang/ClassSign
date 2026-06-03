@@ -13,7 +13,7 @@ export default function Home() {
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <Container maxWidth="sm" sx={{ py: 7, flex: 1 }}>
+        <Container maxWidth="sm" sx={{ py: { xs: 4, sm: 7 }, flex: 1 }}>
           <PublicNav />
           <AuthNav />
         </Container>

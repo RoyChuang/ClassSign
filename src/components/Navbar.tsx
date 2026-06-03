@@ -26,7 +26,13 @@ export function Navbar() {
 
   return (
     <AppBar position="sticky" color="default" elevation={0}
-      sx={{ top: 0, zIndex: 1100, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+      sx={{
+        top: 0, zIndex: 1100,
+        borderBottom: '1px solid rgba(191,219,254,0.5)',
+        bgcolor: 'rgba(255,255,255,0.85)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+      }}>
       <Toolbar variant="dense" sx={{ gap: 2, minHeight: 64 }}>
         <Box component={Link} href="/" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, textDecoration: 'none', flexGrow: 1 }}>
           <Box sx={{ position: 'relative', flexShrink: 0 }}>
