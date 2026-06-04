@@ -55,7 +55,7 @@ export function Navbar() {
         {profile && (
           <>
             <ButtonBase onClick={e => setAnchor(e.currentTarget)}
-              sx={{ display: 'flex', alignItems: 'center', gap: 0.75, px: { xs: 0.75, sm: 1.5 }, py: 0.75, borderRadius: '8px', border: '1px solid', borderColor: 'divider', '&:hover': { bgcolor: '#F8FAFC' } }}>
+              sx={{ display: 'flex', alignItems: 'center', gap: 0.75, px: { xs: 0.75, sm: 1.5 }, py: 0.75, borderRadius: '999px', border: '1px solid', borderColor: 'rgba(191,219,254,0.74)', '&:hover': { bgcolor: '#F8FAFC' } }}>
               <Box sx={{
                 width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
                 background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
