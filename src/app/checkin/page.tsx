@@ -53,16 +53,22 @@ function SessionCard({ s, onClick }: { s: SessionWithStats; onClick: () => void 
         p: 2.5, minHeight: 180, height: '100%',
         display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'space-between', gap: 2,
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
-          <Chip
-            label={isJoint ? '聯合' : s.unit}
-            size="small"
-            sx={{
-              fontSize: 13, height: 26, fontWeight: 600, borderRadius: '8px',
-              ...(isJoint ? { bgcolor: '#F1F5F9', color: '#475569' } : { bgcolor: '#EFF4FF', color: '#2549E5' }),
-            }}
-          />
-          <ChevronRightIcon sx={{ fontSize: 20, color: 'text.disabled', flexShrink: 0, mt: 0.25 }} />
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Chip
+              label={isJoint ? '聯合' : s.unit}
+              size="small"
+              sx={{
+                fontSize: 13, height: 26, fontWeight: 600, borderRadius: '8px',
+                ...(isJoint ? { bgcolor: '#F1F5F9', color: '#475569' } : { bgcolor: '#EFF4FF', color: '#2549E5' }),
+              }}
+            />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <CalendarTodayIcon sx={{ fontSize: 13, color: 'text.disabled', flexShrink: 0 }} />
+              <Typography sx={{ fontSize: 13, color: 'text.disabled' }}>{s.date}</Typography>
+            </Box>
+          </Box>
+          <ChevronRightIcon sx={{ fontSize: 20, color: 'text.disabled', flexShrink: 0 }} />
         </Box>
 
         <Typography sx={{ fontWeight: 700, fontSize: 19, lineHeight: 1.4, color: '#1D1D1F', flex: 1 }}>
@@ -85,22 +91,16 @@ function SessionCard({ s, onClick }: { s: SessionWithStats; onClick: () => void 
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                <CheckCircleOutlinedIcon sx={{ fontSize: 18, color: '#16A34A' }} />
-                <Typography sx={{ fontSize: 16, fontWeight: 700, color: '#16A34A', fontFamily: 'monospace' }}>{s.checkedIn}</Typography>
-                <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>已報到</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                <PeopleOutlineIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'text.primary', fontFamily: 'monospace' }}>{s.total}</Typography>
-                <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>總人數</Typography>
-              </Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <CheckCircleOutlinedIcon sx={{ fontSize: 18, color: '#16A34A', flexShrink: 0 }} />
+              <Typography sx={{ fontSize: 16, fontWeight: 700, color: '#16A34A', fontFamily: 'monospace' }}>{s.checkedIn}</Typography>
+              <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>已報到</Typography>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <CalendarTodayIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
-              <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{s.date}</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <PeopleOutlineIcon sx={{ fontSize: 18, color: 'text.secondary', flexShrink: 0 }} />
+              <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'text.primary', fontFamily: 'monospace' }}>{s.total}</Typography>
+              <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>總人數</Typography>
             </Box>
           </Box>
         </Box>
