@@ -154,10 +154,12 @@ export default function DashboardPage() {
   const totalByGender = (gender: string) => filtered.filter(r => r.gender === gender).length
   const totalCheckin = filtered.filter(r => r.checked_in).length
 
+  const qianCheckin = filtered.filter(r => r.gender === '乾' && r.checked_in).length
+  const kunCheckin = filtered.filter(r => r.gender === '坤' && r.checked_in).length
   const summaryCards = [
-    { value: totalByGender('乾'), label: '乾  掛號', color: '#2563EB', bg: '#EFF6FF' },
-    { value: totalByGender('坤'), label: '坤  掛號', color: '#DB2777', bg: '#FDF2F8' },
-    { value: totalCheckin, label: '已報到', color: '#16A34A', bg: '#F0FDF4' },
+    { value: qianCheckin, label: '乾', color: '#2563EB', bg: '#EFF6FF', sub: totalByGender('乾') },
+    { value: kunCheckin, label: '坤', color: '#DB2777', bg: '#FDF2F8', sub: totalByGender('坤') },
+    { value: totalCheckin, label: '已報到', color: '#16A34A', bg: '#F0FDF4', sub: filtered.length },
   ]
 
   return (
@@ -179,18 +181,25 @@ export default function DashboardPage() {
       </Box>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 2, mb: 4 }}>
-        {summaryCards.map(({ value, label, color, bg }) => (
+        {summaryCards.map(({ value, label, color, bg, sub }) => (
           <Box key={label} sx={{
             borderRadius: 4,
             background: `linear-gradient(145deg, ${bg} 0%, #ffffff 100%)`,
             boxShadow: `0 4px 24px ${color}28`,
             p: { xs: 2, sm: 3 }, pt: { xs: 2.5, sm: 3 },
           }}>
-            <Typography sx={{
-              fontSize: { xs: 52, sm: 64 }, fontWeight: 800, color,
-              lineHeight: 1, letterSpacing: '-0.03em',
-              fontVariantNumeric: 'tabular-nums', mb: 1,
-            }}>{value}</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 1 }}>
+              <Typography sx={{
+                fontSize: 'clamp(28px, 9vw, 52px)', fontWeight: 800, color,
+                lineHeight: 1, letterSpacing: '-0.03em',
+                fontVariantNumeric: 'tabular-nums',
+              }}>{value}</Typography>
+              {sub !== null && (
+                <Typography sx={{ fontSize: 'clamp(11px, 3vw, 15px)', fontWeight: 600, color, opacity: 0.4, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
+                  / {sub}
+                </Typography>
+              )}
+            </Box>
             <Typography sx={{
               fontSize: { xs: 11, sm: 12 }, fontWeight: 700,
               color, opacity: 0.65, letterSpacing: '0.1em',
