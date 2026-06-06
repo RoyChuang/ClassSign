@@ -59,17 +59,17 @@ function UnitRows({ filtered, expandedUnit, setExpandedUnit }: UnitRowsProps) {
               <TableCell sx={{ whiteSpace: 'nowrap' }}><Typography sx={{ fontSize: 15, fontWeight: 500 }}>{unit}</Typography></TableCell>
               <TableCell align="center" sx={{ color: '#2563EB', whiteSpace: 'nowrap', fontSize: 15 }}>
                 <Box sx={{ display: { xs: 'none', sm: 'block' } }}>{qian}</Box>
-                <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{qian}/<span style={{ color: '#16A34A' }}>{qianIn}</span></Box>
+                <Box sx={{ display: { xs: 'block', sm: 'none' } }}><span style={{ color: '#16A34A' }}>{qianIn}</span>/{qian}</Box>
               </TableCell>
               <TableCell align="center" sx={{ color: '#16A34A', whiteSpace: 'nowrap', fontSize: 15, display: { xs: 'none', sm: 'table-cell' } }}>{qianIn}</TableCell>
               <TableCell align="center" sx={{ color: '#DB2777', whiteSpace: 'nowrap', fontSize: 15 }}>
                 <Box sx={{ display: { xs: 'none', sm: 'block' } }}>{kun}</Box>
-                <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{kun}/<span style={{ color: '#16A34A' }}>{kunIn}</span></Box>
+                <Box sx={{ display: { xs: 'block', sm: 'none' } }}><span style={{ color: '#16A34A' }}>{kunIn}</span>/{kun}</Box>
               </TableCell>
               <TableCell align="center" sx={{ color: '#16A34A', whiteSpace: 'nowrap', fontSize: 15, display: { xs: 'none', sm: 'table-cell' } }}>{kunIn}</TableCell>
               <TableCell align="center" sx={{ fontWeight: 600, whiteSpace: 'nowrap', fontSize: 15 }}>
                 <Box sx={{ display: { xs: 'none', sm: 'block' } }}>{qian + kun}</Box>
-                <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{qian + kun}/<span style={{ color: '#16A34A' }}>{qianIn + kunIn}</span></Box>
+                <Box sx={{ display: { xs: 'block', sm: 'none' } }}><span style={{ color: '#16A34A' }}>{qianIn + kunIn}</span>/{qian + kun}</Box>
               </TableCell>
             </TableRow>
             <TableRow>
@@ -251,17 +251,17 @@ export default function DashboardPage() {
                 <TableCell sx={{ fontSize: 15, fontWeight: 600 }}>合計</TableCell>
                 <TableCell align="center" sx={{ color: '#2563EB', fontSize: 15, fontWeight: 700 }}>
                   <Box sx={{ display: { xs: 'none', sm: 'block' } }}>{totalByGender('乾')}</Box>
-                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{totalByGender('乾')}/<span style={{ color: '#16A34A' }}>{filtered.filter(r => r.gender === '乾' && r.checked_in).length}</span></Box>
+                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}><span style={{ color: '#16A34A' }}>{filtered.filter(r => r.gender === '乾' && r.checked_in).length}</span>/{totalByGender('乾')}</Box>
                 </TableCell>
                 <TableCell align="center" sx={{ color: '#16A34A', fontSize: 15, fontWeight: 700, display: { xs: 'none', sm: 'table-cell' } }}>{filtered.filter(r => r.gender === '乾' && r.checked_in).length}</TableCell>
                 <TableCell align="center" sx={{ color: '#DB2777', fontSize: 15, fontWeight: 700 }}>
                   <Box sx={{ display: { xs: 'none', sm: 'block' } }}>{totalByGender('坤')}</Box>
-                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{totalByGender('坤')}/<span style={{ color: '#16A34A' }}>{filtered.filter(r => r.gender === '坤' && r.checked_in).length}</span></Box>
+                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}><span style={{ color: '#16A34A' }}>{filtered.filter(r => r.gender === '坤' && r.checked_in).length}</span>/{totalByGender('坤')}</Box>
                 </TableCell>
                 <TableCell align="center" sx={{ color: '#16A34A', fontSize: 15, fontWeight: 700, display: { xs: 'none', sm: 'table-cell' } }}>{filtered.filter(r => r.gender === '坤' && r.checked_in).length}</TableCell>
                 <TableCell align="center" sx={{ fontSize: 15, fontWeight: 700 }}>
                   <Box sx={{ display: { xs: 'none', sm: 'block' } }}>{filtered.length}</Box>
-                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{filtered.length}/<span style={{ color: '#16A34A' }}>{filtered.filter(r => r.checked_in).length}</span></Box>
+                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}><span style={{ color: '#16A34A' }}>{filtered.filter(r => r.checked_in).length}</span>/{filtered.length}</Box>
                 </TableCell>
               </TableRow>
             </TableFooter>
