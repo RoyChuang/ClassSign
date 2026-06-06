@@ -67,7 +67,10 @@ function UnitRows({ filtered, expandedUnit, setExpandedUnit }: UnitRowsProps) {
                 <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{kun}/<span style={{ color: '#16A34A' }}>{kunIn}</span></Box>
               </TableCell>
               <TableCell align="center" sx={{ color: '#16A34A', whiteSpace: 'nowrap', fontSize: 15, display: { xs: 'none', sm: 'table-cell' } }}>{kunIn}</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 600, whiteSpace: 'nowrap', fontSize: 15 }}>{qian + kun}</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 600, whiteSpace: 'nowrap', fontSize: 15 }}>
+                <Box sx={{ display: { xs: 'none', sm: 'block' } }}>{qian + kun}</Box>
+                <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{qian + kun}/<span style={{ color: '#16A34A' }}>{qianIn + kunIn}</span></Box>
+              </TableCell>
             </TableRow>
             <TableRow>
               <TableCell colSpan={7} sx={{ p: 0, border: isOpen ? undefined : 'none' }}>
@@ -256,7 +259,10 @@ export default function DashboardPage() {
                   <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{totalByGender('坤')}/<span style={{ color: '#16A34A' }}>{filtered.filter(r => r.gender === '坤' && r.checked_in).length}</span></Box>
                 </TableCell>
                 <TableCell align="center" sx={{ color: '#16A34A', fontSize: 15, fontWeight: 700, display: { xs: 'none', sm: 'table-cell' } }}>{filtered.filter(r => r.gender === '坤' && r.checked_in).length}</TableCell>
-                <TableCell align="center" sx={{ fontSize: 15, fontWeight: 700 }}>{filtered.length}</TableCell>
+                <TableCell align="center" sx={{ fontSize: 15, fontWeight: 700 }}>
+                  <Box sx={{ display: { xs: 'none', sm: 'block' } }}>{filtered.length}</Box>
+                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>{filtered.length}/<span style={{ color: '#16A34A' }}>{filtered.filter(r => r.checked_in).length}</span></Box>
+                </TableCell>
               </TableRow>
             </TableFooter>
           </Table>
