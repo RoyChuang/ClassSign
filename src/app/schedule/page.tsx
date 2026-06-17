@@ -360,48 +360,48 @@ export default function SchedulePage() {
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 2, mb: 4, flexWrap: 'wrap' }}>
-        <Box>
+      <Box sx={{ mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: profile?.role === 'admin' ? 2 : 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: '#EFF4FF', color: '#2549E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <CalendarMonthIcon sx={{ fontSize: 18 }} />
             </Box>
             <Typography component="h1" sx={{ fontSize: 22, fontWeight: 700 }}>班表管理</Typography>
+            {profile?.role === 'secretary' && profile.unit && (
+              <Box sx={{ display: 'inline-flex', px: 1.25, py: 0.375, bgcolor: '#EFF4FF', borderRadius: '999px' }}>
+                <Typography sx={{ fontSize: 16, fontWeight: 600, color: '#2549E5' }}>{profile.unit}</Typography>
+              </Box>
+            )}
           </Box>
-          {profile?.role === 'secretary' && profile.unit && (
-            <Box sx={{ display: 'inline-flex', px: 1.25, py: 0.375, bgcolor: '#EFF4FF', borderRadius: '999px' }}>
-              <Typography sx={{ fontSize: 32, fontWeight: 600, color: '#2549E5' }}>{profile.unit}</Typography>
-            </Box>
-          )}
-          {profile?.role === 'admin' && (
-            <ToggleButtonGroup
-              exclusive
-              value={selectedUnit ?? ''}
-              onChange={(_, v) => setSelectedUnit((v as Unit) || null)}
-              sx={{
-                mt: 1, display: 'flex', flexWrap: 'wrap', gap: 0.75,
-                '& .MuiToggleButtonGroup-grouped': {
-                  borderRadius: '8px !important',
-                  border: '1px solid rgba(0,0,0,0.12) !important',
-                  mx: '0 !important',
-                },
-              }}
-            >
-              {UNITS.map(u => (
-                <ToggleButton key={u} value={u} sx={{
-                  px: 2, py: 0.625, fontSize: 15, fontWeight: 600, lineHeight: 1.5,
-                  '&.Mui-selected': { bgcolor: '#EFF4FF', color: '#2549E5', borderColor: '#2549E5 !important', '&:hover': { bgcolor: '#E0EAFF' } },
-                }}>
-                  {u}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-          )}
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}
+            disabled={profile?.role === 'admin' && !selectedUnit}>
+            新增班表
+          </Button>
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}
-          disabled={profile?.role === 'admin' && !selectedUnit}>
-          新增班表
-        </Button>
+        {profile?.role === 'admin' && (
+          <ToggleButtonGroup
+            exclusive
+            value={selectedUnit ?? ''}
+            onChange={(_, v) => setSelectedUnit((v as Unit) || null)}
+            sx={{
+              display: 'flex', flexWrap: 'wrap', gap: 0.75,
+              '& .MuiToggleButtonGroup-grouped': {
+                borderRadius: '8px !important',
+                border: '1px solid rgba(0,0,0,0.12) !important',
+                mx: '0 !important',
+              },
+            }}
+          >
+            {UNITS.map(u => (
+              <ToggleButton key={u} value={u} sx={{
+                px: 2, py: 0.625, fontSize: 15, fontWeight: 600, lineHeight: 1.5,
+                '&.Mui-selected': { bgcolor: '#EFF4FF', color: '#2549E5', borderColor: '#2549E5 !important', '&:hover': { bgcolor: '#E0EAFF' } },
+              }}>
+                {u}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        )}
       </Box>
 
       {/* 班表列表 */}
