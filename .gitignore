@@ -35,6 +35,9 @@ yarn-error.log*
 # claude skills (local only)
 .claude/skills/
 
+# codex/agent skills (local only)
+.agents/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
