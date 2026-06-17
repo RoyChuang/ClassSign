@@ -11,7 +11,7 @@ ClassSign 是一個佛堂班會掛號系統，供各單位秘書線上掛號報�
 - Next.js 16 App Router + React 19 + TypeScript
 - MUI 9（UI 元件，主色 #2549E5，乾=藍 #2563EB，坤=粉 #DB2777，報到=綠 #16A34A）
 - Supabase（PostgreSQL + Auth + Realtime）
-- 版號目前：0.5.23
+- 版號目前：0.5.46
 
 ## 角色與權限
 
@@ -95,3 +95,19 @@ ClassSign 是一個佛堂班會掛號系統，供各單位秘書線上掛號報�
 **Why:** 曾發生誤解 "要上去" 的意思，直接 `git checkout` 還原了使用者的改動。
 
 **How to apply:** 看到 `git diff` 有使用者自己做的改動時，先保留。如果改動看起來奇怪或有疑問，問清楚再決定，不要直接覆蓋或還原。
+
+## Push 前用 git log 確認版號
+
+每次 push 前必須執行 `git log --oneline -3` 確認目前最新版號，再遞增 patch，不可從 session 記憶假設當前版號。
+
+**Why:** 曾發生 session 內自己追蹤版號，忽略 session 外已有的 commit，推出版號倒退的 commit（v0.5.40 但實際已是 v0.5.43）。
+
+**How to apply:** push 前先跑 `git log --oneline -3`，看最新 commit 的版號，再 +1。
+
+## 改完不自動 push
+
+完成程式碼修改後，不可自動執行 git push，必須等使用者明確說「push」才推送。
+
+**Why:** 使用者需要先看到改動結果再決定是否推送，自動 push 剝奪了確認機會。
+
+**How to apply:** 改完後說明做了什麼、問是否 push，或等使用者主動說 push。TypeScript check 可以自動跑，但 git push 不行。
