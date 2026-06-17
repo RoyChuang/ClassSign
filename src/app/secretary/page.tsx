@@ -321,22 +321,59 @@ export default function SecretaryPage() {
             {sessions.map(s => <MenuItem key={s.id} value={s.id}>{s.unit ? `[${s.unit}] ${s.name}` : `[聯合] ${s.name}`}</MenuItem>)}
           </Select>
         </FormControl>
-        <FormControl fullWidth>
-          <InputLabel>單位</InputLabel>
-          {(() => {
-            const sessionUnit = sessions.find(s => s.id === selectedSession)?.unit
-            const locked = profile.role !== 'admin' || !!sessionUnit
-            return locked ? (
-              <Select label="單位" value={selectedUnit} disabled>
-                <MenuItem value={selectedUnit}>{selectedUnit}（已鎖定）</MenuItem>
-              </Select>
-            ) : (
-              <Select label="單位" value={selectedUnit} onChange={e => setSelectedUnit(e.target.value as Unit)}>
-                {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
-              </Select>
-            )
-          })()}
-        </FormControl>
+        {(() => {
+          const sessionUnit = sessions.find(s => s.id === selectedSession)?.unit
+          const locked = profile.role !== 'admin' || !!sessionUnit
+          return (
+            <Box>
+              <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary', mb: 1 }}>
+                單位{locked ? '（已鎖定）' : ''}
+              </Typography>
+              <ToggleButtonGroup
+                exclusive
+                value={selectedUnit}
+                onChange={locked ? undefined : (_, v) => { if (v) setSelectedUnit(v as Unit) }}
+                sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 0.75,
+                  '& .MuiToggleButtonGroup-grouped': {
+                    borderRadius: '8px !important',
+                    border: '1px solid rgba(0,0,0,0.12) !important',
+                    mx: '0 !important',
+                  },
+                }}
+              >
+                {UNITS.map(u => (
+                  <ToggleButton
+                    key={u}
+                    value={u}
+                    disabled={locked}
+                    sx={{
+                      px: 2, py: 0.625,
+                      fontSize: 15,
+                      fontWeight: 600,
+                      lineHeight: 1.5,
+                      '&.Mui-selected': {
+                        bgcolor: '#EFF4FF',
+                        color: '#2549E5',
+                        borderColor: '#2549E5 !important',
+                        '&:hover': { bgcolor: '#E0EAFF' },
+                      },
+                      '&.Mui-selected.Mui-disabled': {
+                        bgcolor: '#EFF4FF',
+                        color: '#2549E5',
+                        opacity: 0.75,
+                      },
+                    }}
+                  >
+                    {u}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+            </Box>
+          )
+        })()}
       </Card>
 
       {selectedSession && selectedUnit && (
