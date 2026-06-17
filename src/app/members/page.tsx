@@ -362,11 +362,28 @@ export default function MembersPage() {
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           {profile.role === 'admin' && (
-            <Select value={selectedUnit ?? ''} onChange={e => setSelectedUnit((e.target.value as Unit) || null)}
-              displayEmpty size="small" sx={{ minWidth: 120 }}>
-              <MenuItem value="">選擇單位</MenuItem>
-              {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
-            </Select>
+            <ToggleButtonGroup
+              exclusive
+              value={selectedUnit ?? ''}
+              onChange={(_, v) => setSelectedUnit((v as Unit) || null)}
+              sx={{
+                display: 'flex', flexWrap: 'wrap', gap: 0.75,
+                '& .MuiToggleButtonGroup-grouped': {
+                  borderRadius: '8px !important',
+                  border: '1px solid rgba(0,0,0,0.12) !important',
+                  mx: '0 !important',
+                },
+              }}
+            >
+              {UNITS.map(u => (
+                <ToggleButton key={u} value={u} sx={{
+                  px: 2, py: 0.625, fontSize: 15, fontWeight: 600, lineHeight: 1.5,
+                  '&.Mui-selected': { bgcolor: '#EFF4FF', color: '#2549E5', borderColor: '#2549E5 !important', '&:hover': { bgcolor: '#E0EAFF' } },
+                }}>
+                  {u}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
           )}
           <Button variant="contained" startIcon={<AddIcon />}
             onClick={() => setCreateDialogOpen(true)}

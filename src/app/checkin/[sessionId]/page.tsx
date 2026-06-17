@@ -235,23 +235,31 @@ export default function CheckinSessionPage() {
 
       {/* 過濾列 */}
       <Card sx={{ mb: 2 }}><CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+        {isJoint && (
+          <ToggleButtonGroup
+            exclusive
+            value={selectedUnit}
+            onChange={(_, v) => { setSelectedUnit((v ?? '') as Unit | ''); setNameFilter(''); setClassFilter(''); setWalkInSuccess('') }}
+            sx={{
+              mb: 1.5, display: 'flex', flexWrap: 'wrap', gap: 0.75,
+              '& .MuiToggleButtonGroup-grouped': {
+                borderRadius: '8px !important',
+                border: '1px solid rgba(0,0,0,0.12) !important',
+                mx: '0 !important',
+              },
+            }}
+          >
+            <ToggleButton value="" sx={{ px: 1.75, py: 0.5, fontSize: 14, fontWeight: 600, lineHeight: 1.5, '&.Mui-selected': { bgcolor: '#EFF4FF', color: '#2549E5', borderColor: '#2549E5 !important' } }}>
+              全部
+            </ToggleButton>
+            {UNITS.map(u => (
+              <ToggleButton key={u} value={u} sx={{ px: 1.75, py: 0.5, fontSize: 14, fontWeight: 600, lineHeight: 1.5, '&.Mui-selected': { bgcolor: '#EFF4FF', color: '#2549E5', borderColor: '#2549E5 !important' } }}>
+                {u}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        )}
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-        <FormControl size="small" sx={{ minWidth: 110, flexShrink: 0 }}>
-          <InputLabel shrink={isJoint || !!selectedUnit}>單位</InputLabel>
-          {session?.unit ? (
-            <Select label="單位" value={selectedUnit} disabled notched>
-              <MenuItem value={selectedUnit}>{selectedUnit}</MenuItem>
-            </Select>
-          ) : (
-            <Select label="單位" value={selectedUnit} displayEmpty
-              notched={isJoint}
-              renderValue={v => v || (isJoint ? '全部' : '')}
-              onChange={e => { setSelectedUnit(e.target.value as Unit); setNameFilter(''); setClassFilter(''); setWalkInSuccess('') }}>
-              {isJoint && <MenuItem value=''>全部</MenuItem>}
-              {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
-            </Select>
-          )}
-        </FormControl>
         {hasUnit && chipItems.map(item => {
           const selected = classFilter === item.id
           return (
