@@ -316,8 +316,20 @@ export default function SecretaryPage() {
 
       <Card sx={{ borderRadius: 2, mb: 1, p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <FormControl fullWidth>
-          <InputLabel>選擇班會</InputLabel>
-          <Select label="選擇班會" value={selectedSession} onChange={e => setSelectedSession(e.target.value)}>
+          <InputLabel shrink>選擇班會</InputLabel>
+          <Select
+            label="選擇班會"
+            value={selectedSession}
+            onChange={e => setSelectedSession(e.target.value)}
+            displayEmpty
+            notched
+            renderValue={v => {
+              const s = sessions.find(x => x.id === v)
+              if (s) return s.unit ? `[${s.unit}] ${s.name}` : `[聯合] ${s.name}`
+              return <Box component="span" sx={{ color: 'text.secondary' }}>{sessions.length === 0 ? '目前沒有可掛號的班會' : '請選擇班會'}</Box>
+            }}
+          >
+            {sessions.length === 0 && <MenuItem value="" disabled>目前沒有可掛號的班會</MenuItem>}
             {sessions.map(s => <MenuItem key={s.id} value={s.id}>{s.unit ? `[${s.unit}] ${s.name}` : `[聯合] ${s.name}`}</MenuItem>)}
           </Select>
         </FormControl>
