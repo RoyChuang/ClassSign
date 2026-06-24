@@ -29,7 +29,6 @@ type RegRow = Registration & { classes: { name: string } | null }
 function formatValue(field: CustomField, extra: Extra): string {
   const v = extra?.[field.key]
   if (v == null || v === '') return ''
-  if (field.type === 'checkbox') return v === true ? '是' : '否'
   return String(v)
 }
 
