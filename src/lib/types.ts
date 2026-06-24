@@ -4,6 +4,24 @@ export type SessionStatus = 'open' | 'finished'
 
 export const UNITS: Unit[] = ['北市', '北縣', '興一', '道一', '彰化', '華山', '基隆', '三合', '府城', '嘉義']
 export const GENDERS: Gender[] = ['乾', '坤']
+
+// 報到自訂欄位
+export type CustomFieldType = 'text' | 'select' | 'checkbox'
+export interface CustomField {
+  key: string
+  label: string
+  type: CustomFieldType
+  options?: string[] // 僅 type === 'select' 使用
+}
+export type ExtraValue = string | boolean
+export type Extra = Record<string, ExtraValue>
+
+export const CUSTOM_FIELD_TYPE_LABELS: Record<CustomFieldType, string> = {
+  text: '文字',
+  select: '下拉選項',
+  checkbox: '是／否',
+}
+
 export interface Session {
   id: string
   name: string
@@ -11,6 +29,7 @@ export interface Session {
   reg_deadline: string
   status: SessionStatus
   unit: string | null
+  custom_fields: CustomField[]
   created_at: string
 }
 
@@ -80,5 +99,6 @@ export interface Registration {
   checked_in: boolean
   checked_in_at: string | null
   qr_token: string
+  extra: Extra
   created_at: string
 }
