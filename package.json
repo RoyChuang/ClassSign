@@ -1,6 +1,6 @@
 {
   "name": "classsign",
-  "version": "0.5.50",
+  "version": "0.5.51",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -26,7 +26,8 @@
     "next": "^16.2.6",
     "qrcode": "^1.5.4",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^20.19.41",

@@ -1,10 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/AuthProvider'
 import { useSnack } from '@/components/SnackProvider'
-import { Session, Class, Registration, MemberGroup, Member, Unit, Gender, UNITS, GENDERS } from '@/lib/types'
+import { Session, Class, Registration, MemberGroup, Member, Unit, Gender, UNITS, GENDERS, Extra } from '@/lib/types'
+import { exportTemplate as buildTemplate, parseTemplate } from '@/lib/template'
+import { CustomFieldsForm } from '@/components/CustomFieldsForm'
+import EditIcon from '@mui/icons-material/Edit'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
@@ -20,6 +23,7 @@ import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import DeleteIcon from '@mui/icons-material/Delete'
 import DownloadIcon from '@mui/icons-material/Download'
+import UploadIcon from '@mui/icons-material/Upload'
 import ListAltIcon from '@mui/icons-material/ListAlt'
 import GroupsIcon from '@mui/icons-material/Groups'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
@@ -65,6 +69,16 @@ export default function SecretaryPage() {
   const [groupImportClassId, setGroupImportClassId] = useState<string>('')
   const [loadingGroupMembers, setLoadingGroupMembers] = useState(false)
   const [groupImporting, setGroupImporting] = useState(false)
+
+  // Excel 範本匯出 / 匯入
+  const importInputRef = useRef<HTMLInputElement>(null)
+  const [templateImporting, setTemplateImporting] = useState(false)
+
+  // 編輯自訂欄位
+  const [extraTarget, setExtraTarget] = useState<Registration | null>(null)
+  const [extraValue, setExtraValue] = useState<Extra>({})
+  const [extraSaving, setExtraSaving] = useState(false)
+  const [expandedExtra, setExpandedExtra] = useState<Set<string>>(new Set())
 
   // 匯入歷史名單
   const [importOpen, setImportOpen] = useState(false)
@@ -212,11 +226,117 @@ export default function SecretaryPage() {
     setGroupImporting(false)
   }
 
+  // 匯出空白範本（依班會自訂欄位，一單位一 sheet）
+  function exportTemplate() {
+    const session = sessions.find(s => s.id === selectedSession)
+    if (!session) return
+    // 聯合班會：全部單位各一 sheet；單位班會：只該單位
+    const units: Unit[] = session.unit ? [session.unit as Unit] : [...UNITS]
+    buildTemplate({
+      sessionName: session.name,
+      unitName: session.unit,
+      classNames: classes.map(c => c.name),
+      fields: session.custom_fields ?? [],
+      units,
+    })
+  }
+
+  // 匯入填好的範本
+  async function onImportFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // 允許重複選同一檔
+    if (!file) return
+    const session = sessions.find(s => s.id === selectedSession)
+    if (!session) return
+
+    setTemplateImporting(true)
+    try {
+      const validUnits: Unit[] = session.unit ? [session.unit as Unit] : [...UNITS]
+      const fields = session.custom_fields ?? []
+      const parsed = await parseTemplate(file, fields, validUnits)
+      if (parsed.length === 0) { showSnack('範本中沒有可匯入的資料', 'warning'); return }
+
+      // 班別名稱 → id
+      const classByName = new Map(classes.map(c => [c.name, c.id]))
+      // 取得整場班會現有掛號，做跨單位去重
+      const { data: existing } = await supabase.from('registrations')
+        .select('unit, name, gender').eq('session_id', selectedSession)
+      const existingKeys = new Set((existing ?? []).map(r => `${r.unit}__${r.name}__${r.gender}`))
+
+      const rows: { session_id: string; class_id: string; unit: Unit; name: string; gender: Gender; extra: Record<string, string> }[] = []
+      const problems: string[] = []
+      let skippedDup = 0
+      const seenInFile = new Set<string>()
+
+      for (const r of parsed) {
+        if (r.gender !== '乾' && r.gender !== '坤') { problems.push(`${r.unit}「${r.name}」性別需為乾或坤`); continue }
+        const classId = classByName.get(r.className)
+        if (!classId) { problems.push(`${r.unit}「${r.name}」找不到班別「${r.className}」`); continue }
+        const key = `${r.unit}__${r.name}__${r.gender}`
+        if (existingKeys.has(key) || seenInFile.has(key)) { skippedDup++; continue }
+        seenInFile.add(key)
+        rows.push({ session_id: selectedSession, class_id: classId, unit: r.unit, name: r.name, gender: r.gender as Gender, extra: r.extra })
+      }
+
+      if (rows.length === 0) {
+        showSnack(problems.length > 0 ? problems.slice(0, 3).join('；') : `無新資料可匯入（跳過 ${skippedDup} 筆重複）`, 'warning')
+        return
+      }
+
+      const { data: inserted, error } = await supabase.from('registrations').insert(rows).select()
+      if (error) { showSnack('匯入失敗：' + error.message, 'error'); return }
+
+      // 只把屬於目前選取單位的新資料加進畫面
+      const mine = (inserted ?? []).filter(r => r.unit === selectedUnit)
+      if (mine.length > 0) setRegistrations(prev => [...prev, ...mine])
+
+      let msg = `已匯入 ${rows.length} 人`
+      if (skippedDup > 0) msg += `，跳過 ${skippedDup} 筆重複`
+      if (problems.length > 0) msg += `，${problems.length} 筆有誤未匯入`
+      showSnack(msg, problems.length > 0 ? 'warning' : 'success')
+    } catch (err) {
+      showSnack('檔案讀取失敗，請確認是有效的 Excel 範本', 'error')
+    } finally {
+      setTemplateImporting(false)
+    }
+  }
+
   function closeImport() {
     setImportOpen(false)
     setImportSession('')
     setImportCandidates([])
     setImportSelected(new Set())
+  }
+
+  // 目前班會的自訂欄位
+  const customFields = sessions.find(s => s.id === selectedSession)?.custom_fields ?? []
+  const hasCustomFields = customFields.length > 0
+
+  function openExtraEdit(r: Registration) {
+    setExtraValue(r.extra ?? {})
+    setExtraTarget(r)
+  }
+
+  async function saveExtra() {
+    if (!extraTarget) return
+    setExtraSaving(true)
+    const target = extraTarget
+    const { error } = await supabase.from('registrations').update({ extra: extraValue }).eq('id', target.id)
+    setExtraSaving(false)
+    if (error) { showSnack('儲存失敗：' + error.message, 'error'); return }
+    setRegistrations(prev => prev.map(r => r.id === target.id ? { ...r, extra: extraValue } : r))
+    setExtraTarget(null)
+  }
+
+  // 已填欄位摘要（每項一個 "label：值" 字串）
+  function extraParts(r: Registration): string[] {
+    return customFields
+      .map(f => { const v = r.extra?.[f.key]; return v ? `${f.label}：${v}` : null })
+      .filter((x): x is string => !!x)
+  }
+
+  function toggleExtra(id: string) {
+    setExpandedExtra(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   }
 
   // 匯入：選舊班會後載入名單
@@ -395,14 +515,13 @@ export default function SecretaryPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1 }}>
                 <Typography sx={{ fontWeight: 600 }}>新增報名者</Typography>
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button startIcon={<GroupsIcon />} onClick={openGroupImport} sx={{ fontSize: 14 }}>
-                    從群組匯入
+                  <Button startIcon={<DownloadIcon />} onClick={exportTemplate} disabled={!selectedSession} sx={{ fontSize: 14 }}>
+                    下載範本
                   </Button>
-                  {pastSessions.length > 0 && (
-                    <Button startIcon={<DownloadIcon />} onClick={() => setImportOpen(true)} sx={{ fontSize: 14 }}>
-                      匯入歷史名單
-                    </Button>
-                  )}
+                  <Button startIcon={<UploadIcon />} onClick={() => importInputRef.current?.click()} disabled={!selectedSession || templateImporting} sx={{ fontSize: 14 }}>
+                    {templateImporting ? '匯入中...' : '匯入名單'}
+                  </Button>
+                  <input ref={importInputRef} type="file" accept=".xlsx,.xls" hidden onChange={onImportFileChange} />
                 </Box>
               </Box>
               <Box component="form" onSubmit={addPerson} sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -456,8 +575,25 @@ export default function SecretaryPage() {
                           <Box key={gi} sx={{ display: 'flex', flexDirection: 'column', px: 2, py: 1, borderRight: gi === 0 ? '1px solid' : 'none', borderColor: 'divider', minHeight: 44 }}>
                             {r ? (
                               <>
-                                <Typography sx={{ fontSize: 16, fontWeight: 500 }}>{r.name}</Typography>
-                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.5 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
+                                  <Typography sx={{ fontSize: 16, fontWeight: 500 }}>{r.name}</Typography>
+                                  {hasCustomFields && extraParts(r).length > 0 && (
+                                    <Typography component="span" onClick={() => toggleExtra(r.id)} sx={{ fontSize: 12, color: 'primary.main', cursor: 'pointer' }}>
+                                      {expandedExtra.has(r.id) ? '收起資訊 ▴' : `查看資訊（${extraParts(r).length}）▾`}
+                                    </Typography>
+                                  )}
+                                </Box>
+                                {hasCustomFields && expandedExtra.has(r.id) && (
+                                  <Box sx={{ mt: 0.25 }}>
+                                    {extraParts(r).map((p, pi) => (
+                                      <Typography key={pi} sx={{ fontSize: 12, color: 'text.secondary', wordBreak: 'break-word' }}>{p}</Typography>
+                                    ))}
+                                  </Box>
+                                )}
+                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', mt: 0.5 }}>
+                                  {hasCustomFields && (
+                                    <Button size="small" startIcon={<EditIcon fontSize="small" />} onClick={() => openExtraEdit(r)}>編輯資料</Button>
+                                  )}
                                   <Button size="small" startIcon={<SwapHorizIcon fontSize="small" />} onClick={e => setClassPopover({ anchorEl: e.currentTarget, regId: r.id })}>換班</Button>
                                   <Button size="small" color="error" startIcon={<DeleteIcon fontSize="small" />} onClick={() => setDeleteTarget(r.id)}>刪除</Button>
                                 </Box>
@@ -476,6 +612,21 @@ export default function SecretaryPage() {
           )}
         </>
       )}
+
+      {/* 編輯自訂欄位 Dialog */}
+      <Dialog open={!!extraTarget} onClose={() => !extraSaving && setExtraTarget(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 600 }}>
+          編輯資料
+          {extraTarget && <Box component="span" sx={{ fontWeight: 400, color: 'text.secondary', ml: 1 }}>{extraTarget.name}（{extraTarget.gender}）</Box>}
+        </DialogTitle>
+        <DialogContent sx={{ pt: '16px !important' }}>
+          <CustomFieldsForm fields={customFields} value={extraValue} onChange={setExtraValue} />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button startIcon={<CloseIcon />} onClick={() => setExtraTarget(null)} disabled={extraSaving}>取消</Button>
+          <Button variant="contained" onClick={saveExtra} disabled={extraSaving}>{extraSaving ? '儲存中...' : '儲存'}</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* 從群組匯入 Dialog */}
       <Dialog open={groupImportOpen} onClose={() => !groupImporting && setGroupImportOpen(false)} maxWidth="sm" fullWidth>

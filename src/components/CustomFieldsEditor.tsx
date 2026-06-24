@@ -1,19 +1,15 @@
 'use client'
 
-import { CustomField, CustomFieldType, CUSTOM_FIELD_TYPE_LABELS } from '@/lib/types'
+import { CustomField } from '@/lib/types'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import TextField from '@mui/material/TextField'
-import Select from '@mui/material/Select'
-import MenuItem from '@mui/material/MenuItem'
-import FormControl from '@mui/material/FormControl'
-import InputLabel from '@mui/material/InputLabel'
 import IconButton from '@mui/material/IconButton'
 import Button from '@mui/material/Button'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
-
-const FIELD_TYPES: CustomFieldType[] = ['text', 'select', 'checkbox']
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 
 // 產生唯一 key（避免中文當 key），純前端用
 function genKey(existing: CustomField[]): string {
@@ -36,8 +32,15 @@ export function CustomFieldsEditor({
   function remove(idx: number) {
     onChange(value.filter((_, i) => i !== idx))
   }
+  function move(idx: number, dir: 'up' | 'down') {
+    const target = dir === 'up' ? idx - 1 : idx + 1
+    if (target < 0 || target >= value.length) return
+    const next = [...value]
+    ;[next[idx], next[target]] = [next[target], next[idx]]
+    onChange(next)
+  }
   function add() {
-    onChange([...value, { key: genKey(value), label: '', type: 'text' }])
+    onChange([...value, { key: genKey(value), label: '' }])
   }
 
   return (
@@ -48,40 +51,24 @@ export function CustomFieldsEditor({
           報到時可額外收集的欄位，例如 POLO衫尺寸、預計抵達時間、是否用餐…
         </Typography>
       )}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         {value.map((field, idx) => (
-          <Box key={field.key} sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.25, borderRadius: '10px', bgcolor: '#F8FAFC', border: '1px solid', borderColor: 'divider' }}>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-              <TextField
-                size="small" label="欄位名稱" placeholder="例：POLO衫"
-                value={field.label}
-                onChange={e => update(idx, { label: e.target.value })}
-                sx={{ flex: 1 }}
-              />
-              <FormControl size="small" sx={{ minWidth: 110 }}>
-                <InputLabel>類型</InputLabel>
-                <Select
-                  label="類型" value={field.type}
-                  onChange={e => {
-                    const type = e.target.value as CustomFieldType
-                    update(idx, { type, options: type === 'select' ? (field.options ?? []) : undefined })
-                  }}
-                >
-                  {FIELD_TYPES.map(t => <MenuItem key={t} value={t}>{CUSTOM_FIELD_TYPE_LABELS[t]}</MenuItem>)}
-                </Select>
-              </FormControl>
-              <IconButton aria-label="刪除欄位" color="error" sx={{ p: 1, mt: 0.25 }} onClick={() => remove(idx)}>
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Box>
-            {field.type === 'select' && (
-              <TextField
-                size="small" label="選項（用逗號分隔）" placeholder="例：S, M, L, XL"
-                value={(field.options ?? []).join(', ')}
-                onChange={e => update(idx, { options: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-                fullWidth
-              />
-            )}
+          <Box key={field.key} sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+            <TextField
+              size="small" label="欄位名稱" placeholder="例：POLO衫"
+              value={field.label}
+              onChange={e => update(idx, { label: e.target.value })}
+              sx={{ flex: 1 }}
+            />
+            <IconButton aria-label="上移" sx={{ p: 0.75 }} onClick={() => move(idx, 'up')} disabled={idx === 0}>
+              <ArrowUpwardIcon fontSize="small" />
+            </IconButton>
+            <IconButton aria-label="下移" sx={{ p: 0.75 }} onClick={() => move(idx, 'down')} disabled={idx === value.length - 1}>
+              <ArrowDownwardIcon fontSize="small" />
+            </IconButton>
+            <IconButton aria-label="刪除欄位" color="error" sx={{ p: 0.75 }} onClick={() => remove(idx)}>
+              <DeleteIcon fontSize="small" />
+            </IconButton>
           </Box>
         ))}
       </Box>

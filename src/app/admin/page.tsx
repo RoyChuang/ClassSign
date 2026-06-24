@@ -46,19 +46,11 @@ const supabase = createClient()
 
 const today = dayjs().format('YYYY-MM-DD')
 
-// 移除沒填名稱的欄位，select 沒選項的降級為 text
+// 移除沒填名稱的欄位
 function sanitizeCustomFields(fields: CustomField[]): CustomField[] {
   return fields
     .filter(f => f.label.trim())
-    .map(f => {
-      const base: CustomField = { key: f.key, label: f.label.trim(), type: f.type }
-      if (f.type === 'select') {
-        const options = (f.options ?? []).map(o => o.trim()).filter(Boolean)
-        if (options.length === 0) return { ...base, type: 'text' }
-        return { ...base, options }
-      }
-      return base
-    })
+    .map(f => ({ key: f.key, label: f.label.trim() }))
 }
 function sessionChip(s: Session) {
   if (s.status === 'finished') return { label: '已結束', color: 'default' as const }
