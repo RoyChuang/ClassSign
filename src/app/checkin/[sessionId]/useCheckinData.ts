@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Session, Class, Registration, Unit, Gender } from '@/lib/types'
+import { Session, Class, Registration, Unit, Gender, Extra } from '@/lib/types'
 import { RealtimeStatusType } from '@/components/RealtimeStatus'
 
 const supabase = createClient()
@@ -120,7 +120,7 @@ export function useCheckinData(sessionId: string, selectedUnit: Unit | '') {
               return s
             })
             setAllResults(prev => prev.map(r =>
-              r.id === updated.id ? { ...r, checked_in: updated.checked_in, checked_in_at: updated.checked_in_at } : r
+              r.id === updated.id ? { ...r, checked_in: updated.checked_in, checked_in_at: updated.checked_in_at, extra: updated.extra } : r
             ))
           })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations', filter: `session_id=eq.${sessionId}` },
@@ -162,7 +162,7 @@ export function useCheckinData(sessionId: string, selectedUnit: Unit | '') {
             })
             setAllResults(prev => {
               const newList = prev.map(r =>
-                r.id === updated.id ? { ...r, checked_in: updated.checked_in, checked_in_at: updated.checked_in_at } : r
+                r.id === updated.id ? { ...r, checked_in: updated.checked_in, checked_in_at: updated.checked_in_at, extra: updated.extra } : r
               )
               setCachedUnit(selectedUnit as Unit, newList)
               return newList
@@ -215,11 +215,13 @@ export function useCheckinData(sessionId: string, selectedUnit: Unit | '') {
     return () => document.removeEventListener('visibilitychange', handleVisible)
   }, [session, selectedUnit, loadUnit, loadAll])
 
-  async function checkIn(reg: Reg) {
+  async function checkIn(reg: Reg, extra?: Extra) {
     if (checkedIn.has(reg.id)) return
     const checkedInAt = new Date().toISOString()
+    const payload: { checked_in: boolean; checked_in_at: string; extra?: Extra } = { checked_in: true, checked_in_at: checkedInAt }
+    if (extra) payload.extra = extra
     const { data, error } = await supabase.from('registrations')
-      .update({ checked_in: true, checked_in_at: checkedInAt })
+      .update(payload)
       .eq('id', reg.id)
       .select('id')
     if (error || !data || data.length === 0) {
@@ -229,10 +231,24 @@ export function useCheckinData(sessionId: string, selectedUnit: Unit | '') {
     }
     setCheckedIn(prev => new Set([...prev, reg.id]))
     setAllResults(prev => {
-      const updated = prev.map(r => r.id === reg.id ? { ...r, checked_in: true, checked_in_at: checkedInAt } : r)
+      const updated = prev.map(r => r.id === reg.id ? { ...r, checked_in: true, checked_in_at: checkedInAt, ...(extra ? { extra } : {}) } : r)
       if (!isJoint) setCachedUnit(reg.unit as Unit, updated)
       return updated
     })
+  }
+
+  // 補填 / 編輯自訂欄位，不改報到狀態
+  async function updateExtra(reg: Reg, extra: Extra): Promise<boolean> {
+    const { error } = await supabase.from('registrations')
+      .update({ extra })
+      .eq('id', reg.id)
+    if (error) return false
+    setAllResults(prev => {
+      const updated = prev.map(r => r.id === reg.id ? { ...r, extra } : r)
+      if (!isJoint) setCachedUnit(reg.unit as Unit, updated)
+      return updated
+    })
+    return true
   }
 
   async function cancelCheckIn(target: Reg) {
@@ -272,6 +288,7 @@ export function useCheckinData(sessionId: string, selectedUnit: Unit | '') {
     realtimeStatus,
     isJoint,
     checkIn,
+    updateExtra,
     cancelCheckIn,
     loadUnit,
     loadAll,

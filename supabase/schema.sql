@@ -23,6 +23,9 @@ create table sessions (
   date date not null,
   reg_deadline date not null,
   status text not null default 'open' check (status in ('open', 'closed', 'finished')),
+  -- 報到自訂欄位定義，每場班會可不同
+  -- [{ "key": "polo", "label": "POLO衫", "type": "select", "options": ["S","M","L"] }, ...]
+  custom_fields jsonb not null default '[]',
   created_at timestamptz default now()
 );
 
@@ -46,6 +49,9 @@ create table registrations (
   checked_in boolean not null default false,
   checked_in_at timestamptz,
   qr_token text unique not null default gen_random_uuid()::text,
+  -- 報到時填寫的自訂欄位值，對應 sessions.custom_fields 的 key
+  -- { "polo": "M", "arrive": "08:30", "meal": true }
+  extra jsonb not null default '{}',
   created_at timestamptz default now()
 );
 

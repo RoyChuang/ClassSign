@@ -3,7 +3,8 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSnack } from '@/components/SnackProvider'
-import { Unit, Gender, UNITS, GENDERS } from '@/lib/types'
+import { Unit, Gender, UNITS, GENDERS, Extra } from '@/lib/types'
+import { CustomFieldsForm } from '@/components/CustomFieldsForm'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
@@ -27,6 +28,8 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CloseIcon from '@mui/icons-material/Close'
 import UndoIcon from '@mui/icons-material/Undo'
 import CheckIcon from '@mui/icons-material/Check'
+import EditIcon from '@mui/icons-material/Edit'
+import ListAltIcon from '@mui/icons-material/ListAlt'
 import Chip from '@mui/material/Chip'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
@@ -48,6 +51,10 @@ export default function CheckinSessionPage() {
   const [activeGender, setActiveGender] = useState<'乾' | '坤'>('乾')
   const [confirmTarget, setConfirmTarget] = useState<Reg | null>(null)
   const [cancelTarget, setCancelTarget] = useState<Reg | null>(null)
+  // 自訂欄位填寫對話框：mode 'checkin' 報到時填、'edit' 已報到補填
+  const [fieldsTarget, setFieldsTarget] = useState<{ reg: Reg; mode: 'checkin' | 'edit' } | null>(null)
+  const [fieldsValue, setFieldsValue] = useState<Extra>({})
+  const [fieldsSubmitting, setFieldsSubmitting] = useState(false)
   const [copied, setCopied] = useState(false)
   const [walkInOpen, setWalkInOpen] = useState(false)
   const [walkInForm, setWalkInForm] = useState<{ name: string; gender: Gender; class_id: string; unit: Unit | '' }>({ name: '', gender: '乾', class_id: '', unit: '' })
@@ -61,10 +68,13 @@ export default function CheckinSessionPage() {
     unitLoading, loadError,
     realtimeStatus,
     isJoint,
-    checkIn, cancelCheckIn,
+    checkIn, updateExtra, cancelCheckIn,
     loadUnit, loadAll, clearUnitCache,
     registerWalkIn,
   } = useCheckinData(sessionId, selectedUnit)
+
+  const customFields = session?.custom_fields ?? []
+  const hasCustomFields = customFields.length > 0
 
   // Lock selectedUnit to session.unit for non-joint sessions
   useEffect(() => {
@@ -146,6 +156,34 @@ export default function CheckinSessionPage() {
     setWalkInSubmitting(false)
   }
 
+  // 點「報到」：有自訂欄位 → 開填寫對話框；沒有 → 走原本確認流程
+  function startCheckin(reg: Reg) {
+    if (hasCustomFields) {
+      setFieldsValue(reg.extra ?? {})
+      setFieldsTarget({ reg, mode: 'checkin' })
+    } else {
+      setConfirmTarget(reg)
+    }
+  }
+
+  // 已報到者補填 / 編輯資料
+  function startEditFields(reg: Reg) {
+    setFieldsValue(reg.extra ?? {})
+    setFieldsTarget({ reg, mode: 'edit' })
+  }
+
+  async function submitFields() {
+    if (!fieldsTarget) return
+    setFieldsSubmitting(true)
+    const { reg, mode } = fieldsTarget
+    const ok = mode === 'checkin'
+      ? (await checkIn(reg, fieldsValue), true)
+      : await updateExtra(reg, fieldsValue)
+    setFieldsSubmitting(false)
+    if (ok === false) { showSnack('儲存失敗，請重試', 'error'); return }
+    setFieldsTarget(null)
+  }
+
   if (sessionLoading) return <Loading fullPage />
 
   if (sessionNotFound) return (
@@ -181,11 +219,18 @@ export default function CheckinSessionPage() {
           <Typography sx={{ fontWeight: 700, fontSize: { xs: 26, sm: 34 }, color: 'text.primary', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
             {session?.name}
           </Typography>
-          <Button onClick={shareLink} size="small" startIcon={<PersonAddIcon sx={{ fontSize: '14px !important' }} />}
-            sx={{ mt: 0.75, fontSize: 13, color: copied ? '#16A34A' : '#2549E5', px: 0, minWidth: 0, fontWeight: 500,
-              '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}>
-            {copied ? '已複製' : '複製連結'}
-          </Button>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.75 }}>
+            <Button onClick={shareLink} size="small" startIcon={<PersonAddIcon sx={{ fontSize: '14px !important' }} />}
+              sx={{ fontSize: 13, color: copied ? '#16A34A' : '#2549E5', px: 0, minWidth: 0, fontWeight: 500,
+                '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}>
+              {copied ? '已複製' : '複製連結'}
+            </Button>
+            <Button onClick={() => router.push(`/checkin/${sessionId}/report`)} size="small" startIcon={<ListAltIcon sx={{ fontSize: '14px !important' }} />}
+              sx={{ fontSize: 13, color: '#2549E5', px: 0, minWidth: 0, fontWeight: 500,
+                '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}>
+              報到明細
+            </Button>
+          </Box>
         </Box>
         <Button variant="contained" startIcon={<PersonAddIcon />} onClick={openWalkIn}
           disabled={!isJoint && !selectedUnit}
@@ -342,7 +387,7 @@ export default function CheckinSessionPage() {
         {/* xs: 單欄列表 */}
         <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1 }}>
           {(activeGender === '乾' ? qian : kun).map(r =>
-            <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} showUnit={isJoint} onCheckin={() => setConfirmTarget(r)} onCancel={() => setCancelTarget(r)} />
+            <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} showUnit={isJoint} onCheckin={() => startCheckin(r)} onCancel={() => setCancelTarget(r)} onEditFields={hasCustomFields ? () => startEditFields(r) : undefined} />
           )}
           {(activeGender === '乾' ? qian : kun).length === 0 && (
             <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>無資料</Typography>
@@ -362,7 +407,7 @@ export default function CheckinSessionPage() {
               </Box>
             </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {qian.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} showUnit={isJoint} onCheckin={() => setConfirmTarget(r)} onCancel={() => setCancelTarget(r)} />)}
+              {qian.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} showUnit={isJoint} onCheckin={() => startCheckin(r)} onCancel={() => setCancelTarget(r)} onEditFields={hasCustomFields ? () => startEditFields(r) : undefined} />)}
               {qian.length === 0 && <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>無資料</Typography>}
             </Box>
           </Box>
@@ -377,7 +422,7 @@ export default function CheckinSessionPage() {
               </Box>
             </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {kun.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} showUnit={isJoint} onCheckin={() => setConfirmTarget(r)} onCancel={() => setCancelTarget(r)} />)}
+              {kun.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} showUnit={isJoint} onCheckin={() => startCheckin(r)} onCancel={() => setCancelTarget(r)} onEditFields={hasCustomFields ? () => startEditFields(r) : undefined} />)}
               {kun.length === 0 && <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>無資料</Typography>}
             </Box>
           </Box>
@@ -417,6 +462,24 @@ export default function CheckinSessionPage() {
         confirmColor="error"
         confirmIcon={<UndoIcon />}
       />
+
+      {/* 自訂欄位填寫 / 補填 */}
+      <Dialog open={!!fieldsTarget} onClose={() => !fieldsSubmitting && setFieldsTarget(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 600 }}>
+          {fieldsTarget?.mode === 'checkin' ? '報到' : '編輯資料'}
+          {fieldsTarget && <Box component="span" sx={{ fontWeight: 400, color: 'text.secondary', ml: 1 }}>{fieldsTarget.reg.name}（{fieldsTarget.reg.gender}・{fieldsTarget.reg.classes?.name}）</Box>}
+        </DialogTitle>
+        <DialogContent sx={{ pt: '16px !important' }}>
+          <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 2 }}>以下欄位皆可留空，事後也能再補填。</Typography>
+          <CustomFieldsForm fields={customFields} value={fieldsValue} onChange={setFieldsValue} />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button startIcon={<CloseIcon />} onClick={() => setFieldsTarget(null)} disabled={fieldsSubmitting}>取消</Button>
+          <Button variant="contained" startIcon={<CheckIcon />} onClick={submitFields} disabled={fieldsSubmitting}>
+            {fieldsSubmitting ? '處理中...' : fieldsTarget?.mode === 'checkin' ? '確定報到' : '儲存'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={walkInOpen} onClose={() => !walkInSubmitting && setWalkInOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 600 }}>現場報名並報到</DialogTitle>
@@ -463,7 +526,7 @@ export default function CheckinSessionPage() {
   )
 }
 
-function PersonCard({ r, done, showUnit, onCheckin, onCancel }: { r: Reg; done: boolean; showUnit?: boolean; onCheckin: () => void; onCancel: () => void }) {
+function PersonCard({ r, done, showUnit, onCheckin, onCancel, onEditFields }: { r: Reg; done: boolean; showUnit?: boolean; onCheckin: () => void; onCancel: () => void; onEditFields?: () => void }) {
   const timeStr = done && r.checked_in_at
     ? new Date(r.checked_in_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })
     : null
@@ -476,6 +539,12 @@ function PersonCard({ r, done, showUnit, onCheckin, onCancel }: { r: Reg; done: 
             <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <Typography noWrap sx={{ fontSize: 12, color: '#16A34A', lineHeight: 1.2, opacity: 0.8 }}>{subLabel}</Typography>
               <Typography noWrap sx={{ fontWeight: 700, fontSize: 18, lineHeight: 1.35, color: '#15803D' }}>{r.name}</Typography>
+              {onEditFields && (
+                <Button onClick={onEditFields} size="small" startIcon={<EditIcon sx={{ fontSize: '14px !important' }} />}
+                  sx={{ mt: 0.25, alignSelf: 'flex-start', px: 0, minWidth: 0, fontSize: 12, color: '#15803D', fontWeight: 500, '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}>
+                  編輯資料
+                </Button>
+              )}
             </Box>
             <Box onClick={onCancel} sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', cursor: 'pointer', gap: 0.25, px: 0.5, borderRadius: 1, '&:hover': { bgcolor: 'rgba(20,184,106,0.06)' } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

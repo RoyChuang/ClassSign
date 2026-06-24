@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/AuthProvider'
 import { useSnack } from '@/components/SnackProvider'
-import { Session, Class, ClassTemplate, SessionStatus, UNITS } from '@/lib/types'
+import { Session, Class, ClassTemplate, SessionStatus, UNITS, CustomField } from '@/lib/types'
+import { CustomFieldsEditor } from '@/components/CustomFieldsEditor'
 import dynamic from 'next/dynamic'
 const DatePicker = dynamic(() => import('@mui/x-date-pickers/DatePicker').then(m => ({ default: m.DatePicker })), { ssr: false })
 import dayjs, { Dayjs } from 'dayjs'
@@ -44,6 +45,21 @@ import DialogActions from '@mui/material/DialogActions'
 const supabase = createClient()
 
 const today = dayjs().format('YYYY-MM-DD')
+
+// 移除沒填名稱的欄位，select 沒選項的降級為 text
+function sanitizeCustomFields(fields: CustomField[]): CustomField[] {
+  return fields
+    .filter(f => f.label.trim())
+    .map(f => {
+      const base: CustomField = { key: f.key, label: f.label.trim(), type: f.type }
+      if (f.type === 'select') {
+        const options = (f.options ?? []).map(o => o.trim()).filter(Boolean)
+        if (options.length === 0) return { ...base, type: 'text' }
+        return { ...base, options }
+      }
+      return base
+    })
+}
 function sessionChip(s: Session) {
   if (s.status === 'finished') return { label: '已結束', color: 'default' as const }
   if (s.reg_deadline < today) return { label: '已截止', color: 'warning' as const }
@@ -56,12 +72,12 @@ export default function AdminPage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState<{ name: string; date: Dayjs | null; reg_deadline: Dayjs | null; unit: string }>({ name: '', date: null, reg_deadline: null, unit: '' })
+  const [form, setForm] = useState<{ name: string; date: Dayjs | null; reg_deadline: Dayjs | null; unit: string; customFields: CustomField[] }>({ name: '', date: null, reg_deadline: null, unit: '', customFields: [] })
   const [submitting, setSubmitting] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Session | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [editTarget, setEditTarget] = useState<Session | null>(null)
-  const [editForm, setEditForm] = useState<{ name: string; date: Dayjs | null; reg_deadline: Dayjs | null; unit: string }>({ name: '', date: null, reg_deadline: null, unit: '' })
+  const [editForm, setEditForm] = useState<{ name: string; date: Dayjs | null; reg_deadline: Dayjs | null; unit: string; customFields: CustomField[] }>({ name: '', date: null, reg_deadline: null, unit: '', customFields: [] })
   const [editExistingClasses, setEditExistingClasses] = useState<Class[]>([])
   const [editSelectedClassIds, setEditSelectedClassIds] = useState<Set<string>>(new Set())
   const [saving, setSaving] = useState(false)
@@ -139,7 +155,7 @@ export default function AdminPage() {
 
   async function openEdit(s: Session) {
     setEditTarget(s)
-    setEditForm({ name: s.name, date: dayjs(s.date), reg_deadline: dayjs(s.reg_deadline), unit: s.unit ?? '' })
+    setEditForm({ name: s.name, date: dayjs(s.date), reg_deadline: dayjs(s.reg_deadline), unit: s.unit ?? '', customFields: s.custom_fields ?? [] })
     const { data: existing } = await supabase.from('classes').select('*').eq('session_id', s.id).order('sort_order')
     const existingList = existing ?? []
     setEditExistingClasses(existingList)
@@ -151,12 +167,14 @@ export default function AdminPage() {
     if (!editTarget || !editForm.date || !editForm.reg_deadline) return
     setSaving(true)
     const targetId = editTarget.id
+    const cleanFields = sanitizeCustomFields(editForm.customFields)
     const updatedSession = {
       ...editTarget,
       name: editForm.name,
       date: editForm.date.format('YYYY-MM-DD'),
       reg_deadline: editForm.reg_deadline.format('YYYY-MM-DD'),
       unit: editForm.unit || null,
+      custom_fields: cleanFields,
     }
     setSessions(prev => prev.map(s => s.id === targetId ? updatedSession : s))
     setEditTarget(null)
@@ -166,6 +184,7 @@ export default function AdminPage() {
       date: editForm.date.format('YYYY-MM-DD'),
       reg_deadline: editForm.reg_deadline.format('YYYY-MM-DD'),
       unit: editForm.unit || null,
+      custom_fields: cleanFields,
     }).eq('id', targetId)
 
     if (error) { showSnack('儲存失敗：' + error.message, 'error'); await loadSessions(); setSaving(false); return }
@@ -192,7 +211,7 @@ export default function AdminPage() {
     const sessionUnit = profile?.role === 'secretary' ? (profile.unit ?? null) : (form.unit || null)
     const { data: session, error } = await supabase
       .from('sessions')
-      .insert({ name: form.name, date: form.date?.format('YYYY-MM-DD') ?? '', reg_deadline: form.reg_deadline?.format('YYYY-MM-DD') ?? '', unit: sessionUnit })
+      .insert({ name: form.name, date: form.date?.format('YYYY-MM-DD') ?? '', reg_deadline: form.reg_deadline?.format('YYYY-MM-DD') ?? '', unit: sessionUnit, custom_fields: sanitizeCustomFields(form.customFields) })
       .select().single()
 
     if (error || !session) { showSnack('建立失敗：' + error?.message, 'error'); setSubmitting(false); return }
@@ -201,7 +220,7 @@ export default function AdminPage() {
     await supabase.from('classes').insert(
       selectedTemplates.map((t, i) => ({ session_id: session.id, name: t.name, sort_order: i }))
     )
-    setForm({ name: '', date: null, reg_deadline: null, unit: '' })
+    setForm({ name: '', date: null, reg_deadline: null, unit: '', customFields: [] })
     setCreateOpen(false)
     await loadSessions()
     setSubmitting(false)
@@ -259,7 +278,7 @@ export default function AdminPage() {
       ) : null}
 
       {/* 建立班會 Dialog */}
-      <Dialog open={createOpen} onClose={() => { if (submitting) return; setForm({ name: '', date: null, reg_deadline: null, unit: '' }); setSelectedClassIds(new Set()); setCreateOpen(false) }} maxWidth="xs" fullWidth>
+      <Dialog open={createOpen} onClose={() => { if (submitting) return; setForm({ name: '', date: null, reg_deadline: null, unit: '', customFields: [] }); setSelectedClassIds(new Set()); setCreateOpen(false) }} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 600 }}>建立新班會</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
           <TextField required label="班會名稱" placeholder="例：115年5月全家福班"
@@ -303,9 +322,10 @@ export default function AdminPage() {
               </Box>
             </Box>
           )}
+          <CustomFieldsEditor value={form.customFields} onChange={fields => setForm(f => ({ ...f, customFields: fields }))} />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button startIcon={<CloseIcon />} onClick={() => { setForm({ name: '', date: null, reg_deadline: null, unit: '' }); setSelectedClassIds(new Set()); setCreateOpen(false) }} disabled={submitting}>取消</Button>
+          <Button startIcon={<CloseIcon />} onClick={() => { setForm({ name: '', date: null, reg_deadline: null, unit: '', customFields: [] }); setSelectedClassIds(new Set()); setCreateOpen(false) }} disabled={submitting}>取消</Button>
           <Button variant="contained" startIcon={<AddIcon />} onClick={e => createSession(e as unknown as React.FormEvent)}
             disabled={submitting || !form.name || !form.date || !form.reg_deadline || selectedClassIds.size === 0}>
             {submitting ? '建立中...' : '建立班會'}
@@ -507,6 +527,7 @@ export default function AdminPage() {
               </Typography>
             </Box>
           )}
+          <CustomFieldsEditor value={editForm.customFields} onChange={fields => setEditForm(f => ({ ...f, customFields: fields }))} />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
           <Button startIcon={<CloseIcon />} onClick={() => setEditTarget(null)} disabled={saving}>取消</Button>
