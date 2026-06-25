@@ -1,12 +1,12 @@
 // 班會掛號範本：依班會自訂欄位產生 Excel 空白範本（一單位一 sheet），及解析填好的範本
 import * as XLSX from 'xlsx'
-import { CustomField, Unit } from '@/lib/types'
+import { CustomField, RegUnit } from '@/lib/types'
 
 // 固定欄位（範本最前面三欄）
 const BASE_HEADERS = ['姓名', '性別', '班別'] as const
 
 export interface TemplateRow {
-  unit: Unit
+  unit: RegUnit
   name: string
   gender: string
   className: string
@@ -28,7 +28,7 @@ export function exportTemplate(opts: {
   unitName: string | null // 班會所屬單位，null 為聯合
   classNames: string[]
   fields: CustomField[]
-  units: Unit[]
+  units: RegUnit[]
 }): void {
   const { sessionName, unitName, classNames, fields, units } = opts
   const headers = headersFor(fields)
@@ -72,7 +72,7 @@ export function exportSheet(filename: string, headers: string[], rows: (string |
 export async function parseTemplate(
   file: File,
   fields: CustomField[],
-  validUnits: Unit[],
+  validUnits: RegUnit[],
 ): Promise<TemplateRow[]> {
   const buf = await file.arrayBuffer()
   const wb = XLSX.read(buf, { type: 'array' })
@@ -94,7 +94,7 @@ export async function parseTemplate(
         const s = v == null ? '' : String(v).trim()
         if (s) extra[f.key] = s
       }
-      rows.push({ unit: sheetName as Unit, name, gender, className, extra })
+      rows.push({ unit: sheetName as RegUnit, name, gender, className, extra })
     }
   }
   return rows

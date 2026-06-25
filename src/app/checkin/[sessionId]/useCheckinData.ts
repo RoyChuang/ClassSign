@@ -2,14 +2,14 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Session, Class, Registration, Unit, Gender, Extra } from '@/lib/types'
+import { Session, Class, Registration, Unit, RegUnit, Gender, Extra } from '@/lib/types'
 import { RealtimeStatusType } from '@/components/RealtimeStatus'
 
 const supabase = createClient()
 
 export type Reg = Registration & { classes: { name: string } }
 
-export function useCheckinData(sessionId: string, selectedUnit: Unit | '') {
+export function useCheckinData(sessionId: string, selectedUnit: RegUnit | '') {
   const [session, setSession] = useState<Session | null>(null)
   const [sessionLoading, setSessionLoading] = useState(true)
   const [sessionNotFound, setSessionNotFound] = useState(false)
@@ -54,7 +54,7 @@ export function useCheckinData(sessionId: string, selectedUnit: Unit | '') {
       .then(({ data }) => { setClasses(data ?? []); classesRef.current = data ?? [] })
   }, [sessionId])
 
-  const loadUnit = useCallback(async (unit: Unit) => {
+  const loadUnit = useCallback(async (unit: RegUnit) => {
     const cached = unitCacheRef.current.get(unit)
     if (cached) {
       setAllResults(cached)
@@ -100,7 +100,7 @@ export function useCheckinData(sessionId: string, selectedUnit: Unit | '') {
   useEffect(() => {
     if (!session || !session.unit) return
     if (!selectedUnit) { setAllResults([]); return }
-    loadUnit(selectedUnit as Unit)
+    loadUnit(selectedUnit as RegUnit)
   }, [session, selectedUnit, loadUnit])
 
   useEffect(() => {
@@ -164,7 +164,7 @@ export function useCheckinData(sessionId: string, selectedUnit: Unit | '') {
               const newList = prev.map(r =>
                 r.id === updated.id ? { ...r, checked_in: updated.checked_in, checked_in_at: updated.checked_in_at, extra: updated.extra } : r
               )
-              setCachedUnit(selectedUnit as Unit, newList)
+              setCachedUnit(selectedUnit, newList)
               return newList
             })
           })
@@ -177,7 +177,7 @@ export function useCheckinData(sessionId: string, selectedUnit: Unit | '') {
             setAllResults(prev => {
               if (prev.some(r => r.id === inserted.id)) return prev
               const newList = [...prev, inserted].sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'))
-              setCachedUnit(selectedUnit as Unit, newList)
+              setCachedUnit(selectedUnit, newList)
               return newList
             })
             if (inserted.checked_in) setCheckedIn(prev => new Set([...prev, inserted.id]))
@@ -186,8 +186,8 @@ export function useCheckinData(sessionId: string, selectedUnit: Unit | '') {
           if (status === 'SUBSCRIBED') {
             connectionCount++
             if (connectionCount > 1) {
-              unitCacheRef.current.delete(selectedUnit as Unit)
-              loadUnit(selectedUnit as Unit)
+              unitCacheRef.current.delete(selectedUnit as RegUnit)
+              loadUnit(selectedUnit as RegUnit)
             }
             setRealtimeStatus('connected')
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
@@ -206,8 +206,8 @@ export function useCheckinData(sessionId: string, selectedUnit: Unit | '') {
         loadAll()
         setRealtimeKey(k => k + 1)
       } else if (selectedUnit) {
-        unitCacheRef.current.delete(selectedUnit as Unit)
-        loadUnit(selectedUnit as Unit)
+        unitCacheRef.current.delete(selectedUnit as RegUnit)
+        loadUnit(selectedUnit as RegUnit)
         setRealtimeKey(k => k + 1)
       }
     }
@@ -232,7 +232,7 @@ export function useCheckinData(sessionId: string, selectedUnit: Unit | '') {
     setCheckedIn(prev => new Set([...prev, reg.id]))
     setAllResults(prev => {
       const updated = prev.map(r => r.id === reg.id ? { ...r, checked_in: true, checked_in_at: checkedInAt, ...(extra ? { extra } : {}) } : r)
-      if (!isJoint) setCachedUnit(reg.unit as Unit, updated)
+      if (!isJoint) setCachedUnit(reg.unit, updated)
       return updated
     })
   }
@@ -245,7 +245,7 @@ export function useCheckinData(sessionId: string, selectedUnit: Unit | '') {
     if (error) return false
     setAllResults(prev => {
       const updated = prev.map(r => r.id === reg.id ? { ...r, extra } : r)
-      if (!isJoint) setCachedUnit(reg.unit as Unit, updated)
+      if (!isJoint) setCachedUnit(reg.unit, updated)
       return updated
     })
     return true
@@ -259,13 +259,13 @@ export function useCheckinData(sessionId: string, selectedUnit: Unit | '') {
       setCheckedIn(prev => { const s = new Set(prev); s.delete(target.id); return s })
       setAllResults(prev => {
         const updated = prev.map(r => r.id === target.id ? { ...r, checked_in: false, checked_in_at: null } : r)
-        if (!isJoint) setCachedUnit(target.unit as Unit, updated)
+        if (!isJoint) setCachedUnit(target.unit, updated)
         return updated
       })
     }
   }
 
-  async function registerWalkIn(params: { unit: Unit; name: string; gender: Gender; class_id: string }): Promise<{ duplicate: boolean; error: string | null }> {
+  async function registerWalkIn(params: { unit: RegUnit; name: string; gender: Gender; class_id: string }): Promise<{ duplicate: boolean; error: string | null }> {
     const { unit, name, gender, class_id } = params
     const { data: existing } = await supabase.from('registrations')
       .select('id').eq('session_id', sessionId).eq('unit', unit)

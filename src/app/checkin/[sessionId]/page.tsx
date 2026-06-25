@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSnack } from '@/components/SnackProvider'
-import { Unit, Gender, UNITS, GENDERS, Extra } from '@/lib/types'
+import { Unit, RegUnit, Gender, UNITS, CHECKIN_UNITS, NO_UNIT, GENDERS, Extra } from '@/lib/types'
 import { CustomFieldsForm } from '@/components/CustomFieldsForm'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
@@ -46,7 +46,7 @@ export default function CheckinSessionPage() {
   const sessionId = params.sessionId as string
   const { showSnack } = useSnack()
 
-  const [selectedUnit, setSelectedUnit] = useState<Unit | ''>('')
+  const [selectedUnit, setSelectedUnit] = useState<RegUnit | ''>('')
   const [nameFilter, setNameFilter] = useState('')
   const [classFilter, setClassFilter] = useState<string>('')
   const [activeGender, setActiveGender] = useState<'乾' | '坤'>('乾')
@@ -58,7 +58,7 @@ export default function CheckinSessionPage() {
   const [fieldsSubmitting, setFieldsSubmitting] = useState(false)
   const [copied, setCopied] = useState(false)
   const [walkInOpen, setWalkInOpen] = useState(false)
-  const [walkInForm, setWalkInForm] = useState<{ name: string; gender: Gender; class_id: string; unit: Unit | '' }>({ name: '', gender: '乾', class_id: '', unit: '' })
+  const [walkInForm, setWalkInForm] = useState<{ name: string; gender: Gender; class_id: string; unit: RegUnit | '' }>({ name: '', gender: '乾', class_id: '', unit: '' })
   const [walkInSubmitting, setWalkInSubmitting] = useState(false)
   const [walkInSuccess, setWalkInSuccess] = useState<string>('')
 
@@ -134,7 +134,7 @@ export default function CheckinSessionPage() {
 
   async function submitWalkIn() {
     const trimmedName = walkInForm.name.trim()
-    const unit = (walkInForm.unit || selectedUnit) as Unit
+    const unit = (walkInForm.unit || selectedUnit) as RegUnit
     if (!unit || !trimmedName || !walkInForm.class_id) return
 
     setWalkInSubmitting(true)
@@ -285,7 +285,7 @@ export default function CheckinSessionPage() {
           <ToggleButtonGroup
             exclusive
             value={selectedUnit}
-            onChange={(_, v) => { setSelectedUnit((v ?? '') as Unit | ''); setNameFilter(''); setClassFilter(''); setWalkInSuccess('') }}
+            onChange={(_, v) => { setSelectedUnit((v ?? '') as RegUnit | ''); setNameFilter(''); setClassFilter(''); setWalkInSuccess('') }}
             sx={{
               mb: 1.5, display: 'flex', flexWrap: 'wrap', gap: 0.75,
               '& .MuiToggleButtonGroup-grouped': {
@@ -298,7 +298,7 @@ export default function CheckinSessionPage() {
             <ToggleButton value="" sx={{ px: 1.75, py: 0.5, fontSize: 14, fontWeight: 600, lineHeight: 1.5, '&.Mui-selected': { bgcolor: '#EFF4FF', color: '#2549E5', borderColor: '#2549E5 !important' } }}>
               全部
             </ToggleButton>
-            {UNITS.map(u => (
+            {(allResults.some(r => r.unit === NO_UNIT) ? [NO_UNIT, ...UNITS] : UNITS).map(u => (
               <ToggleButton key={u} value={u} sx={{ px: 1.75, py: 0.5, fontSize: 14, fontWeight: 600, lineHeight: 1.5, '&.Mui-selected': { bgcolor: '#EFF4FF', color: '#2549E5', borderColor: '#2549E5 !important' } }}>
                 {u}
               </ToggleButton>
@@ -497,8 +497,8 @@ export default function CheckinSessionPage() {
             <InputLabel>單位</InputLabel>
             <Select label="單位" value={walkInForm.unit ?? selectedUnit}
               disabled={!!session?.unit}
-              onChange={e => setWalkInForm(f => ({ ...f, unit: e.target.value as Unit }))}>
-              {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
+              onChange={e => setWalkInForm(f => ({ ...f, unit: e.target.value as RegUnit }))}>
+              {(session?.unit ? UNITS : CHECKIN_UNITS).map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
             </Select>
           </FormControl>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>

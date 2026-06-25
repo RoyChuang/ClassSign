@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Session, Class, Registration, Unit, UNITS } from '@/lib/types'
+import { Session, Class, Registration, Unit, RegUnit, UNITS, NO_UNIT } from '@/lib/types'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
@@ -36,12 +36,15 @@ interface UnitRowsProps {
 }
 
 function UnitRows({ filtered, expandedUnit, setExpandedUnit }: UnitRowsProps) {
-  const count = (unit: Unit, gender: string, checked?: boolean) =>
+  const count = (unit: RegUnit, gender: string, checked?: boolean) =>
     filtered.filter(r => r.unit === unit && r.gender === gender && (checked === undefined || r.checked_in === checked)).length
+
+  // 10 個單位 + 有資料時的「不分單位」
+  const rowUnits: RegUnit[] = [...UNITS, ...(filtered.some(r => r.unit === NO_UNIT) ? [NO_UNIT] : [])]
 
   return (
     <>
-      {UNITS.filter(unit => count(unit, '乾') + count(unit, '坤') > 0).map(unit => {
+      {rowUnits.filter(unit => count(unit, '乾') + count(unit, '坤') > 0).map(unit => {
         const qian = count(unit, '乾'), qianIn = count(unit, '乾', true)
         const kun = count(unit, '坤'), kunIn = count(unit, '坤', true)
         const isOpen = expandedUnit === unit
