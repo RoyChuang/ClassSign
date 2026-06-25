@@ -42,7 +42,7 @@ create table registrations (
   id uuid primary key default gen_random_uuid(),
   session_id uuid not null references sessions(id) on delete cascade,
   class_id uuid not null references classes(id) on delete cascade,
-  unit text not null check (unit in ('北市','北縣','興一','道一','彰化','華山','基隆','三合','府城','嘉義')),
+  unit text not null check (unit in ('北市','北縣','興一','道一','彰化','華山','基隆','三合','府城','嘉義','不分單位')),
   name text not null,
   gender text not null check (gender in ('乾','坤')),
   registered boolean not null default true,

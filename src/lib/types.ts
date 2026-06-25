@@ -5,6 +5,12 @@ export type SessionStatus = 'open' | 'finished'
 export const UNITS: Unit[] = ['北市', '北縣', '興一', '道一', '彰化', '華山', '基隆', '三合', '府城', '嘉義']
 export const GENDERS: Gender[] = ['乾', '坤']
 
+// 「不分單位」：僅聯合班會掛號/報到時可用，放在單位列最前面
+export const NO_UNIT = '不分單位' as const
+// 掛號時可選的單位（聯合班會用）：不分單位 + 10 個單位
+export type RegUnit = Unit | typeof NO_UNIT
+export const CHECKIN_UNITS: RegUnit[] = [NO_UNIT, ...UNITS]
+
 // 報到自訂欄位（目前統一為文字欄位）
 export interface CustomField {
   key: string
@@ -83,7 +89,7 @@ export interface Registration {
   id: string
   session_id: string
   class_id: string
-  unit: Unit
+  unit: RegUnit
   name: string
   gender: Gender
   registered: boolean

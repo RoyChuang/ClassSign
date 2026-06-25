@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/AuthProvider'
 import { useSnack } from '@/components/SnackProvider'
-import { Session, Class, Registration, MemberGroup, Member, Unit, Gender, UNITS, GENDERS, Extra } from '@/lib/types'
+import { Session, Class, Registration, MemberGroup, Member, Unit, RegUnit, Gender, UNITS, CHECKIN_UNITS, GENDERS, Extra } from '@/lib/types'
 import { exportTemplate as buildTemplate, parseTemplate } from '@/lib/template'
 import { CustomFieldsForm } from '@/components/CustomFieldsForm'
 import EditIcon from '@mui/icons-material/Edit'
@@ -50,7 +50,7 @@ export default function SecretaryPage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [selectedSession, setSelectedSession] = useState<string>('')
   const [classes, setClasses] = useState<Class[]>([])
-  const [selectedUnit, setSelectedUnit] = useState<Unit | ''>('')
+  const [selectedUnit, setSelectedUnit] = useState<RegUnit | ''>('')
   const [registrations, setRegistrations] = useState<Registration[]>([])
   const [form, setForm] = useState({ name: '', gender: '乾' as Gender, class_id: '' })
   const [submitting, setSubmitting] = useState(false)
@@ -231,7 +231,7 @@ export default function SecretaryPage() {
     const session = sessions.find(s => s.id === selectedSession)
     if (!session) return
     // 聯合班會：全部單位各一 sheet；單位班會：只該單位
-    const units: Unit[] = session.unit ? [session.unit as Unit] : [...UNITS]
+    const units: RegUnit[] = session.unit ? [session.unit as Unit] : [...CHECKIN_UNITS]
     buildTemplate({
       sessionName: session.name,
       unitName: session.unit,
@@ -251,7 +251,7 @@ export default function SecretaryPage() {
 
     setTemplateImporting(true)
     try {
-      const validUnits: Unit[] = session.unit ? [session.unit as Unit] : [...UNITS]
+      const validUnits: RegUnit[] = session.unit ? [session.unit as Unit] : [...CHECKIN_UNITS]
       const fields = session.custom_fields ?? []
       const parsed = await parseTemplate(file, fields, validUnits)
       if (parsed.length === 0) { showSnack('範本中沒有可匯入的資料', 'warning'); return }
@@ -263,7 +263,7 @@ export default function SecretaryPage() {
         .select('unit, name, gender').eq('session_id', selectedSession)
       const existingKeys = new Set((existing ?? []).map(r => `${r.unit}__${r.name}__${r.gender}`))
 
-      const rows: { session_id: string; class_id: string; unit: Unit; name: string; gender: Gender; extra: Record<string, string> }[] = []
+      const rows: { session_id: string; class_id: string; unit: RegUnit; name: string; gender: Gender; extra: Record<string, string> }[] = []
       const problems: string[] = []
       let skippedDup = 0
       const seenInFile = new Set<string>()
@@ -456,6 +456,8 @@ export default function SecretaryPage() {
         {(() => {
           const sessionUnit = sessions.find(s => s.id === selectedSession)?.unit
           const locked = profile.role !== 'admin' || !!sessionUnit
+          // 聯合班會（無 sessionUnit）可選「不分單位」；單位班會維持原本 10 單位
+          const unitOptions: RegUnit[] = sessionUnit ? UNITS : CHECKIN_UNITS
           return (
             <Box>
               <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary', mb: 1 }}>
@@ -464,7 +466,7 @@ export default function SecretaryPage() {
               <ToggleButtonGroup
                 exclusive
                 value={selectedUnit}
-                onChange={locked ? undefined : (_, v) => { if (v) setSelectedUnit(v as Unit) }}
+                onChange={locked ? undefined : (_, v) => { if (v) setSelectedUnit(v as RegUnit) }}
                 sx={{
                   display: 'flex',
                   flexWrap: 'wrap',
@@ -476,7 +478,7 @@ export default function SecretaryPage() {
                   },
                 }}
               >
-                {UNITS.map(u => (
+                {unitOptions.map(u => (
                   <ToggleButton
                     key={u}
                     value={u}
