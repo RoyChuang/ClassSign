@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Session, CustomField, Extra, Registration } from '@/lib/types'
-import { toCsv, downloadCsv } from '@/lib/csv'
+import { exportSheet } from '@/lib/template'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
@@ -73,7 +73,7 @@ export default function ReportPage() {
     setExpanded(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   }
 
-  function exportCsv() {
+  function exportXlsx() {
     if (!session) return
     const headers = ['單位', '姓名', '性別', '班別', '報到', '報到時間', ...fields.map(f => f.label)]
     const data = filtered.map(r => [
@@ -86,7 +86,7 @@ export default function ReportPage() {
       ...fields.map(f => formatValue(f, r.extra ?? {})),
     ])
     const unit = session.unit ? `${session.unit}_` : ''
-    downloadCsv(`${unit}${session.name}_報到明細`, toCsv(headers, data))
+    exportSheet(`${unit}${session.name}_報到明細`, headers, data, '報到明細')
   }
 
   if (loading) return <Loading fullPage />
@@ -107,9 +107,9 @@ export default function ReportPage() {
             報到明細　共 {rows.length} 人，已報到 {checkedInCount} 人
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<DownloadIcon />} onClick={exportCsv} disabled={rows.length === 0}
+        <Button variant="contained" startIcon={<DownloadIcon />} onClick={exportXlsx} disabled={rows.length === 0}
           sx={{ flexShrink: 0, borderRadius: '12px' }}>
-          匯出 CSV
+          匯出 Excel
         </Button>
       </Box>
 

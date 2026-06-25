@@ -11,6 +11,7 @@ import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Button from '@mui/material/Button'
+import IconButton from '@mui/material/IconButton'
 import TextField from '@mui/material/TextField'
 import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
@@ -539,13 +540,13 @@ function PersonCard({ r, done, showUnit, onCheckin, onCancel, onEditFields }: { 
             <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <Typography noWrap sx={{ fontSize: 12, color: '#16A34A', lineHeight: 1.2, opacity: 0.8 }}>{subLabel}</Typography>
               <Typography noWrap sx={{ fontWeight: 700, fontSize: 18, lineHeight: 1.35, color: '#15803D' }}>{r.name}</Typography>
-              {onEditFields && (
-                <Button onClick={onEditFields} size="small" startIcon={<EditIcon sx={{ fontSize: '14px !important' }} />}
-                  sx={{ mt: 0.25, alignSelf: 'flex-start', px: 0, minWidth: 0, fontSize: 12, color: '#15803D', fontWeight: 500, '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}>
-                  編輯資料
-                </Button>
-              )}
             </Box>
+            {onEditFields && (
+              <Button variant="contained" size="small" startIcon={<EditIcon />} onClick={onEditFields}
+                sx={{ fontSize: 13, flexShrink: 0, whiteSpace: 'nowrap', alignSelf: 'center', bgcolor: '#16A34A', boxShadow: '0 4px 12px rgba(20,184,106,0.35)', '&:hover': { bgcolor: '#15803D', boxShadow: '0 6px 16px rgba(20,184,106,0.45)' } }}>
+                編輯
+              </Button>
+            )}
             <Box onClick={onCancel} sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', cursor: 'pointer', gap: 0.25, px: 0.5, borderRadius: 1, '&:hover': { bgcolor: 'rgba(20,184,106,0.06)' } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <CheckCircleIcon sx={{ fontSize: 15, color: '#16A34A' }} />
@@ -560,6 +561,12 @@ function PersonCard({ r, done, showUnit, onCheckin, onCancel, onEditFields }: { 
               <Typography noWrap sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1.2 }}>{subLabel}</Typography>
               <Typography noWrap sx={{ fontWeight: 700, fontSize: 18, lineHeight: 1.35, color: 'text.primary' }}>{r.name}</Typography>
             </Box>
+            {onEditFields && (
+              <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={onEditFields}
+                sx={{ fontSize: 13, flexShrink: 0, whiteSpace: 'nowrap', alignSelf: 'center', color: 'text.secondary', borderColor: 'divider', '&:hover': { borderColor: 'text.secondary', bgcolor: 'transparent' } }}>
+                編輯
+              </Button>
+            )}
             <Button variant="contained" size="small" startIcon={<CheckIcon />} onClick={onCheckin}
               sx={{ fontSize: 13, flexShrink: 0, whiteSpace: 'nowrap', alignSelf: 'stretch', height: 'auto', boxShadow: '0 4px 12px rgba(37,73,229,0.4)', '&:hover': { boxShadow: '0 6px 16px rgba(37,73,229,0.5)' } }}>
               報到

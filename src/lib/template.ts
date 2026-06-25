@@ -59,6 +59,15 @@ export function exportTemplate(opts: {
   XLSX.writeFile(wb, `${unitPrefix}${sessionName}_掛號範本.xlsx`)
 }
 
+// 通用：把表頭 + 資料列匯出成單一 sheet 的 .xlsx
+export function exportSheet(filename: string, headers: string[], rows: (string | number)[][], sheetName = '工作表1'): void {
+  const wb = XLSX.utils.book_new()
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
+  ws['!cols'] = headers.map(h => ({ wch: Math.max(8, h.length * 2 + 2) }))
+  XLSX.utils.book_append_sheet(wb, ws, safeSheetName(sheetName))
+  XLSX.writeFile(wb, filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`)
+}
+
 // 解析填好的範本。validUnits 為允許的 sheet 名稱（單位），其他 sheet（如「說明」）略過
 export async function parseTemplate(
   file: File,
