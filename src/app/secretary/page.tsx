@@ -53,6 +53,7 @@ export default function SecretaryPage() {
   const [selectedUnit, setSelectedUnit] = useState<RegUnit | ''>('')
   const [registrations, setRegistrations] = useState<Registration[]>([])
   const [form, setForm] = useState({ name: '', gender: '乾' as Gender, class_id: '', extra: {} as Extra })
+  const [addOpen, setAddOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
@@ -152,7 +153,11 @@ export default function SecretaryPage() {
       unit: selectedUnit, name: trimmedName, gender: form.gender, extra: form.extra,
     }).select().single()
     if (error) showSnack('新增失敗：' + error.message, 'error')
-    else { setForm(f => ({ ...f, name: '', extra: {} })); setRegistrations(prev => [...prev, data]) }
+    else {
+      setForm(f => ({ ...f, name: '', extra: {} }))
+      setRegistrations(prev => [...prev, data])
+      setAddOpen(false)
+    }
     setSubmitting(false)
   }
 
@@ -511,12 +516,17 @@ export default function SecretaryPage() {
         <Card sx={{ mb: 3 }}>
           <CardContent sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
             <Box>
-              <Typography sx={{ fontWeight: 600 }}>Excel 名單匯入</Typography>
+              <Typography sx={{ fontWeight: 600 }}>新增與匯入</Typography>
               <Typography sx={{ mt: 0.5, fontSize: 13, color: 'text.secondary' }}>
-                可一次匯入這場班會的所有單位與班別
+                {selectedUnit ? '可單筆新增，或透過 Excel 一次匯入所有單位與班別' : '可透過 Excel 一次匯入所有單位與班別'}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {selectedUnit && (
+                <Button variant="contained" startIcon={<AddIcon />} onClick={() => setAddOpen(true)} sx={{ fontSize: 14 }}>
+                  新增報名者
+                </Button>
+              )}
               <Button startIcon={<DownloadIcon />} onClick={exportTemplate} disabled={classes.length === 0} sx={{ fontSize: 14 }}>
                 下載範本
               </Button>
@@ -531,44 +541,6 @@ export default function SecretaryPage() {
 
       {selectedSession && selectedUnit && (
         <>
-          <Card sx={{ mb: 3 }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography sx={{ mb: 2, fontWeight: 600 }}>新增報名者</Typography>
-              <Box component="form" onSubmit={addPerson} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'stretch' }}>
-                  <TextField required label="姓名" value={form.name}
-                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))} sx={{ width: 140 }} />
-                  <ToggleButtonGroup exclusive value={form.gender}
-                    onChange={(_, v) => v && setForm(f => ({ ...f, gender: v as Gender }))}>
-                    <ToggleButton value="乾" sx={genderToggleQian}>乾</ToggleButton>
-                    <ToggleButton value="坤" sx={genderToggleKun}>坤</ToggleButton>
-                  </ToggleButtonGroup>
-                  <FormControl sx={{ width: 150 }}>
-                    <InputLabel>班別</InputLabel>
-                    <Select label="班別" value={form.class_id} onChange={e => setForm(f => ({ ...f, class_id: e.target.value }))}>
-                      {classes.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
-                    </Select>
-                  </FormControl>
-                </Box>
-                {hasCustomFields && (
-                  <Box sx={{ width: '100%', maxWidth: 480 }}>
-                    <Typography sx={{ mb: 1, fontSize: 13, fontWeight: 600, color: 'text.secondary' }}>額外資料（選填）</Typography>
-                    <CustomFieldsForm
-                      fields={customFields}
-                      value={form.extra}
-                      onChange={extra => setForm(f => ({ ...f, extra }))}
-                    />
-                  </Box>
-                )}
-                <Box>
-                  <Button type="submit" variant="contained" startIcon={<AddIcon />} disabled={submitting}>
-                    {submitting ? '新增中...' : '新增'}
-                  </Button>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-
           {loading ? <Loading /> : (
             <Card>
               {/* 表頭 */}
@@ -629,6 +601,46 @@ export default function SecretaryPage() {
           )}
         </>
       )}
+
+      {/* 新增報名者 Dialog */}
+      <Dialog open={addOpen} onClose={() => !submitting && setAddOpen(false)} maxWidth="xs" fullWidth>
+        <Box component="form" onSubmit={addPerson}>
+          <DialogTitle sx={{ fontWeight: 600 }}>新增報名者</DialogTitle>
+          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
+            <TextField required autoFocus label="姓名" value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))} fullWidth />
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              <ToggleButtonGroup exclusive fullWidth value={form.gender}
+                onChange={(_, v) => v && setForm(f => ({ ...f, gender: v as Gender }))}>
+                <ToggleButton value="乾" sx={genderToggleQian}>乾</ToggleButton>
+                <ToggleButton value="坤" sx={genderToggleKun}>坤</ToggleButton>
+              </ToggleButtonGroup>
+              <FormControl fullWidth>
+                <InputLabel>班別</InputLabel>
+                <Select label="班別" value={form.class_id} onChange={e => setForm(f => ({ ...f, class_id: e.target.value }))}>
+                  {classes.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+                </Select>
+              </FormControl>
+            </Box>
+            {hasCustomFields && (
+              <Box>
+                <Typography sx={{ mb: 1, fontSize: 13, fontWeight: 600, color: 'text.secondary' }}>額外資料（選填）</Typography>
+                <CustomFieldsForm
+                  fields={customFields}
+                  value={form.extra}
+                  onChange={extra => setForm(f => ({ ...f, extra }))}
+                />
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+            <Button startIcon={<CloseIcon />} onClick={() => setAddOpen(false)} disabled={submitting}>取消</Button>
+            <Button type="submit" variant="contained" startIcon={<AddIcon />} disabled={submitting || !form.name.trim() || !form.class_id}>
+              {submitting ? '新增中...' : '新增'}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
 
       {/* 編輯性別與自訂欄位 Dialog */}
       <Dialog open={!!extraTarget} onClose={() => !extraSaving && setExtraTarget(null)} maxWidth="xs" fullWidth>
