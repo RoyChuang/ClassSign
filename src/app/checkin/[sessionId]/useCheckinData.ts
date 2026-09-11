@@ -265,14 +265,14 @@ export function useCheckinData(sessionId: string, selectedUnit: RegUnit | '') {
     }
   }
 
-  async function registerWalkIn(params: { unit: RegUnit; name: string; gender: Gender; class_id: string }): Promise<{ duplicate: boolean; error: string | null }> {
-    const { unit, name, gender, class_id } = params
+  async function registerWalkIn(params: { unit: RegUnit; name: string; gender: Gender; class_id: string; extra: Extra }): Promise<{ duplicate: boolean; error: string | null }> {
+    const { unit, name, gender, class_id, extra } = params
     const { data: existing } = await supabase.from('registrations')
       .select('id').eq('session_id', sessionId).eq('unit', unit)
       .eq('name', name).eq('gender', gender).limit(1)
     if (existing && existing.length > 0) return { duplicate: true, error: null }
     const { error } = await supabase.from('registrations').insert({
-      session_id: sessionId, unit, name, gender, class_id,
+      session_id: sessionId, unit, name, gender, class_id, extra,
       checked_in: true, checked_in_at: new Date().toISOString(),
     })
     if (error) return { duplicate: false, error: error.message }

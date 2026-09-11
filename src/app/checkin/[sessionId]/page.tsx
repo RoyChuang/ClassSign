@@ -58,7 +58,7 @@ export default function CheckinSessionPage() {
   const [fieldsSubmitting, setFieldsSubmitting] = useState(false)
   const [copied, setCopied] = useState(false)
   const [walkInOpen, setWalkInOpen] = useState(false)
-  const [walkInForm, setWalkInForm] = useState<{ name: string; gender: Gender; class_id: string; unit: RegUnit | '' }>({ name: '', gender: '乾', class_id: '', unit: '' })
+  const [walkInForm, setWalkInForm] = useState<{ name: string; gender: Gender; class_id: string; unit: RegUnit | ''; extra: Extra }>({ name: '', gender: '乾', class_id: '', unit: '', extra: {} })
   const [walkInSubmitting, setWalkInSubmitting] = useState(false)
   const [walkInSuccess, setWalkInSuccess] = useState<string>('')
 
@@ -127,7 +127,7 @@ export default function CheckinSessionPage() {
 
   function openWalkIn() {
     const defaultClass = classes.find(c => c.name === '壇主人才班') ?? classes[0]
-    setWalkInForm({ name: nameFilter.trim(), gender: '乾', class_id: defaultClass?.id ?? '', unit: isJoint ? '' : selectedUnit })
+    setWalkInForm({ name: nameFilter.trim(), gender: '乾', class_id: defaultClass?.id ?? '', unit: isJoint ? '' : selectedUnit, extra: {} })
     setWalkInSuccess('')
     setWalkInOpen(true)
   }
@@ -138,7 +138,7 @@ export default function CheckinSessionPage() {
     if (!unit || !trimmedName || !walkInForm.class_id) return
 
     setWalkInSubmitting(true)
-    const { duplicate, error } = await registerWalkIn({ unit, name: trimmedName, gender: walkInForm.gender, class_id: walkInForm.class_id })
+    const { duplicate, error } = await registerWalkIn({ unit, name: trimmedName, gender: walkInForm.gender, class_id: walkInForm.class_id, extra: walkInForm.extra })
 
     if (duplicate) {
       showSnack(`「${trimmedName}」（${walkInForm.gender}）已在報名名單中`, 'warning')
@@ -514,6 +514,16 @@ export default function CheckinSessionPage() {
               </Select>
             </FormControl>
           </Box>
+          {hasCustomFields && (
+            <Box>
+              <Typography sx={{ mb: 1, fontSize: 13, fontWeight: 600, color: 'text.secondary' }}>額外資料（選填）</Typography>
+              <CustomFieldsForm
+                fields={customFields}
+                value={walkInForm.extra}
+                onChange={extra => setWalkInForm(f => ({ ...f, extra }))}
+              />
+            </Box>
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
           <Button startIcon={<CloseIcon />} onClick={() => setWalkInOpen(false)} disabled={walkInSubmitting}>取消</Button>
