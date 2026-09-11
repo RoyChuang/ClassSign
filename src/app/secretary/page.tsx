@@ -52,7 +52,7 @@ export default function SecretaryPage() {
   const [classes, setClasses] = useState<Class[]>([])
   const [selectedUnit, setSelectedUnit] = useState<RegUnit | ''>('')
   const [registrations, setRegistrations] = useState<Registration[]>([])
-  const [form, setForm] = useState({ name: '', gender: '乾' as Gender, class_id: '' })
+  const [form, setForm] = useState({ name: '', gender: '乾' as Gender, class_id: '', extra: {} as Extra })
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
@@ -77,6 +77,7 @@ export default function SecretaryPage() {
   // 編輯自訂欄位
   const [extraTarget, setExtraTarget] = useState<Registration | null>(null)
   const [extraValue, setExtraValue] = useState<Extra>({})
+  const [extraGender, setExtraGender] = useState<Gender>('乾')
   const [extraSaving, setExtraSaving] = useState(false)
 
   // 匯入歷史名單
@@ -112,7 +113,7 @@ export default function SecretaryPage() {
       .then(({ data }) => {
         setClasses(data ?? [])
         const defaultClass = (data ?? []).find(c => c.name === '壇主人才班') ?? data?.[0]
-        setForm(f => ({ ...f, class_id: defaultClass?.id ?? '' }))
+        setForm(f => ({ ...f, class_id: defaultClass?.id ?? '', extra: {} }))
       })
   }, [selectedSession])
 
@@ -148,10 +149,10 @@ export default function SecretaryPage() {
     setSubmitting(true)
     const { data, error } = await supabase.from('registrations').insert({
       session_id: selectedSession, class_id: form.class_id,
-      unit: selectedUnit, name: trimmedName, gender: form.gender,
+      unit: selectedUnit, name: trimmedName, gender: form.gender, extra: form.extra,
     }).select().single()
     if (error) showSnack('新增失敗：' + error.message, 'error')
-    else { setForm(f => ({ ...f, name: '' })); setRegistrations(prev => [...prev, data]) }
+    else { setForm(f => ({ ...f, name: '', extra: {} })); setRegistrations(prev => [...prev, data]) }
     setSubmitting(false)
   }
 
@@ -313,6 +314,7 @@ export default function SecretaryPage() {
 
   function openExtraEdit(r: Registration) {
     setExtraValue(r.extra ?? {})
+    setExtraGender(r.gender)
     setExtraTarget(r)
   }
 
@@ -320,10 +322,10 @@ export default function SecretaryPage() {
     if (!extraTarget) return
     setExtraSaving(true)
     const target = extraTarget
-    const { error } = await supabase.from('registrations').update({ extra: extraValue }).eq('id', target.id)
+    const { error } = await supabase.from('registrations').update({ gender: extraGender, extra: extraValue }).eq('id', target.id)
     setExtraSaving(false)
     if (error) { showSnack('儲存失敗：' + error.message, 'error'); return }
-    setRegistrations(prev => prev.map(r => r.id === target.id ? { ...r, extra: extraValue } : r))
+    setRegistrations(prev => prev.map(r => r.id === target.id ? { ...r, gender: extraGender, extra: extraValue } : r))
     setExtraTarget(null)
   }
 
@@ -532,23 +534,37 @@ export default function SecretaryPage() {
           <Card sx={{ mb: 3 }}>
             <CardContent sx={{ p: 3 }}>
               <Typography sx={{ mb: 2, fontWeight: 600 }}>新增報名者</Typography>
-              <Box component="form" onSubmit={addPerson} sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                <TextField required label="姓名" value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))} sx={{ width: 140 }} />
-                <ToggleButtonGroup exclusive value={form.gender} sx={{ alignSelf: 'stretch' }}
-                  onChange={(_, v) => v && setForm(f => ({ ...f, gender: v as Gender }))}>
-                  <ToggleButton value="乾" sx={genderToggleQian}>乾</ToggleButton>
-                  <ToggleButton value="坤" sx={genderToggleKun}>坤</ToggleButton>
-                </ToggleButtonGroup>
-                <FormControl sx={{ width: 150 }}>
-                  <InputLabel>班別</InputLabel>
-                  <Select label="班別" value={form.class_id} onChange={e => setForm(f => ({ ...f, class_id: e.target.value }))}>
-                    {classes.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
-                  </Select>
-                </FormControl>
-                <Button type="submit" variant="contained" startIcon={<AddIcon />} disabled={submitting} sx={{ alignSelf: 'stretch' }}>
-                  {submitting ? '新增中...' : '新增'}
-                </Button>
+              <Box component="form" onSubmit={addPerson} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'stretch' }}>
+                  <TextField required label="姓名" value={form.name}
+                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))} sx={{ width: 140 }} />
+                  <ToggleButtonGroup exclusive value={form.gender}
+                    onChange={(_, v) => v && setForm(f => ({ ...f, gender: v as Gender }))}>
+                    <ToggleButton value="乾" sx={genderToggleQian}>乾</ToggleButton>
+                    <ToggleButton value="坤" sx={genderToggleKun}>坤</ToggleButton>
+                  </ToggleButtonGroup>
+                  <FormControl sx={{ width: 150 }}>
+                    <InputLabel>班別</InputLabel>
+                    <Select label="班別" value={form.class_id} onChange={e => setForm(f => ({ ...f, class_id: e.target.value }))}>
+                      {classes.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+                    </Select>
+                  </FormControl>
+                </Box>
+                {hasCustomFields && (
+                  <Box sx={{ width: '100%', maxWidth: 480 }}>
+                    <Typography sx={{ mb: 1, fontSize: 13, fontWeight: 600, color: 'text.secondary' }}>額外資料（選填）</Typography>
+                    <CustomFieldsForm
+                      fields={customFields}
+                      value={form.extra}
+                      onChange={extra => setForm(f => ({ ...f, extra }))}
+                    />
+                  </Box>
+                )}
+                <Box>
+                  <Button type="submit" variant="contained" startIcon={<AddIcon />} disabled={submitting}>
+                    {submitting ? '新增中...' : '新增'}
+                  </Button>
+                </Box>
               </Box>
             </CardContent>
           </Card>
@@ -594,9 +610,7 @@ export default function SecretaryPage() {
                                   </Box>
                                 )}
                                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', mt: 0.5 }}>
-                                  {hasCustomFields && (
-                                    <Button size="small" startIcon={<EditIcon fontSize="small" />} onClick={() => openExtraEdit(r)}>編輯資料</Button>
-                                  )}
+                                  <Button size="small" startIcon={<EditIcon fontSize="small" />} onClick={() => openExtraEdit(r)}>編輯資料</Button>
                                   <Button size="small" startIcon={<SwapHorizIcon fontSize="small" />} onClick={e => setClassPopover({ anchorEl: e.currentTarget, regId: r.id })}>換班</Button>
                                   <Button size="small" color="error" startIcon={<DeleteIcon fontSize="small" />} onClick={() => setDeleteTarget(r.id)}>刪除</Button>
                                 </Box>
@@ -616,13 +630,25 @@ export default function SecretaryPage() {
         </>
       )}
 
-      {/* 編輯自訂欄位 Dialog */}
+      {/* 編輯性別與自訂欄位 Dialog */}
       <Dialog open={!!extraTarget} onClose={() => !extraSaving && setExtraTarget(null)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 600 }}>
           編輯資料
-          {extraTarget && <Box component="span" sx={{ fontWeight: 400, color: 'text.secondary', ml: 1 }}>{extraTarget.name}（{extraTarget.gender}）</Box>}
+          {extraTarget && <Box component="span" sx={{ fontWeight: 400, color: 'text.secondary', ml: 1 }}>{extraTarget.name}</Box>}
         </DialogTitle>
-        <DialogContent sx={{ pt: '16px !important' }}>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
+          <Box>
+            <Typography sx={{ mb: 1, fontSize: 13, fontWeight: 600, color: 'text.secondary' }}>性別</Typography>
+            <ToggleButtonGroup
+              exclusive
+              fullWidth
+              value={extraGender}
+              onChange={(_, value) => value && setExtraGender(value as Gender)}
+            >
+              <ToggleButton value="乾" sx={genderToggleQian}>乾</ToggleButton>
+              <ToggleButton value="坤" sx={genderToggleKun}>坤</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
           <CustomFieldsForm fields={customFields} value={extraValue} onChange={setExtraValue} />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
