@@ -78,7 +78,6 @@ export default function SecretaryPage() {
   const [extraTarget, setExtraTarget] = useState<Registration | null>(null)
   const [extraValue, setExtraValue] = useState<Extra>({})
   const [extraSaving, setExtraSaving] = useState(false)
-  const [expandedExtra, setExpandedExtra] = useState<Set<string>>(new Set())
 
   // 匯入歷史名單
   const [importOpen, setImportOpen] = useState(false)
@@ -335,10 +334,6 @@ export default function SecretaryPage() {
       .filter((x): x is string => !!x)
   }
 
-  function toggleExtra(id: string) {
-    setExpandedExtra(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
-  }
-
   // 匯入：選舊班會後載入名單
   const pastSessions = allSessions.filter(s => s.id !== selectedSession)
 
@@ -510,22 +505,33 @@ export default function SecretaryPage() {
         })()}
       </Card>
 
+      {selectedSession && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+            <Box>
+              <Typography sx={{ fontWeight: 600 }}>Excel 名單匯入</Typography>
+              <Typography sx={{ mt: 0.5, fontSize: 13, color: 'text.secondary' }}>
+                可一次匯入這場班會的所有單位與班別
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Button startIcon={<DownloadIcon />} onClick={exportTemplate} disabled={classes.length === 0} sx={{ fontSize: 14 }}>
+                下載範本
+              </Button>
+              <Button startIcon={<UploadIcon />} onClick={() => importInputRef.current?.click()} disabled={classes.length === 0 || templateImporting} sx={{ fontSize: 14 }}>
+                {templateImporting ? '匯入中...' : '匯入名單'}
+              </Button>
+              <input ref={importInputRef} type="file" accept=".xlsx,.xls" hidden onChange={onImportFileChange} />
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
       {selectedSession && selectedUnit && (
         <>
           <Card sx={{ mb: 3 }}>
             <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-                <Typography sx={{ fontWeight: 600 }}>新增報名者</Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button startIcon={<DownloadIcon />} onClick={exportTemplate} disabled={!selectedSession} sx={{ fontSize: 14 }}>
-                    下載範本
-                  </Button>
-                  <Button startIcon={<UploadIcon />} onClick={() => importInputRef.current?.click()} disabled={!selectedSession || templateImporting} sx={{ fontSize: 14 }}>
-                    {templateImporting ? '匯入中...' : '匯入名單'}
-                  </Button>
-                  <input ref={importInputRef} type="file" accept=".xlsx,.xls" hidden onChange={onImportFileChange} />
-                </Box>
-              </Box>
+              <Typography sx={{ mb: 2, fontWeight: 600 }}>新增報名者</Typography>
               <Box component="form" onSubmit={addPerson} sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <TextField required label="姓名" value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))} sx={{ width: 140 }} />
@@ -579,13 +585,8 @@ export default function SecretaryPage() {
                               <>
                                 <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
                                   <Typography sx={{ fontSize: 16, fontWeight: 500 }}>{r.name}</Typography>
-                                  {hasCustomFields && extraParts(r).length > 0 && (
-                                    <Typography component="span" onClick={() => toggleExtra(r.id)} sx={{ fontSize: 12, color: 'primary.main', cursor: 'pointer' }}>
-                                      {expandedExtra.has(r.id) ? '收起資訊 ▴' : `查看資訊（${extraParts(r).length}）▾`}
-                                    </Typography>
-                                  )}
                                 </Box>
-                                {hasCustomFields && expandedExtra.has(r.id) && (
+                                {hasCustomFields && extraParts(r).length > 0 && (
                                   <Box sx={{ mt: 0.25 }}>
                                     {extraParts(r).map((p, pi) => (
                                       <Typography key={pi} sx={{ fontSize: 12, color: 'text.secondary', wordBreak: 'break-word' }}>{p}</Typography>

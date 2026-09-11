@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSnack } from '@/components/SnackProvider'
-import { Unit, RegUnit, Gender, UNITS, CHECKIN_UNITS, NO_UNIT, GENDERS, Extra } from '@/lib/types'
+import { Unit, RegUnit, Gender, UNITS, CHECKIN_UNITS, NO_UNIT, GENDERS, Extra, CustomField } from '@/lib/types'
 import { CustomFieldsForm } from '@/components/CustomFieldsForm'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
@@ -388,7 +388,7 @@ export default function CheckinSessionPage() {
         {/* xs: 單欄列表 */}
         <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1 }}>
           {(activeGender === '乾' ? qian : kun).map(r =>
-            <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} showUnit={isJoint} onCheckin={() => startCheckin(r)} onCancel={() => setCancelTarget(r)} onEditFields={hasCustomFields ? () => startEditFields(r) : undefined} />
+            <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} showUnit={isJoint} customFields={customFields} onCheckin={() => startCheckin(r)} onCancel={() => setCancelTarget(r)} onEditFields={hasCustomFields ? () => startEditFields(r) : undefined} />
           )}
           {(activeGender === '乾' ? qian : kun).length === 0 && (
             <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>無資料</Typography>
@@ -408,7 +408,7 @@ export default function CheckinSessionPage() {
               </Box>
             </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {qian.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} showUnit={isJoint} onCheckin={() => startCheckin(r)} onCancel={() => setCancelTarget(r)} onEditFields={hasCustomFields ? () => startEditFields(r) : undefined} />)}
+              {qian.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} showUnit={isJoint} customFields={customFields} onCheckin={() => startCheckin(r)} onCancel={() => setCancelTarget(r)} onEditFields={hasCustomFields ? () => startEditFields(r) : undefined} />)}
               {qian.length === 0 && <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>無資料</Typography>}
             </Box>
           </Box>
@@ -423,7 +423,7 @@ export default function CheckinSessionPage() {
               </Box>
             </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {kun.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} showUnit={isJoint} onCheckin={() => startCheckin(r)} onCancel={() => setCancelTarget(r)} onEditFields={hasCustomFields ? () => startEditFields(r) : undefined} />)}
+              {kun.map(r => <PersonCard key={r.id} r={r} done={checkedIn.has(r.id)} showUnit={isJoint} customFields={customFields} onCheckin={() => startCheckin(r)} onCancel={() => setCancelTarget(r)} onEditFields={hasCustomFields ? () => startEditFields(r) : undefined} />)}
               {kun.length === 0 && <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>無資料</Typography>}
             </Box>
           </Box>
@@ -527,20 +527,31 @@ export default function CheckinSessionPage() {
   )
 }
 
-function PersonCard({ r, done, showUnit, onCheckin, onCancel, onEditFields }: { r: Reg; done: boolean; showUnit?: boolean; onCheckin: () => void; onCancel: () => void; onEditFields?: () => void }) {
+function PersonCard({ r, done, showUnit, customFields, onCheckin, onCancel, onEditFields }: { r: Reg; done: boolean; showUnit?: boolean; customFields: CustomField[]; onCheckin: () => void; onCancel: () => void; onEditFields?: () => void }) {
   const timeStr = done && r.checked_in_at
     ? new Date(r.checked_in_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })
     : null
   const subLabel = showUnit ? `${r.unit} · ${r.classes?.name}` : r.classes?.name
+  const extraParts = customFields.flatMap(field => {
+    const value = r.extra?.[field.key]
+    return value ? [`${field.label}：${value}`] : []
+  })
   return (
     <Card sx={{ borderColor: done ? 'rgba(20,184,106,0.25)' : 'divider', bgcolor: done ? '#F0FDF4' : 'background.paper', transition: 'border-color 180ms ease, background 180ms ease' }}>
       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', alignItems: 'stretch', gap: 1.5 }}>
+        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <Typography noWrap sx={{ fontSize: 12, color: done ? '#16A34A' : 'text.secondary', lineHeight: 1.2, opacity: done ? 0.8 : 1 }}>{subLabel}</Typography>
+          <Typography noWrap sx={{ fontWeight: 700, fontSize: 18, lineHeight: 1.35, color: done ? '#15803D' : 'text.primary' }}>{r.name}</Typography>
+          {extraParts.length > 0 && (
+            <Box sx={{ mt: 0.25 }}>
+              {extraParts.map((part, index) => (
+                <Typography key={index} sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1.45, wordBreak: 'break-word' }}>{part}</Typography>
+              ))}
+            </Box>
+          )}
+        </Box>
         {done ? (
           <>
-            <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <Typography noWrap sx={{ fontSize: 12, color: '#16A34A', lineHeight: 1.2, opacity: 0.8 }}>{subLabel}</Typography>
-              <Typography noWrap sx={{ fontWeight: 700, fontSize: 18, lineHeight: 1.35, color: '#15803D' }}>{r.name}</Typography>
-            </Box>
             {onEditFields && (
               <Button variant="contained" size="small" startIcon={<EditIcon />} onClick={onEditFields}
                 sx={{ fontSize: 13, flexShrink: 0, whiteSpace: 'nowrap', alignSelf: 'center', bgcolor: '#16A34A', boxShadow: '0 4px 12px rgba(20,184,106,0.35)', '&:hover': { bgcolor: '#15803D', boxShadow: '0 6px 16px rgba(20,184,106,0.45)' } }}>
@@ -557,10 +568,6 @@ function PersonCard({ r, done, showUnit, onCheckin, onCancel, onEditFields }: { 
           </>
         ) : (
           <>
-            <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <Typography noWrap sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1.2 }}>{subLabel}</Typography>
-              <Typography noWrap sx={{ fontWeight: 700, fontSize: 18, lineHeight: 1.35, color: 'text.primary' }}>{r.name}</Typography>
-            </Box>
             {onEditFields && (
               <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={onEditFields}
                 sx={{ fontSize: 13, flexShrink: 0, whiteSpace: 'nowrap', alignSelf: 'center', color: 'text.secondary', borderColor: 'divider', '&:hover': { borderColor: 'text.secondary', bgcolor: 'transparent' } }}>
