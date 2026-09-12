@@ -1,6 +1,6 @@
 {
   "name": "classsign",
-  "version": "0.5.63",
+  "version": "0.5.64",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -24,7 +24,6 @@
     "dayjs": "^1.11.21",
     "html5-qrcode": "^2.3.8",
     "next": "^16.2.6",
-    "pinyin-pro": "^3.29.4",
     "qrcode": "^1.5.4",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

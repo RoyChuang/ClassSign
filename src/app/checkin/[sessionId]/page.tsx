@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, useRef } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSnack } from '@/components/SnackProvider'
 import { Unit, RegUnit, Gender, UNITS, CHECKIN_UNITS, NO_UNIT, GENDERS, Extra, CustomField } from '@/lib/types'
@@ -31,8 +31,6 @@ import UndoIcon from '@mui/icons-material/Undo'
 import CheckIcon from '@mui/icons-material/Check'
 import EditIcon from '@mui/icons-material/Edit'
 import ListAltIcon from '@mui/icons-material/ListAlt'
-import MicIcon from '@mui/icons-material/Mic'
-import StopCircleIcon from '@mui/icons-material/StopCircle'
 import Chip from '@mui/material/Chip'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
@@ -41,35 +39,6 @@ import ConfirmDialog from '@/components/ConfirmDialog'
 import { genderToggleQian, genderToggleKun } from '@/lib/sx'
 import { RealtimeStatus } from '@/components/RealtimeStatus'
 import { useCheckinData, Reg } from './useCheckinData'
-import { pinyin } from 'pinyin-pro'
-
-type SpeechRecognitionResultLike = {
-  length: number
-  [index: number]: { transcript: string }
-}
-
-type SpeechRecognitionLike = {
-  lang: string
-  continuous: boolean
-  interimResults: boolean
-  maxAlternatives: number
-  start: () => void
-  stop: () => void
-  abort: () => void
-  onstart: (() => void) | null
-  onend: (() => void) | null
-  onresult: ((event: { results: { [index: number]: SpeechRecognitionResultLike } }) => void) | null
-  onerror: ((event: { error: string }) => void) | null
-}
-
-type SpeechRecognitionConstructor = new () => SpeechRecognitionLike
-
-declare global {
-  interface Window {
-    SpeechRecognition?: SpeechRecognitionConstructor
-    webkitSpeechRecognition?: SpeechRecognitionConstructor
-  }
-}
 
 export default function CheckinSessionPage() {
   const params = useParams()
@@ -92,10 +61,6 @@ export default function CheckinSessionPage() {
   const [walkInForm, setWalkInForm] = useState<{ name: string; gender: Gender; class_id: string; unit: RegUnit | ''; extra: Extra }>({ name: '', gender: '乾', class_id: '', unit: '', extra: {} })
   const [walkInSubmitting, setWalkInSubmitting] = useState(false)
   const [walkInSuccess, setWalkInSuccess] = useState<string>('')
-  const [voiceSupported, setVoiceSupported] = useState(false)
-  const [voiceListening, setVoiceListening] = useState(false)
-  const [voiceCandidateIds, setVoiceCandidateIds] = useState<string[] | null>(null)
-  const voiceRecognitionRef = useRef<SpeechRecognitionLike | null>(null)
 
   const {
     session, sessionLoading, sessionNotFound, sessionEnded,
@@ -123,23 +88,14 @@ export default function CheckinSessionPage() {
     setWalkInForm(f => ({ ...f, class_id: defaultClass?.id ?? '' }))
   }, [classes])
 
-  useEffect(() => {
-    setVoiceSupported(Boolean(window.SpeechRecognition || window.webkitSpeechRecognition))
-    return () => voiceRecognitionRef.current?.abort()
-  }, [])
-
   // Derived state
   const unitFiltered = useMemo(
     () => isJoint && selectedUnit ? allResults.filter(r => r.unit === selectedUnit) : allResults,
     [isJoint, selectedUnit, allResults]
   )
-  const voiceCandidateSet = useMemo(
-    () => voiceCandidateIds ? new Set(voiceCandidateIds) : null,
-    [voiceCandidateIds]
-  )
   const nameFiltered = useMemo(
-    () => unitFiltered.filter(r => voiceCandidateSet?.has(r.id) || (!voiceCandidateSet && (!nameFilter.trim() || r.name.includes(nameFilter.trim())))),
-    [unitFiltered, nameFilter, voiceCandidateSet]
+    () => unitFiltered.filter(r => !nameFilter.trim() || r.name.includes(nameFilter.trim())),
+    [unitFiltered, nameFilter]
   )
   const filtered = useMemo(
     () => nameFiltered.filter(r => !classFilter || r.class_id === classFilter),
@@ -173,107 +129,6 @@ export default function CheckinSessionPage() {
     setWalkInForm({ name: nameFilter.trim(), gender: '乾', class_id: defaultClass?.id ?? '', unit: isJoint ? '' : selectedUnit, extra: {} })
     setWalkInSuccess('')
     setWalkInOpen(true)
-  }
-
-  function normalizeSpokenName(value: string) {
-    return value
-      .trim()
-      .replace(/[\s，。,.、]/g, '')
-      .replace(/^(請|幫我|我要)?(幫|替)?/, '')
-      .replace(/報到$/, '')
-  }
-
-  function phoneticName(value: string) {
-    return pinyin(normalizeSpokenName(value), {
-      toneType: 'none',
-      type: 'array',
-      surname: 'head',
-    }).join('')
-  }
-
-  function startVoiceSearch() {
-    if (voiceListening) {
-      voiceRecognitionRef.current?.stop()
-      return
-    }
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SpeechRecognition) {
-      showSnack('此手機瀏覽器不支援語音辨識，請改用姓名輸入', 'warning')
-      return
-    }
-
-    const recognition = new SpeechRecognition()
-    recognition.lang = 'zh-TW'
-    recognition.continuous = false
-    recognition.interimResults = false
-    recognition.maxAlternatives = 5
-    recognition.onstart = () => setVoiceListening(true)
-    recognition.onend = () => {
-      setVoiceListening(false)
-      voiceRecognitionRef.current = null
-    }
-    recognition.onerror = event => {
-      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        showSnack('請允許麥克風權限後再試', 'warning')
-      } else if (event.error === 'no-speech') {
-        showSnack('沒有聽到姓名，請靠近手機再說一次', 'warning')
-      } else if (event.error !== 'aborted') {
-        showSnack('語音辨識失敗，請再試一次或改用姓名輸入', 'error')
-      }
-    }
-    recognition.onresult = event => {
-      const alternatives = Array.from(
-        { length: event.results[0].length },
-        (_, index) => event.results[0][index].transcript.trim()
-      )
-      const exactAlternative = alternatives.find(transcript => {
-        const spokenName = normalizeSpokenName(transcript)
-        return unitFiltered.some(r => normalizeSpokenName(r.name) === spokenName)
-      })
-      const phoneticAlternative = exactAlternative ? undefined : alternatives.find(transcript => {
-        const spokenSound = phoneticName(transcript)
-        return unitFiltered.some(r => phoneticName(r.name) === spokenSound)
-      })
-      const transcript = exactAlternative ?? phoneticAlternative ?? alternatives[0] ?? ''
-      const spokenName = normalizeSpokenName(transcript)
-      const exactMatches = unitFiltered.filter(r => normalizeSpokenName(r.name) === spokenName)
-      const matches = exactMatches.length > 0
-        ? exactMatches
-        : unitFiltered.filter(r => phoneticName(r.name) === phoneticName(spokenName))
-
-      if (matches.length === 1) {
-        const matched = matches[0]
-        setVoiceCandidateIds(null)
-        setNameFilter(matched.name)
-        if (checkedIn.has(matched.id)) {
-          showSnack(`辨識為「${matched.name}」，此人已報到`, 'success')
-        } else {
-          startCheckin(matched)
-        }
-        return
-      }
-
-      if (matches.length > 1) {
-        setClassFilter('')
-        setNameFilter('')
-        setVoiceCandidateIds(matches.map(r => r.id))
-        showSnack(`辨識為「${spokenName}」，找到 ${matches.length} 位同音姓名，請從名單選擇`, 'warning')
-      } else {
-        setVoiceCandidateIds(null)
-        setNameFilter(spokenName)
-        showSnack(`辨識為「${spokenName}」，找不到完全相符的人員`, 'warning')
-      }
-    }
-
-    voiceRecognitionRef.current = recognition
-    try {
-      recognition.start()
-    } catch {
-      voiceRecognitionRef.current = null
-      setVoiceListening(false)
-      showSnack('麥克風正在使用中，請稍後再試', 'warning')
-    }
   }
 
   async function submitWalkIn() {
@@ -467,47 +322,11 @@ export default function CheckinSessionPage() {
           )
         })}
         <TextField size="small" label="篩選姓名" placeholder="輸入篩選"
-          value={nameFilter} onChange={e => { setVoiceCandidateIds(null); setNameFilter(e.target.value) }}
+          value={nameFilter} onChange={e => setNameFilter(e.target.value)}
           disabled={!hasUnit}
           sx={{ width: 150, flexShrink: 0 }}
         />
-        {voiceSupported && (
-          <Button
-            variant={voiceListening ? 'contained' : 'outlined'}
-            color={voiceListening ? 'error' : 'primary'}
-            startIcon={voiceListening ? <StopCircleIcon /> : <MicIcon />}
-            onClick={startVoiceSearch}
-            disabled={!hasUnit || unitLoading}
-            aria-label={voiceListening ? '停止語音辨識' : '用語音搜尋報到姓名'}
-            sx={{
-              minHeight: 40,
-              px: 2,
-              flexShrink: 0,
-              fontWeight: 700,
-              ...(voiceListening && {
-                boxShadow: '0 0 0 5px rgba(220,38,38,0.12)',
-                animation: 'voicePulse 1.4s ease-in-out infinite',
-                '@keyframes voicePulse': {
-                  '0%, 100%': { boxShadow: '0 0 0 4px rgba(220,38,38,0.12)' },
-                  '50%': { boxShadow: '0 0 0 9px rgba(220,38,38,0.04)' },
-                },
-              }),
-            }}
-          >
-            {voiceListening ? '聆聽中…' : '語音找人'}
-          </Button>
-        )}
       </Box>
-      {voiceCandidateIds && (
-        <Box sx={{ mt: 1.5, px: 1.5, py: 1.25, borderRadius: 2, bgcolor: '#FFF7ED', border: '1px solid #FED7AA', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
-          <Typography sx={{ color: '#9A3412', fontWeight: 700, fontSize: 14 }}>
-            找到 {voiceCandidateIds.length} 位同音姓名，請確認姓名後按報到
-          </Typography>
-          <Button size="small" onClick={() => setVoiceCandidateIds(null)} sx={{ flexShrink: 0, fontWeight: 700 }}>
-            顯示全部
-          </Button>
-        </Box>
-      )}
       </CardContent></Card>
 
       {walkInSuccess && (
