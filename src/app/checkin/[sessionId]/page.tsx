@@ -41,6 +41,7 @@ import ConfirmDialog from '@/components/ConfirmDialog'
 import { genderToggleQian, genderToggleKun } from '@/lib/sx'
 import { RealtimeStatus } from '@/components/RealtimeStatus'
 import { useCheckinData, Reg } from './useCheckinData'
+import { pinyin } from 'pinyin-pro'
 
 type SpeechRecognitionResultLike = {
   length: number
@@ -93,6 +94,7 @@ export default function CheckinSessionPage() {
   const [walkInSuccess, setWalkInSuccess] = useState<string>('')
   const [voiceSupported, setVoiceSupported] = useState(false)
   const [voiceListening, setVoiceListening] = useState(false)
+  const [voiceCandidateIds, setVoiceCandidateIds] = useState<string[] | null>(null)
   const voiceRecognitionRef = useRef<SpeechRecognitionLike | null>(null)
 
   const {
@@ -131,9 +133,13 @@ export default function CheckinSessionPage() {
     () => isJoint && selectedUnit ? allResults.filter(r => r.unit === selectedUnit) : allResults,
     [isJoint, selectedUnit, allResults]
   )
+  const voiceCandidateSet = useMemo(
+    () => voiceCandidateIds ? new Set(voiceCandidateIds) : null,
+    [voiceCandidateIds]
+  )
   const nameFiltered = useMemo(
-    () => unitFiltered.filter(r => !nameFilter.trim() || r.name.includes(nameFilter.trim())),
-    [unitFiltered, nameFilter]
+    () => unitFiltered.filter(r => voiceCandidateSet?.has(r.id) || (!voiceCandidateSet && (!nameFilter.trim() || r.name.includes(nameFilter.trim())))),
+    [unitFiltered, nameFilter, voiceCandidateSet]
   )
   const filtered = useMemo(
     () => nameFiltered.filter(r => !classFilter || r.class_id === classFilter),
@@ -177,6 +183,14 @@ export default function CheckinSessionPage() {
       .replace(/報到$/, '')
   }
 
+  function phoneticName(value: string) {
+    return pinyin(normalizeSpokenName(value), {
+      toneType: 'none',
+      type: 'array',
+      surname: 'head',
+    }).join('')
+  }
+
   function startVoiceSearch() {
     if (voiceListening) {
       voiceRecognitionRef.current?.stop()
@@ -213,16 +227,24 @@ export default function CheckinSessionPage() {
         { length: event.results[0].length },
         (_, index) => event.results[0][index].transcript.trim()
       )
-      const matchedAlternative = alternatives.find(transcript => {
+      const exactAlternative = alternatives.find(transcript => {
         const spokenName = normalizeSpokenName(transcript)
         return unitFiltered.some(r => normalizeSpokenName(r.name) === spokenName)
       })
-      const transcript = matchedAlternative ?? alternatives[0] ?? ''
+      const phoneticAlternative = exactAlternative ? undefined : alternatives.find(transcript => {
+        const spokenSound = phoneticName(transcript)
+        return unitFiltered.some(r => phoneticName(r.name) === spokenSound)
+      })
+      const transcript = exactAlternative ?? phoneticAlternative ?? alternatives[0] ?? ''
       const spokenName = normalizeSpokenName(transcript)
-      const matches = unitFiltered.filter(r => normalizeSpokenName(r.name) === spokenName)
+      const exactMatches = unitFiltered.filter(r => normalizeSpokenName(r.name) === spokenName)
+      const matches = exactMatches.length > 0
+        ? exactMatches
+        : unitFiltered.filter(r => phoneticName(r.name) === phoneticName(spokenName))
 
       if (matches.length === 1) {
         const matched = matches[0]
+        setVoiceCandidateIds(null)
         setNameFilter(matched.name)
         if (checkedIn.has(matched.id)) {
           showSnack(`辨識為「${matched.name}」，此人已報到`, 'success')
@@ -232,10 +254,14 @@ export default function CheckinSessionPage() {
         return
       }
 
-      setNameFilter(spokenName)
       if (matches.length > 1) {
-        showSnack(`找到 ${matches.length} 位「${spokenName}」，請從名單選擇`, 'warning')
+        setClassFilter('')
+        setNameFilter('')
+        setVoiceCandidateIds(matches.map(r => r.id))
+        showSnack(`辨識為「${spokenName}」，找到 ${matches.length} 位同音姓名，請從名單選擇`, 'warning')
       } else {
+        setVoiceCandidateIds(null)
+        setNameFilter(spokenName)
         showSnack(`辨識為「${spokenName}」，找不到完全相符的人員`, 'warning')
       }
     }
@@ -441,7 +467,7 @@ export default function CheckinSessionPage() {
           )
         })}
         <TextField size="small" label="篩選姓名" placeholder="輸入篩選"
-          value={nameFilter} onChange={e => setNameFilter(e.target.value)}
+          value={nameFilter} onChange={e => { setVoiceCandidateIds(null); setNameFilter(e.target.value) }}
           disabled={!hasUnit}
           sx={{ width: 150, flexShrink: 0 }}
         />
@@ -472,6 +498,16 @@ export default function CheckinSessionPage() {
           </Button>
         )}
       </Box>
+      {voiceCandidateIds && (
+        <Box sx={{ mt: 1.5, px: 1.5, py: 1.25, borderRadius: 2, bgcolor: '#FFF7ED', border: '1px solid #FED7AA', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
+          <Typography sx={{ color: '#9A3412', fontWeight: 700, fontSize: 14 }}>
+            找到 {voiceCandidateIds.length} 位同音姓名，請確認姓名後按報到
+          </Typography>
+          <Button size="small" onClick={() => setVoiceCandidateIds(null)} sx={{ flexShrink: 0, fontWeight: 700 }}>
+            顯示全部
+          </Button>
+        </Box>
+      )}
       </CardContent></Card>
 
       {walkInSuccess && (
