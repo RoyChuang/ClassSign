@@ -265,18 +265,30 @@ export function useCheckinData(sessionId: string, selectedUnit: RegUnit | '') {
     }
   }
 
-  async function registerWalkIn(params: { unit: RegUnit; name: string; gender: Gender; class_id: string; extra: Extra }): Promise<{ duplicate: boolean; error: string | null }> {
-    const { unit, name, gender, class_id, extra } = params
-    const { data: existing } = await supabase.from('registrations')
-      .select('id').eq('session_id', sessionId).eq('unit', unit)
-      .eq('name', name).eq('gender', gender).limit(1)
-    if (existing && existing.length > 0) return { duplicate: true, error: null }
-    const { error } = await supabase.from('registrations').insert({
+  async function registerWalkIn(params: { unit: RegUnit; name: string; gender: Gender; class_id: string; extra: Extra }): Promise<{ duplicate: { unit: string; gender: Gender } | null; error: string | null }> {
+    const { unit, gender, class_id, extra } = params
+    const name = params.name.trim()
+    // 同一班會跨單位、性別與班別檢查姓名，避免選錯資料後重複報名。
+    const { data: existing, error: lookupError } = await supabase.from('registrations')
+      .select('unit, gender').eq('session_id', sessionId)
+      .eq('name', name).limit(1)
+    if (lookupError) return { duplicate: null, error: '無法確認是否已報名，請稍後再試：' + lookupError.message }
+    if (existing && existing.length > 0) return { duplicate: existing[0], error: null }
+    const { data, error } = await supabase.from('registrations').insert({
       session_id: sessionId, unit, name, gender, class_id, extra,
       checked_in: true, checked_in_at: new Date().toISOString(),
+    }).select('*, classes(name)').single()
+    if (error) return { duplicate: null, error: error.message }
+    const inserted: Reg = { ...data, classes: data.classes ?? { name: '' } }
+    setAllResults(prev => {
+      const updated = prev.some(r => r.id === inserted.id)
+        ? prev
+        : [...prev, inserted].sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'))
+      if (!isJoint) setCachedUnit(unit, updated)
+      return updated
     })
-    if (error) return { duplicate: false, error: error.message }
-    return { duplicate: false, error: null }
+    setCheckedIn(prev => new Set([...prev, inserted.id]))
+    return { duplicate: null, error: null }
   }
 
   return {

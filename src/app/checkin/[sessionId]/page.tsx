@@ -70,7 +70,6 @@ export default function CheckinSessionPage() {
     realtimeStatus,
     isJoint,
     checkIn, updateExtra, cancelCheckIn,
-    loadUnit, loadAll, clearUnitCache,
     registerWalkIn,
   } = useCheckinData(sessionId, selectedUnit)
 
@@ -141,18 +140,12 @@ export default function CheckinSessionPage() {
     const { duplicate, error } = await registerWalkIn({ unit, name: trimmedName, gender: walkInForm.gender, class_id: walkInForm.class_id, extra: walkInForm.extra })
 
     if (duplicate) {
-      showSnack(`「${trimmedName}」（${walkInForm.gender}）已在報名名單中`, 'warning')
+      showSnack(`「${trimmedName}」已在「${duplicate.unit}」報名（${duplicate.gender}），請回名單查找，勿重複新增`, 'warning')
     } else if (error) {
       showSnack('報名失敗：' + error, 'error')
     } else {
       setWalkInSuccess(trimmedName)
       setWalkInOpen(false)
-      if (isJoint) {
-        await loadAll()
-      } else {
-        if (unit !== selectedUnit) setSelectedUnit(unit)
-        else { clearUnitCache(unit); await loadUnit(unit) }
-      }
     }
     setWalkInSubmitting(false)
   }

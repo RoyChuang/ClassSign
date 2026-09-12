@@ -44,6 +44,25 @@ import { genderToggleQian, genderToggleKun } from '@/lib/sx'
 
 const supabase = createClient()
 
+function excludeDuplicateNames<T extends { name: string }>(people: T[], existing: Map<string, string>, unit: string) {
+  const seen = new Map(existing)
+  const duplicates: string[] = []
+  const rows = people.filter(person => {
+    const name = person.name.trim()
+    if (seen.has(name)) {
+      duplicates.push(`「${name}」（${seen.get(name)}）`)
+      return false
+    }
+    seen.set(name, unit)
+    return true
+  })
+  return { rows, duplicates }
+}
+
+function duplicateSummary(duplicates: string[]) {
+  return duplicates.length ? `；同名已報名：${duplicates.slice(0, 3).join('、')}${duplicates.length > 3 ? '等' : ''}` : ''
+}
+
 export default function SecretaryPage() {
   const { profile, loading: authLoading, signIn } = useAuth()
   const { showSnack } = useSnack()
@@ -138,16 +157,35 @@ export default function SecretaryPage() {
     setLoading(false)
   }
 
+  // 分頁查詢整場班會，避免只檢查目前單位或漏掉超過回傳上限的名單。
+  async function loadRegisteredNames() {
+    const names = new Map<string, string>()
+    for (let offset = 0; ; offset += 500) {
+      const { data, error } = await supabase.from('registrations')
+        .select('name, unit').eq('session_id', selectedSession)
+        .order('id').range(offset, offset + 499)
+      if (error || !data) {
+        showSnack('無法確認是否已報名，請稍後再試', 'error')
+        return null
+      }
+      for (const person of data) names.set(person.name.trim(), person.unit)
+      if (data.length < 500) return names
+    }
+  }
+
   async function addPerson(e: React.FormEvent) {
     e.preventDefault()
     if (!selectedSession || !selectedUnit || !form.class_id) return
     const trimmedName = form.name.trim()
-    const isDuplicate = registrations.some(r => r.name === trimmedName && r.gender === form.gender)
-    if (isDuplicate) {
-      showSnack(`「${trimmedName}」（${form.gender}）已在名單中`, 'warning')
+    if (!trimmedName || submitting) return
+    setSubmitting(true)
+    const existing = await loadRegisteredNames()
+    if (!existing) { setSubmitting(false); return }
+    if (existing.has(trimmedName)) {
+      showSnack(`「${trimmedName}」已在「${existing.get(trimmedName)}」報名，勿重複新增`, 'warning')
+      setSubmitting(false)
       return
     }
-    setSubmitting(true)
     const { data, error } = await supabase.from('registrations').insert({
       session_id: selectedSession, class_id: form.class_id,
       unit: selectedUnit, name: trimmedName, gender: form.gender, extra: form.extra,
@@ -204,10 +242,11 @@ export default function SecretaryPage() {
   async function confirmGroupImport() {
     if (!selectedSession || !selectedUnit || !groupImportClassId || groupMembers.length === 0) return
     setGroupImporting(true)
-    const existingKeys = new Set(registrations.map(r => `${r.name}__${r.gender}`))
-    const toInsert = groupMembers.filter(m => !existingKeys.has(`${m.name}__${m.gender}`))
+    const existing = await loadRegisteredNames()
+    if (!existing) { setGroupImporting(false); return }
+    const { rows: toInsert, duplicates } = excludeDuplicateNames(groupMembers, existing, selectedUnit)
     if (toInsert.length === 0) {
-      showSnack('群組所有成員已在名單中，無需重複匯入。', 'warning')
+      showSnack('群組所有成員已在名單中，無需重複匯入。' + duplicateSummary(duplicates), 'warning')
       setGroupImporting(false)
       return
     }
@@ -215,7 +254,7 @@ export default function SecretaryPage() {
       session_id: selectedSession,
       class_id: groupImportClassId,
       unit: selectedUnit,
-      name: m.name,
+      name: m.name.trim(),
       gender: m.gender,
     }))
     const { data: inserted, error } = await supabase.from('registrations').insert(rows).select()
@@ -226,7 +265,7 @@ export default function SecretaryPage() {
       setSelectedGroupId('')
       setGroupMembers([])
       const skipped = groupMembers.length - toInsert.length
-      if (skipped > 0) showSnack(`已匯入 ${toInsert.length} 人，跳過 ${skipped} 位重複者。`, 'warning')
+      if (skipped > 0) showSnack(`已匯入 ${toInsert.length} 人，跳過 ${skipped} 位重複者。` + duplicateSummary(duplicates), 'warning')
     }
     setGroupImporting(false)
   }
@@ -264,27 +303,30 @@ export default function SecretaryPage() {
       // 班別名稱 → id
       const classByName = new Map(classes.map(c => [c.name, c.id]))
       // 取得整場班會現有掛號，做跨單位去重
-      const { data: existing } = await supabase.from('registrations')
-        .select('unit, name, gender').eq('session_id', selectedSession)
-      const existingKeys = new Set((existing ?? []).map(r => `${r.unit}__${r.name}__${r.gender}`))
+      const existingNames = await loadRegisteredNames()
+      if (!existingNames) return
 
       const rows: { session_id: string; class_id: string; unit: RegUnit; name: string; gender: Gender; extra: Record<string, string> }[] = []
       const problems: string[] = []
       let skippedDup = 0
-      const seenInFile = new Set<string>()
+      const duplicates: string[] = []
 
       for (const r of parsed) {
         if (r.gender !== '乾' && r.gender !== '坤') { problems.push(`${r.unit}「${r.name}」性別需為乾或坤`); continue }
         const classId = classByName.get(r.className)
         if (!classId) { problems.push(`${r.unit}「${r.name}」找不到班別「${r.className}」`); continue }
-        const key = `${r.unit}__${r.name}__${r.gender}`
-        if (existingKeys.has(key) || seenInFile.has(key)) { skippedDup++; continue }
-        seenInFile.add(key)
-        rows.push({ session_id: selectedSession, class_id: classId, unit: r.unit, name: r.name, gender: r.gender as Gender, extra: r.extra })
+        const name = r.name.trim()
+        if (existingNames.has(name)) {
+          skippedDup++
+          duplicates.push(`「${name}」（${existingNames.get(name)}）`)
+          continue
+        }
+        existingNames.set(name, r.unit)
+        rows.push({ session_id: selectedSession, class_id: classId, unit: r.unit, name, gender: r.gender as Gender, extra: r.extra })
       }
 
       if (rows.length === 0) {
-        showSnack(problems.length > 0 ? problems.slice(0, 3).join('；') : `無新資料可匯入（跳過 ${skippedDup} 筆重複）`, 'warning')
+        showSnack((problems.length > 0 ? problems.slice(0, 3).join('；') : `無新資料可匯入（跳過 ${skippedDup} 筆重複）`) + duplicateSummary(duplicates), 'warning')
         return
       }
 
@@ -298,7 +340,7 @@ export default function SecretaryPage() {
       let msg = `已匯入 ${rows.length} 人`
       if (skippedDup > 0) msg += `，跳過 ${skippedDup} 筆重複`
       if (problems.length > 0) msg += `，${problems.length} 筆有誤未匯入`
-      showSnack(msg, problems.length > 0 ? 'warning' : 'success')
+      showSnack(msg + duplicateSummary(duplicates), problems.length > 0 || skippedDup > 0 ? 'warning' : 'success')
     } catch (err) {
       showSnack('檔案讀取失敗，請確認是有效的 Excel 範本', 'error')
     } finally {
@@ -379,12 +421,12 @@ export default function SecretaryPage() {
     const currentClassMap = Object.fromEntries(classes.map(c => [c.name, c.id]))
     const importClassMap = Object.fromEntries(importClasses.map(c => [c.id, c.name]))
 
-    // 排除已存在（同姓名＋同性別）
-    const existingKeys = new Set(registrations.map(r => `${r.name}__${r.gender}`))
-    const deduped = toImport.filter(r => !existingKeys.has(`${r.name}__${r.gender}`))
+    const existing = await loadRegisteredNames()
+    if (!existing) { setImporting(false); return }
+    const { rows: deduped, duplicates } = excludeDuplicateNames(toImport, existing, selectedUnit)
 
     if (deduped.length === 0) {
-      showSnack('選取的人員已全數存在於目前名單中，無需重複匯入。', 'warning')
+      showSnack('選取的人員已全數存在於目前名單中，無需重複匯入。' + duplicateSummary(duplicates), 'warning')
       setImporting(false)
       return
     }
@@ -396,7 +438,7 @@ export default function SecretaryPage() {
         session_id: selectedSession,
         class_id: classId,
         unit: selectedUnit,
-        name: r.name,
+        name: r.name.trim(),
         gender: r.gender,
       }
     })
@@ -408,7 +450,7 @@ export default function SecretaryPage() {
     else {
       setRegistrations(prev => [...prev, ...(inserted ?? [])])
       closeImport()
-      if (skipped > 0) showSnack(`已匯入 ${deduped.length} 人，跳過 ${skipped} 位重複者。`, 'warning')
+      if (skipped > 0) showSnack(`已匯入 ${deduped.length} 人，跳過 ${skipped} 位重複者。` + duplicateSummary(duplicates), 'warning')
     }
     setImporting(false)
   }
@@ -700,17 +742,13 @@ export default function SecretaryPage() {
               )}
 
               {!loadingGroupMembers && groupMembers.length > 0 && (() => {
-                const existingKeys = new Set(registrations.map(r => `${r.name}__${r.gender}`))
-                const newCount = groupMembers.filter(m => !existingKeys.has(`${m.name}__${m.gender}`)).length
-                const skipCount = groupMembers.length - newCount
                 return (
                   <Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 2 }}>
                     <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
                       群組共 {groupMembers.length} 人
-                      {skipCount > 0 && `，${skipCount} 人已在名單中將自動跳過`}
                     </Typography>
                     <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                      將新增 {newCount} 人至「{classes.find(c => c.id === groupImportClassId)?.name}」
+                      匯入至「{classes.find(c => c.id === groupImportClassId)?.name}」，確認時會檢查整場班會並跳過同名者。
                     </Typography>
                   </Box>
                 )
