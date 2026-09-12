@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSnack } from '@/components/SnackProvider'
 import { Unit, RegUnit, Gender, UNITS, CHECKIN_UNITS, NO_UNIT, GENDERS, Extra, CustomField } from '@/lib/types'
@@ -31,6 +31,8 @@ import UndoIcon from '@mui/icons-material/Undo'
 import CheckIcon from '@mui/icons-material/Check'
 import EditIcon from '@mui/icons-material/Edit'
 import ListAltIcon from '@mui/icons-material/ListAlt'
+import MicIcon from '@mui/icons-material/Mic'
+import StopCircleIcon from '@mui/icons-material/StopCircle'
 import Chip from '@mui/material/Chip'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
@@ -39,6 +41,34 @@ import ConfirmDialog from '@/components/ConfirmDialog'
 import { genderToggleQian, genderToggleKun } from '@/lib/sx'
 import { RealtimeStatus } from '@/components/RealtimeStatus'
 import { useCheckinData, Reg } from './useCheckinData'
+
+type SpeechRecognitionResultLike = {
+  length: number
+  [index: number]: { transcript: string }
+}
+
+type SpeechRecognitionLike = {
+  lang: string
+  continuous: boolean
+  interimResults: boolean
+  maxAlternatives: number
+  start: () => void
+  stop: () => void
+  abort: () => void
+  onstart: (() => void) | null
+  onend: (() => void) | null
+  onresult: ((event: { results: { [index: number]: SpeechRecognitionResultLike } }) => void) | null
+  onerror: ((event: { error: string }) => void) | null
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor
+    webkitSpeechRecognition?: SpeechRecognitionConstructor
+  }
+}
 
 export default function CheckinSessionPage() {
   const params = useParams()
@@ -61,6 +91,9 @@ export default function CheckinSessionPage() {
   const [walkInForm, setWalkInForm] = useState<{ name: string; gender: Gender; class_id: string; unit: RegUnit | ''; extra: Extra }>({ name: '', gender: '乾', class_id: '', unit: '', extra: {} })
   const [walkInSubmitting, setWalkInSubmitting] = useState(false)
   const [walkInSuccess, setWalkInSuccess] = useState<string>('')
+  const [voiceSupported, setVoiceSupported] = useState(false)
+  const [voiceListening, setVoiceListening] = useState(false)
+  const voiceRecognitionRef = useRef<SpeechRecognitionLike | null>(null)
 
   const {
     session, sessionLoading, sessionNotFound, sessionEnded,
@@ -87,6 +120,11 @@ export default function CheckinSessionPage() {
     const defaultClass = classes.find(c => c.name === '壇主人才班') ?? classes[0]
     setWalkInForm(f => ({ ...f, class_id: defaultClass?.id ?? '' }))
   }, [classes])
+
+  useEffect(() => {
+    setVoiceSupported(Boolean(window.SpeechRecognition || window.webkitSpeechRecognition))
+    return () => voiceRecognitionRef.current?.abort()
+  }, [])
 
   // Derived state
   const unitFiltered = useMemo(
@@ -129,6 +167,87 @@ export default function CheckinSessionPage() {
     setWalkInForm({ name: nameFilter.trim(), gender: '乾', class_id: defaultClass?.id ?? '', unit: isJoint ? '' : selectedUnit, extra: {} })
     setWalkInSuccess('')
     setWalkInOpen(true)
+  }
+
+  function normalizeSpokenName(value: string) {
+    return value
+      .trim()
+      .replace(/[\s，。,.、]/g, '')
+      .replace(/^(請|幫我|我要)?(幫|替)?/, '')
+      .replace(/報到$/, '')
+  }
+
+  function startVoiceSearch() {
+    if (voiceListening) {
+      voiceRecognitionRef.current?.stop()
+      return
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      showSnack('此手機瀏覽器不支援語音辨識，請改用姓名輸入', 'warning')
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'zh-TW'
+    recognition.continuous = false
+    recognition.interimResults = false
+    recognition.maxAlternatives = 5
+    recognition.onstart = () => setVoiceListening(true)
+    recognition.onend = () => {
+      setVoiceListening(false)
+      voiceRecognitionRef.current = null
+    }
+    recognition.onerror = event => {
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        showSnack('請允許麥克風權限後再試', 'warning')
+      } else if (event.error === 'no-speech') {
+        showSnack('沒有聽到姓名，請靠近手機再說一次', 'warning')
+      } else if (event.error !== 'aborted') {
+        showSnack('語音辨識失敗，請再試一次或改用姓名輸入', 'error')
+      }
+    }
+    recognition.onresult = event => {
+      const alternatives = Array.from(
+        { length: event.results[0].length },
+        (_, index) => event.results[0][index].transcript.trim()
+      )
+      const matchedAlternative = alternatives.find(transcript => {
+        const spokenName = normalizeSpokenName(transcript)
+        return unitFiltered.some(r => normalizeSpokenName(r.name) === spokenName)
+      })
+      const transcript = matchedAlternative ?? alternatives[0] ?? ''
+      const spokenName = normalizeSpokenName(transcript)
+      const matches = unitFiltered.filter(r => normalizeSpokenName(r.name) === spokenName)
+
+      if (matches.length === 1) {
+        const matched = matches[0]
+        setNameFilter(matched.name)
+        if (checkedIn.has(matched.id)) {
+          showSnack(`辨識為「${matched.name}」，此人已報到`, 'success')
+        } else {
+          startCheckin(matched)
+        }
+        return
+      }
+
+      setNameFilter(spokenName)
+      if (matches.length > 1) {
+        showSnack(`找到 ${matches.length} 位「${spokenName}」，請從名單選擇`, 'warning')
+      } else {
+        showSnack(`辨識為「${spokenName}」，找不到完全相符的人員`, 'warning')
+      }
+    }
+
+    voiceRecognitionRef.current = recognition
+    try {
+      recognition.start()
+    } catch {
+      voiceRecognitionRef.current = null
+      setVoiceListening(false)
+      showSnack('麥克風正在使用中，請稍後再試', 'warning')
+    }
   }
 
   async function submitWalkIn() {
@@ -326,6 +445,32 @@ export default function CheckinSessionPage() {
           disabled={!hasUnit}
           sx={{ width: 150, flexShrink: 0 }}
         />
+        {voiceSupported && (
+          <Button
+            variant={voiceListening ? 'contained' : 'outlined'}
+            color={voiceListening ? 'error' : 'primary'}
+            startIcon={voiceListening ? <StopCircleIcon /> : <MicIcon />}
+            onClick={startVoiceSearch}
+            disabled={!hasUnit || unitLoading}
+            aria-label={voiceListening ? '停止語音辨識' : '用語音搜尋報到姓名'}
+            sx={{
+              minHeight: 40,
+              px: 2,
+              flexShrink: 0,
+              fontWeight: 700,
+              ...(voiceListening && {
+                boxShadow: '0 0 0 5px rgba(220,38,38,0.12)',
+                animation: 'voicePulse 1.4s ease-in-out infinite',
+                '@keyframes voicePulse': {
+                  '0%, 100%': { boxShadow: '0 0 0 4px rgba(220,38,38,0.12)' },
+                  '50%': { boxShadow: '0 0 0 9px rgba(220,38,38,0.04)' },
+                },
+              }),
+            }}
+          >
+            {voiceListening ? '聆聽中…' : '語音找人'}
+          </Button>
+        )}
       </Box>
       </CardContent></Card>
 
@@ -531,6 +676,10 @@ export default function CheckinSessionPage() {
 }
 
 function PersonCard({ r, done, showUnit, customFields, onCheckin, onCancel, onEditFields }: { r: Reg; done: boolean; showUnit?: boolean; customFields: CustomField[]; onCheckin: () => void; onCancel: () => void; onEditFields?: () => void }) {
+  const checkinColor = r.gender === '乾' ? '#2563EB' : '#DB2777'
+  const checkinHoverColor = r.gender === '乾' ? '#1D4ED8' : '#BE185D'
+  const checkinShadow = r.gender === '乾' ? 'rgba(37,99,235,0.4)' : 'rgba(219,39,119,0.4)'
+  const checkinHoverShadow = r.gender === '乾' ? 'rgba(37,99,235,0.5)' : 'rgba(219,39,119,0.5)'
   const timeStr = done && r.checked_in_at
     ? new Date(r.checked_in_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })
     : null
@@ -578,7 +727,7 @@ function PersonCard({ r, done, showUnit, customFields, onCheckin, onCancel, onEd
               </Button>
             )}
             <Button variant="contained" size="small" startIcon={<CheckIcon />} onClick={onCheckin}
-              sx={{ fontSize: 13, flexShrink: 0, whiteSpace: 'nowrap', alignSelf: 'stretch', height: 'auto', boxShadow: '0 4px 12px rgba(37,73,229,0.4)', '&:hover': { boxShadow: '0 6px 16px rgba(37,73,229,0.5)' } }}>
+              sx={{ fontSize: 13, flexShrink: 0, whiteSpace: 'nowrap', alignSelf: 'stretch', height: 'auto', bgcolor: checkinColor, boxShadow: `0 4px 12px ${checkinShadow}`, '&:hover': { bgcolor: checkinHoverColor, boxShadow: `0 6px 16px ${checkinHoverShadow}` } }}>
               報到
             </Button>
           </>
